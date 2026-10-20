@@ -1,0 +1,10 @@
+{
+  "name": "dentalsis-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/auth.js",
+  "scripts": {
+    "build": "node -e \"console.log('Build completado')\"",
+    "test:unit": "node --test test/auth.test.js"
+  }
+}
