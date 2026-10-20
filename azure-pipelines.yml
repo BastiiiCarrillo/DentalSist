@@ -28,5 +28,18 @@ stages:
       displayName: 'Instalar Dependencias y Compilar'
     - script: |
         cd backend
-        npm run test:unit
+        npm audit --audit-level=high
+      displayName: 'Auditoria de Seguridad de Dependencias'
+
+    - script: |
+        cd backend
+        node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results.xml
       displayName: 'Ejecutar Pruebas Unitarias'
+
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: 'backend/test-results.xml'
+        testRunTitle: 'Pruebas Unitarias DentalSist'
+      displayName: 'Publicar Resultados de Pruebas'
