@@ -15,7 +15,7 @@ stages:
   displayName: 'Fase de Compilacion y Pruebas Unitarias'
   jobs:
   - job: BackendCI
-    displayName: 'Ejecutar Build y Linter Backend'
+    displayName: 'Ejecutar Build y Pruebas Backend'
     steps:
     - task: NodeTool@0
       inputs:
