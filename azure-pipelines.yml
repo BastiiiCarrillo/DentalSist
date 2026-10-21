@@ -17,9 +17,9 @@ stages:
   - job: BackendCI
     displayName: 'Ejecutar Build y Pruebas Backend'
     steps:
-    - task: NodeTool@0
+    - task: UseNode@1
       inputs:
-        versionSpec: '$(NODE_VERSION)'
+        version: '$(NODE_VERSION)'
       displayName: 'Instalar Node.js $(NODE_VERSION)'
     - script: |
         cd backend
