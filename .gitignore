@@ -1,5 +1,16 @@
 node_modules/
 npm-debug.log
 .DS_Store
-
 test-results.xml
+*.log
+.env
+.env.*
+!.env.example
+.sessions/
+sessions/
+.cache/
+.tmp/
+tmp/
+dist/
+build/
+coverage/

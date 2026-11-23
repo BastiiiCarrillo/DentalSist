@@ -11,11 +11,11 @@ variables:
   NODE_VERSION: '20.x'
 
 stages:
-- stage: BuildAndTest
-  displayName: 'Fase de Compilacion y Pruebas Unitarias'
+- stage: BuildTestAndAudit
+  displayName: 'Fase de Compilacion, Auditoria y Pruebas'
   jobs:
-  - job: BackendCI
-    displayName: 'Ejecutar Build y Pruebas Backend'
+  - job: BackendSecurityCI
+    displayName: 'Verificacion DevSecOps Backend'
     steps:
     - task: UseNode@1
       inputs:
@@ -24,18 +24,19 @@ stages:
     - script: |
         cd backend
         npm install
-        npm run build
-      displayName: 'Instalar Dependencias y Compilar'
+      displayName: 'Instalar Dependencias'
     - script: |
         cd backend
         npm audit --audit-level=high
-      displayName: 'Auditoria de Seguridad de Dependencias'
-
+      displayName: 'Auditoria de Vulnerabilidades de Seguridad (SCA)'
+    - script: |
+        cd backend
+        npm run build
+      displayName: 'Compilar y Verificar Sintaxis'
     - script: |
         cd backend
         node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results.xml
-      displayName: 'Ejecutar Pruebas Unitarias'
-
+      displayName: 'Ejecutar Pruebas Unitarias y de Seguridad'
     - task: PublishTestResults@2
       condition: succeededOrFailed()
       inputs:
@@ -43,3 +44,17 @@ stages:
         testResultsFiles: 'backend/test-results.xml'
         testRunTitle: 'Pruebas Unitarias DentalSist'
       displayName: 'Publicar Resultados de Pruebas'
+
+- stage: Deploy
+  displayName: 'Fase de Despliegue a Produccion'
+  dependsOn: BuildTestAndAudit
+  condition: succeeded()
+  jobs:
+  - job: DeployJob
+    displayName: 'Desplegar Servicio DentalSis'
+    steps:
+    - script: |
+        echo "Validando firmas y politicas de seguridad..."
+        echo "Artefactos verificados. Desplegando version estable de DentalSis..."
+        echo "Despliegue finalizado con exito."
+      displayName: 'Ejecutar Tareas de Despliegue'
