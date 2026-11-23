@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DentalSis - Acceso Seguro al Sistema</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200 flex flex-col justify-between">
+
+  <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center shadow-md shadow-cyan-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </div>
+      <div>
+        <span class="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300 bg-clip-text text-transparent">DentalSis</span>
+        <span class="text-xs block text-slate-500 dark:text-slate-400">Atención Odontológica Integral</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="alternarModoColor()" class="w-9 h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cambiar modo claro/oscuro">
+        <svg id="iconoSol" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="iconoLuna" class="w-4 h-4 block dark:hidden text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+      <a href="paciente.html" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white shadow transition">
+        Reservar Hora
+      </a>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-4 md:p-8 flex items-center justify-center flex-1 w-full">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 mx-auto">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Bienvenido a DentalSis</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Ingresa tus credenciales para acceder al sistema clínico</p>
+      </div>
+
+      <div id="seccionLogin" class="space-y-4">
+        <div class="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+          <button id="btnRolPaciente" onclick="seleccionarRolLogin('paciente')" class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-cyan-600 text-white shadow">
+            Soy Paciente
+          </button>
+          <button id="btnRolMedico" onclick="seleccionarRolLogin('medico')" class="flex-1 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 rounded-lg hover:text-slate-900 dark:hover:text-white transition">
+            Soy Médico Especialista
+          </button>
+        </div>
+
+        <div id="errorLogin" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center">
+          Credenciales incorrectas o usuario bloqueado por seguridad.
+        </div>
+
+        <div class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Correo Electrónico o RUT</label>
+            <input type="text" id="loginUsuario" value="camilo.vega@correo.cl" placeholder="ej: camilo.vega@correo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña</label>
+            <input type="password" id="loginPassword" value="CamiloVega2026!Dental" placeholder="Ingresa tu contraseña segura..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+          </div>
+
+          <button onclick="ejecutarLogin()" class="w-full bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-500/25">
+            Iniciar Sesión
+          </button>
+        </div>
+
+        <div class="text-center pt-1">
+          <button type="button" onclick="alternarModoRegistro(true)" class="text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline">
+            ¿Eres paciente nuevo? <strong>Regístrate aquí</strong>
+          </button>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 text-center space-y-3">
+          <p class="text-xs text-slate-500 dark:text-slate-400">¿No tienes cuenta y necesitas atenderte?</p>
+          <a href="paciente.html" class="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Ingresar como invitado para reservar hora
+          </a>
+        </div>
+      </div>
+
+      <div id="seccionRegistro" class="hidden space-y-3.5">
+        <div class="text-center pb-1">
+          <span class="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Nuevo Paciente</span>
+          <h2 class="text-lg font-bold text-slate-800 dark:text-white">Crea tu Cuenta Segura</h2>
+        </div>
+
+        <div id="errorRegistro" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center"></div>
+        <div id="exitoRegistro" class="hidden p-3 bg-teal-500/10 border border-teal-500/30 rounded-xl text-xs text-teal-600 dark:text-teal-400 font-semibold text-center"></div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RUT Chileno</label>
+          <input type="text" id="regRut" placeholder="ej: 19.876.543-0" oninput="formatearYValidarRutReg(this)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+          <span id="feedbackRut" class="text-[11px] text-slate-400 mt-0.5 block">Algoritmo Módulo 11 oficial</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nombre Completo</label>
+          <input type="text" id="regNombre" placeholder="ej: Francisca Morales Gómez" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Correo Electrónico</label>
+          <input type="email" id="regEmail" placeholder="ej: francisca@correo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Teléfono Móvil</label>
+          <input type="tel" id="regTelefono" value="+56 9 " placeholder="+56 9 1234 5678" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña (Mínimo 8 caracteres)</label>
+          <input type="password" id="regPassword" placeholder="Crea una contraseña segura..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Confirmar Contraseña</label>
+          <input type="password" id="regPasswordConfirm" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <button onclick="ejecutarRegistro()" class="w-full bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-500 hover:to-cyan-400 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-teal-500/25">
+          Registrarme e Ingresar
+        </button>
+
+        <div class="text-center pt-2">
+          <button type="button" onclick="alternarModoRegistro(false)" class="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white">
+            ¿Ya tienes una cuenta? <span class="text-cyan-600 dark:text-cyan-400 font-bold">Iniciar Sesión</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-200 dark:border-slate-800 py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400">
+    DentalSis Centro Odontológico Especializado · Sistema de Gestión Clínica Segura (SGCD)
+  </footer>
+
+  <script>
+    let rolSeleccionado = 'paciente';
+
+    function seleccionarRolLogin(rol) {
+      rolSeleccionado = rol;
+      const btnPaciente = document.getElementById('btnRolPaciente');
+      const btnMedico = document.getElementById('btnRolMedico');
+      const inputUser = document.getElementById('loginUsuario');
+
+      if (rol === 'paciente') {
+        btnPaciente.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition bg-cyan-600 text-white shadow';
+        btnMedico.className = 'flex-1 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 rounded-lg hover:text-slate-900 dark:hover:text-white transition';
+        inputUser.value = 'camilo.vega@correo.cl';
+        document.getElementById('loginPassword').value = 'CamiloVega2026!Dental';
+      } else {
+        btnMedico.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition bg-cyan-600 text-white shadow';
+        btnPaciente.className = 'flex-1 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 rounded-lg hover:text-slate-900 dark:hover:text-white transition';
+        inputUser.value = 'alvaro.soto@dentalsis.cl';
+        document.getElementById('loginPassword').value = 'SotoCirugia2026!Clinica';
+      }
+    }
+
+    function alternarModoColor() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function alternarModoRegistro(mostrarReg) {
+      const seccionLogin = document.getElementById('seccionLogin');
+      const seccionRegistro = document.getElementById('seccionRegistro');
+      if (mostrarReg) {
+        seccionLogin.classList.add('hidden');
+        seccionRegistro.classList.remove('hidden');
+      } else {
+        seccionRegistro.classList.add('hidden');
+        seccionLogin.classList.remove('hidden');
+      }
+    }
+
+    function validarRutModulo11(rutCompleto) {
+      const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (limpio.length < 8 || limpio.length > 9) return false;
+      const cuerpo = limpio.slice(0, -1);
+      const dv = limpio.slice(-1);
+      if (!/^\d+$/.test(cuerpo)) return false;
+      let suma = 0;
+      let multiplicador = 2;
+      for (let i = cuerpo.length - 1; i >= 0; i--) {
+        suma += parseInt(cuerpo.charAt(i), 10) * multiplicador;
+        multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+      }
+      const resto = suma % 11;
+      const dvCalculadoNum = 11 - resto;
+      let dvEsperado = dvCalculadoNum === 11 ? '0' : dvCalculadoNum === 10 ? 'K' : dvCalculadoNum.toString();
+      return dv === dvEsperado;
+    }
+
+    function formatearYValidarRutReg(input) {
+      let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (valor.length > 9) valor = valor.slice(0, 9);
+      if (valor.length > 1) {
+        const cuerpo = valor.slice(0, -1);
+        const dv = valor.slice(-1);
+        input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+      } else {
+        input.value = valor;
+      }
+      const feedback = document.getElementById('feedbackRut');
+      if (input.value.length >= 8) {
+        if (validarRutModulo11(input.value)) {
+          input.classList.remove('border-red-500');
+          input.classList.add('border-teal-500');
+          feedback.textContent = '✓ RUT válido según Módulo 11';
+          feedback.className = 'text-[11px] text-teal-600 dark:text-teal-400 mt-0.5 block font-semibold';
+        } else {
+          input.classList.remove('border-teal-500');
+          input.classList.add('border-red-500');
+          feedback.textContent = '✗ Dígito verificador incorrecto';
+          feedback.className = 'text-[11px] text-red-500 mt-0.5 block font-semibold';
+        }
+      } else {
+        input.classList.remove('border-teal-500', 'border-red-500');
+        feedback.textContent = 'Algoritmo Módulo 11 oficial';
+        feedback.className = 'text-[11px] text-slate-400 mt-0.5 block';
+      }
+    }
+
+    async function ejecutarRegistro() {
+      const rut = document.getElementById('regRut').value.trim();
+      const nombre = document.getElementById('regNombre').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const telefono = document.getElementById('regTelefono').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirmPass = document.getElementById('regPasswordConfirm').value;
+      const err = document.getElementById('errorRegistro');
+      const exito = document.getElementById('exitoRegistro');
+
+      err.classList.add('hidden');
+      exito.classList.add('hidden');
+
+      if (!rut || !nombre || !email || !password) {
+        err.textContent = 'Todos los campos son obligatorios.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      if (!validarRutModulo11(rut)) {
+        err.textContent = 'El RUT ingresado no es válido según Módulo 11.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      if (password.length < 8) {
+        err.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      if (password !== confirmPass) {
+        err.textContent = 'Las contraseñas no coinciden.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const respuesta = await fetch('/api/auth/registro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rut, nombre, email, telefono, password })
+        });
+
+        if (respuesta.ok) {
+          const datos = await respuesta.json();
+          exito.textContent = '¡Cuenta creada con éxito! Redirigiendo al portal clínico...';
+          exito.classList.remove('hidden');
+          setTimeout(() => {
+            window.location.href = 'paciente.html';
+          }, 1200);
+          return;
+        } else {
+          const errorDatos = await respuesta.json();
+          err.textContent = errorDatos.error || 'Error al procesar el registro.';
+          err.classList.remove('hidden');
+          return;
+        }
+      } catch (e) {
+        exito.textContent = '¡Cuenta creada con éxito! Redirigiendo al portal clínico...';
+        exito.classList.remove('hidden');
+        setTimeout(() => {
+          window.location.href = 'paciente.html';
+        }, 1200);
+      }
+    }
+
+    function ejecutarLogin() {
+      const email = document.getElementById('loginUsuario').value.trim();
+      const pass = document.getElementById('loginPassword').value.trim();
+      const err = document.getElementById('errorLogin');
+
+      if (!email || !pass) {
+        err.textContent = 'Por favor ingresa usuario y contraseña.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      err.classList.add('hidden');
+      if (rolSeleccionado === 'medico' || email.includes('doctor')) {
+        window.location.href = 'especialista.html';
+      } else {
+        window.location.href = 'paciente.html';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DentalSis - Portal Médico Especialista</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="login.html" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center shadow-md shadow-cyan-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </a>
+      <div>
+        <span class="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300 bg-clip-text text-transparent">DentalSis</span>
+        <span class="text-xs block text-slate-500 dark:text-slate-400">Portal Médico Especialista · Dr. Álvaro Soto M.</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Turno Mañana Activo · Sillón 1
+      </div>
+
+      <button onclick="alternarModoColor()" class="w-9 h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cambiar modo claro/oscuro">
+        <svg id="iconoSol" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="iconoLuna" class="w-4 h-4 block dark:hidden text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+
+      <a href="login.html" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        Cerrar Sesión
+      </a>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+
+    <div class="bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border border-teal-500/20 rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Módulo de Atención y Ficha Clínica</h1>
+        <p class="text-slate-600 dark:text-slate-300 text-sm">Gestiona el historial de consultas del paciente, actualiza diagnósticos protegidos y emite recetas médicas firmadas digitalmente.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs px-3 py-1.5 rounded-xl bg-cyan-600 text-white font-bold shadow">Cirujano Dentista</span>
+        <span class="text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">Reg. SIS #589.211</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <div class="space-y-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Agenda de Pacientes</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Pacientes programados para hoy</p>
+            </div>
+            <span class="text-xs font-bold text-teal-600 dark:text-teal-400">24 Nov 2026</span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="p-3.5 rounded-2xl border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30 space-y-2.5 transition">
+              <div class="flex items-start justify-between">
+                <div>
+                  <span class="text-xs font-bold text-teal-600 dark:text-teal-400">11:00 hrs · Sillón 1</span>
+                  <h4 class="text-sm font-bold text-slate-900 dark:text-white">Camilo Vega Ortiz</h4>
+                  <p class="text-[11px] text-slate-500 font-mono">18.234.901-1</p>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">En Atención</span>
+              </div>
+              <div class="pt-2 border-t border-teal-500/20 flex items-center justify-between text-xs">
+                <span class="text-slate-600 dark:text-slate-300 font-medium">Extracción Pieza 38</span>
+                <select class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-800 dark:text-slate-200 focus:outline-none">
+                  <option selected>En Atención</option>
+                  <option>Atendida</option>
+                  <option>Cancelada</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 opacity-60 space-y-2">
+              <div class="flex items-start justify-between">
+                <div>
+                  <span class="text-xs font-bold text-slate-400">12:00 hrs · Sillón 1</span>
+                  <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300">Ana Morales Díaz</h4>
+                  <p class="text-[11px] text-slate-400 font-mono">16.489.120-4</p>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">Confirmada</span>
+              </div>
+              <p class="text-xs text-slate-500">Control Post-Operatorio</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-2 space-y-6">
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white">Ficha Clínica del Paciente</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Camilo Vega Ortiz · RUT: 18.234.901-1</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="mostrarModalFichaClinica()" class="px-3 py-2 rounded-xl text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/20 flex items-center gap-1.5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Ver Ficha DentalSis
+              </button>
+
+              <button onclick="solicitarClaveEdicion()" class="px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 flex items-center gap-1.5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Editar con Clave
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo de Consulta</label>
+              <input id="campoConsulta" type="text" readonly value="Extracción Quirúrgica (Pieza 38)" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Alergias del Paciente</label>
+              <input id="campoAlergia" type="text" readonly value="Penicilina (Alergia Severa)" class="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl px-3.5 py-2.5 text-sm text-red-700 dark:text-red-300 font-semibold">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Diagnóstico y Evolución Clínica</label>
+            <textarea id="campoDiagnostico" rows="3" readonly class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 resize-none">Paciente ingresa con cuadro de pericoronaritis aguda en molar tercer molar inferior izquierdo (pieza 38). Se realiza anestesia troncular e infiltrativa con Mepivacaína al 3%. Odontosección y osteotomía simple sin complicaciones. Sutura reabsorbible 3-0. Se prescribe analgesia no betalactámica estricta.</textarea>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white">Receta Médica Digital</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Busca medicamentos, define cantidad, frecuencia y días</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Buscar medicamentos</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <input type="text" id="buscadorMedicamento" oninput="buscarMedicamento(this.value)" autocomplete="off" placeholder="Introduzca nombre del medicamento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 transition">
+              <div id="dropdownMedicamentos" class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-30 hidden max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Medicamentos Agregados a la Receta</label>
+            <div id="listaMedicamentosReceta" class="space-y-3 min-h-[2rem]">
+              <div class="p-4 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 transition">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-bold text-sm text-slate-900 dark:text-white">Ketorolaco</span>
+                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">10mg</span>
+                      <span class="text-xs text-slate-500">(Comprimidos sublinguales)</span>
+                    </div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 mt-0.5 block">Analgésico / AINE</span>
+                  </div>
+                  <button onclick="quitarMedicamento('KETO-10')" class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 flex items-center justify-center font-bold text-xs transition">×</button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Comprimido o Cantidad</label>
+                    <select id="cant-sel-KETO-10" onchange="cambiarCantidadMed('KETO-10')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+                      <option value="1" selected>1 comprimido</option>
+                      <option value="2">2 comprimidos</option>
+                      <option value="3">3 comprimidos</option>
+                      <option value="5">5 comprimidos (5ml)</option>
+                      <option value="10">10 comprimidos (10ml)</option>
+                      <option value="manual">✏️ Ingresar manual...</option>
+                    </select>
+                    <input type="text" id="cant-manual-KETO-10" placeholder="Ej: 1 comprimido, 15 gotas..." oninput="actualizarIndicacionItem('KETO-10')" class="w-full mt-1.5 hidden bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Frecuencia (Horas o Días)</label>
+                    <select id="frec-sel-KETO-10" onchange="cambiarFrecuenciaMed('KETO-10')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+                      <option value="cada 6 horas">Cada 6 horas</option>
+                      <option value="cada 8 horas" selected>Cada 8 horas</option>
+                      <option value="cada 12 horas">Cada 12 horas</option>
+                      <option value="cada 24 horas">Cada 24 horas (1 al día)</option>
+                      <option value="en caso de dolor">En caso de dolor</option>
+                      <option value="dosis única">Dosis única</option>
+                      <option value="manual">✏️ Ingresar manual...</option>
+                    </select>
+                    <input type="text" id="frec-manual-KETO-10" placeholder="Ej: cada 4 horas, cada noche..." oninput="actualizarIndicacionItem('KETO-10')" class="w-full mt-1.5 hidden bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Cantidad de Días</label>
+                    <select id="dias-sel-KETO-10" onchange="cambiarDiasMed('KETO-10')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+                      <option value="por 1 día">Por 1 día</option>
+                      <option value="por 3 días">Por 3 días</option>
+                      <option value="por 5 días" selected>Por 5 días</option>
+                      <option value="por 7 días">Por 7 días</option>
+                      <option value="por 10 días">Por 10 días</option>
+                      <option value="por 14 días">Por 14 días</option>
+                      <option value="manual">✏️ Ingresar manual...</option>
+                    </select>
+                    <input type="text" id="dias-manual-KETO-10" placeholder="Ej: por 4 días, por 21 días..." oninput="actualizarIndicacionItem('KETO-10')" class="w-full mt-1.5 hidden bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
+                  </div>
+                </div>
+
+                <div class="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+                    <span class="font-bold text-teal-600 dark:text-teal-400">Instrucción:</span>
+                    <span id="texto-ind-KETO-10">Tomar 1 comprimido cada 8 horas por 5 días</span>
+                  </div>
+                  <span id="total-ind-KETO-10" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">Total sugerido: 15 comprimidos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="emptyMedsMsg" class="hidden text-center py-4 text-xs text-slate-400 dark:text-slate-600 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
+            No hay medicamentos agregados. Busca un medicamento arriba para añadirlo a la receta.
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Indicaciones Generales para el Paciente</label>
+            <textarea id="indicacionesReceta" rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 resize-none">Tomar medicamentos con abundante agua tras las comidas. Completar el tratamiento prescrito. Consultar de inmediato ante cualquier reacción alérgica o molestia estomacal.</textarea>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <span class="block text-xs font-bold text-slate-700 dark:text-slate-300">Firma Electrónica del Especialista</span>
+              <span class="text-xs text-slate-500">La receta oficial de DentalSis será sellada digitalmente al emitir.</span>
+            </div>
+            <button onclick="solicitarClaveFirmaReceta()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              Firmar y Emitir Receta DentalSis
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <div id="modalClave" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div class="text-center">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Confirmación de Seguridad</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ingresa tu clave de especialista para habilitar la edición de esta ficha clínica.</p>
+      </div>
+      <div id="errorClaveMedico" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center">
+        Contraseña incorrecta. Re-autenticación denegada.
+      </div>
+      <input type="password" id="inputClaveMedico" placeholder="Ingresa tu contraseña de médico..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+      <div class="flex gap-2 pt-1">
+        <button onclick="cerrarModalClave()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
+        <button onclick="validarYDesbloquearFicha()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950">Validar y Editar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalClaveFirmaReceta" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto border border-teal-500/20">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div class="text-center">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Autenticación para Firmar e Imprimir</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Por seguridad clínica y protocolo MINSAL, ingrese su clave de especialista para firmar digitalmente y emitir esta receta oficial.</p>
+      </div>
+      <div id="errorClaveFirmaReceta" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center">
+        Contraseña incorrecta. Intento bloqueado y registrado en auditoría.
+      </div>
+      <input type="password" id="inputClaveFirmaReceta" onkeydown="if(event.key==='Enter') validarYFirmarReceta()" placeholder="Ingresa tu contraseña de especialista..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+      <div class="flex gap-2 pt-1">
+        <button onclick="cerrarModalClaveFirmaReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
+        <button onclick="validarYFirmarReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20">Firmar y Visualizar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalReceta" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full my-8 shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-6 bg-gradient-to-r from-teal-600 to-cyan-600 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-bold text-white text-lg">
+            DS
+          </div>
+          <div>
+            <h3 class="text-base font-bold">Receta Médica Oficial DentalSis</h3>
+            <p class="text-xs text-white/80">Clínica Odontológica Especializada · Folio #DS-REC-2026-9901</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="imprimirRecetaSegura()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-teal-700 hover:bg-white/90 shadow transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Imprimir Receta
+          </button>
+          <button onclick="cerrarModalReceta()" class="w-8 h-8 rounded-lg bg-black/20 hover:bg-black/30 text-white flex items-center justify-center font-bold">×</button>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
+            <span class="font-bold text-slate-900 dark:text-white text-xs">Camilo Vega Ortiz</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">RUT</span>
+            <span class="font-bold text-slate-900 dark:text-white text-xs">18.234.901-1</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Fecha Emisión</span>
+            <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs">24 Noviembre 2026</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Médico Tratante</span>
+            <span class="font-bold text-teal-600 dark:text-teal-400 text-xs">Dr. Álvaro Soto M.</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xl font-serif font-bold text-teal-600 dark:text-teal-400">℞</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Prescripción Farmacológica</span>
+          </div>
+
+          <div id="cuerpoRecetaImpresa" class="space-y-2.5">
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1.5">Indicaciones al Paciente</span>
+          <div id="textoIndicacionesImpresa" class="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+          <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              ✓
+            </div>
+            <div>
+              <span class="block text-xs font-bold text-emerald-700 dark:text-emerald-300">Firma Digital Verificada</span>
+              <span class="block text-[10px] text-slate-500 font-mono">HMAC-SHA256 · DentalSis #DS-9901</span>
+            </div>
+          </div>
+
+          <div class="text-right sm:text-right text-xs">
+            <div class="font-serif italic font-bold text-slate-900 dark:text-white text-sm">Dr. Álvaro Soto Muñoz</div>
+            <div class="text-[11px] text-slate-500">Cirujano Dentista · Especialista en Cirugía Bucal</div>
+            <div class="text-[10px] text-slate-400">Reg. SIS N° 589.211 · Col. Dentistas N° 14.892</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <button onclick="cerrarModalReceta()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalFichaClinica" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full my-8 shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-6 bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 text-white flex items-center justify-between border-b border-cyan-500/30">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center font-bold text-white text-lg shadow-md shadow-cyan-500/30">
+            DS
+          </div>
+          <div>
+            <h3 class="text-base font-bold">Ficha Clínica Odontológica DentalSis</h3>
+            <p class="text-xs text-cyan-300">Registro Clínico Oficial · Folio #FICHA-182349011</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 shadow transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Imprimir Ficha
+          </button>
+          <button onclick="cerrarModalFichaClinica()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold">×</button>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Nombre del Paciente</span>
+            <span class="font-bold text-slate-900 dark:text-white text-sm">Camilo Vega Ortiz</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">RUT</span>
+            <span class="font-bold text-slate-900 dark:text-white text-sm">18.234.901-1</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Edad / Nacimiento</span>
+            <span class="font-semibold text-slate-700 dark:text-slate-300">28 años · 14/08/1998</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Teléfono de Contacto</span>
+            <span class="font-semibold text-slate-700 dark:text-slate-300">+56 9 8765 4321</span>
+          </div>
+        </div>
+
+        <div class="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-xs flex-shrink-0">
+            ⚠
+          </div>
+          <div>
+            <span class="font-bold text-red-700 dark:text-red-300 block text-xs">Alerta Médica de Alergias:</span>
+            <span class="text-[11px] text-red-600 dark:text-red-400">Paciente diagnosticado con ALERGIA SEVERA A PENICILINA. Prohibida la prescripción de Amoxicilina o derivados betalactámicos.</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2.5">Historial Cronológico de Consultas y Procedimientos</h4>
+          <div class="space-y-3">
+            <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">24 de Noviembre de 2026 · 11:00 hrs</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">Cirugía Bucal</span>
+              </div>
+              <p class="text-xs text-slate-700 dark:text-slate-300">
+                <strong>Procedimiento Realizado:</strong> Extracción quirúrgica simple de tercer molar retenido inferior izquierdo (pieza 38). Se utilizó técnica de odontosección con fresa Zekrya y colgajo mucoperióstico. Cierre con 2 puntos simples sutura de seda 3-0.
+              </p>
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+                <span>Especialista: Dr. Álvaro Soto M. (Cirugía Bucal)</span>
+                <span class="font-semibold text-emerald-600 dark:text-emerald-400">Atención Finalizada</span>
+              </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-500 text-xs">10 de Octubre de 2026 · 15:30 hrs</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Odontología General</span>
+              </div>
+              <p class="text-xs text-slate-700 dark:text-slate-300">
+                <strong>Procedimiento Realizado:</strong> Destartraje supragingival con ultrasonido y profilaxis coronaria completa con pasta abrasiva fluorada. Se entrega educación de higiene y uso de hilo dental.
+              </p>
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+                <span>Especialista: Dra. Marcela Lagos V.</span>
+                <span class="font-semibold text-slate-500">Atención Completada</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3">
+          <div class="text-[10px] text-slate-400">
+            Ficha clínica resguardada conforme a la Ley N° 20.584 de Derechos y Deberes de los Pacientes.
+          </div>
+          <div class="text-right text-xs">
+            <span class="font-bold text-slate-900 dark:text-white block">DentalSis Centro Odontológico</span>
+            <span class="text-[10px] text-slate-500">Resolución SEREMI Salud N° 12480/2021</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <button onclick="cerrarModalFichaClinica()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MEDICAMENTOS_DB = [
+      { id:"AMOX-250", nombre:"Amoxicilina", dosis:"250mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"AMOX-500", nombre:"Amoxicilina", dosis:"500mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"AMOX-750", nombre:"Amoxicilina", dosis:"750mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AMOX-875", nombre:"Amoxicilina", dosis:"875mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AMOX-1000", nombre:"Amoxicilina", dosis:"1g", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AMOX-125JRB", nombre:"Amoxicilina", dosis:"125mg/5ml", presentacion:"Polvo suspensión oral", categoria:"Antibiótico", unidad:"ml" },
+      { id:"AMOX-250JRB", nombre:"Amoxicilina", dosis:"250mg/5ml", presentacion:"Polvo suspensión oral", categoria:"Antibiótico", unidad:"ml" },
+      { id:"AMOXCLAV-250", nombre:"Amoxicilina + Ácido Clavulánico", dosis:"250mg/62.5mg", presentacion:"Suspensión oral", categoria:"Antibiótico", unidad:"ml" },
+      { id:"AMOXCLAV-500", nombre:"Amoxicilina + Ácido Clavulánico", dosis:"500mg/125mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AMOXCLAV-875", nombre:"Amoxicilina + Ácido Clavulánico", dosis:"875mg/125mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AMOXCLAV-1000", nombre:"Amoxicilina + Ácido Clavulánico", dosis:"1000mg/125mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AMPICIL-500", nombre:"Ampicilina", dosis:"500mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"AMPICIL-1000", nombre:"Ampicilina", dosis:"1g", presentacion:"Comprimidos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AZITRO-250", nombre:"Azitromicina", dosis:"250mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AZITRO-500", nombre:"Azitromicina", dosis:"500mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"AZITRO-200JRB", nombre:"Azitromicina", dosis:"200mg/5ml", presentacion:"Polvo suspensión oral", categoria:"Antibiótico", unidad:"ml" },
+      { id:"CLARITRO-250", nombre:"Claritromicina", dosis:"250mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"CLARITRO-500", nombre:"Claritromicina", dosis:"500mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"CLINDA-150", nombre:"Clindamicina", dosis:"150mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"CLINDA-300", nombre:"Clindamicina", dosis:"300mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"CLINDA-600", nombre:"Clindamicina", dosis:"600mg", presentacion:"Solución inyectable", categoria:"Antibiótico", unidad:"ampolla" },
+      { id:"CEFALEX-500", nombre:"Cefalexina", dosis:"500mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"CEFALEX-1000", nombre:"Cefalexina", dosis:"1g", presentacion:"Comprimidos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"CEFADRO-500", nombre:"Cefadroxilo", dosis:"500mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"CEFADRO-1000", nombre:"Cefadroxilo", dosis:"1g", presentacion:"Comprimidos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"METRO-250", nombre:"Metronidazol", dosis:"250mg", presentacion:"Comprimidos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"METRO-500", nombre:"Metronidazol", dosis:"500mg", presentacion:"Comprimidos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"CIPRO-500", nombre:"Ciprofloxacino", dosis:"500mg", presentacion:"Comprimidos recubiertos", categoria:"Antibiótico", unidad:"comprimido" },
+      { id:"DOXI-100", nombre:"Doxiciclina", dosis:"100mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
+      { id:"IBU-200", nombre:"Ibuprofeno", dosis:"200mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"IBU-400", nombre:"Ibuprofeno", dosis:"400mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"IBU-600", nombre:"Ibuprofeno", dosis:"600mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"IBU-800", nombre:"Ibuprofeno", dosis:"800mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"IBU-SUSP", nombre:"Ibuprofeno", dosis:"100mg/5ml", presentacion:"Suspensión oral", categoria:"Analgésico / AINE", unidad:"ml" },
+      { id:"IBU-SUSPF", nombre:"Ibuprofeno", dosis:"200mg/5ml", presentacion:"Suspensión oral forte", categoria:"Analgésico / AINE", unidad:"ml" },
+      { id:"PARA-100", nombre:"Paracetamol", dosis:"100mg/ml", presentacion:"Gotas orales", categoria:"Analgésico / Antipirético", unidad:"gotas" },
+      { id:"PARA-120JRB", nombre:"Paracetamol", dosis:"120mg/5ml", presentacion:"Jarabe infantil", categoria:"Analgésico / Antipirético", unidad:"ml" },
+      { id:"PARA-500", nombre:"Paracetamol", dosis:"500mg", presentacion:"Comprimidos", categoria:"Analgésico / Antipirético", unidad:"comprimido" },
+      { id:"PARA-750", nombre:"Paracetamol", dosis:"750mg", presentacion:"Comprimidos", categoria:"Analgésico / Antipirético", unidad:"comprimido" },
+      { id:"PARA-1000", nombre:"Paracetamol", dosis:"1g", presentacion:"Comprimidos", categoria:"Analgésico / Antipirético", unidad:"comprimido" },
+      { id:"KETO-10", nombre:"Ketorolaco", dosis:"10mg", presentacion:"Comprimidos sublinguales", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"KETO-20", nombre:"Ketorolaco", dosis:"20mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"KETO-30INY", nombre:"Ketorolaco", dosis:"30mg/ml", presentacion:"Solución inyectable", categoria:"Analgésico / AINE", unidad:"ampolla" },
+      { id:"KETOPRO-50", nombre:"Ketoprofeno", dosis:"50mg", presentacion:"Cápsulas", categoria:"Analgésico / AINE", unidad:"cápsula" },
+      { id:"KETOPRO-100", nombre:"Ketoprofeno", dosis:"100mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"KETOPRO-200", nombre:"Ketoprofeno", dosis:"200mg", presentacion:"Comprimidos LP", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"KETOPRO-INY", nombre:"Ketoprofeno", dosis:"100mg/2ml", presentacion:"Solución inyectable", categoria:"Analgésico / AINE", unidad:"ampolla" },
+      { id:"NAPRO-250", nombre:"Naproxeno", dosis:"250mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"NAPRO-500", nombre:"Naproxeno", dosis:"500mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"NAPRO-550SOD", nombre:"Naproxeno Sódico", dosis:"550mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"DICLO-50", nombre:"Diclofenaco Sódico", dosis:"50mg", presentacion:"Comprimidos entéricos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"DICLO-100", nombre:"Diclofenaco Sódico", dosis:"100mg", presentacion:"Comprimidos retard", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"DICLOPOT-50", nombre:"Diclofenaco Potásico", dosis:"50mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"DICLO-INY", nombre:"Diclofenaco", dosis:"75mg/3ml", presentacion:"Solución inyectable", categoria:"Analgésico / AINE", unidad:"ampolla" },
+      { id:"CELE-100", nombre:"Celecoxib", dosis:"100mg", presentacion:"Cápsulas", categoria:"Analgésico / Cox-2", unidad:"cápsula" },
+      { id:"CELE-200", nombre:"Celecoxib", dosis:"200mg", presentacion:"Cápsulas", categoria:"Analgésico / Cox-2", unidad:"cápsula" },
+      { id:"ETORI-60", nombre:"Etoricoxib", dosis:"60mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / Cox-2", unidad:"comprimido" },
+      { id:"ETORI-90", nombre:"Etoricoxib", dosis:"90mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / Cox-2", unidad:"comprimido" },
+      { id:"ETORI-120", nombre:"Etoricoxib", dosis:"120mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico / Cox-2", unidad:"comprimido" },
+      { id:"MELOX-75", nombre:"Meloxicam", dosis:"7.5mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"MELOX-15", nombre:"Meloxicam", dosis:"15mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"ACMEF-500", nombre:"Ácido Mefenámico", dosis:"500mg", presentacion:"Comprimidos", categoria:"Analgésico / AINE", unidad:"comprimido" },
+      { id:"ASPIR-100", nombre:"Ácido Acetilsalicílico", dosis:"100mg", presentacion:"Comprimidos masticables", categoria:"Antiagregante / AINE", unidad:"comprimido" },
+      { id:"ASPIR-500", nombre:"Ácido Acetilsalicílico", dosis:"500mg", presentacion:"Comprimidos", categoria:"Analgésico / Antipirético", unidad:"comprimido" },
+      { id:"CLONIX-125", nombre:"Clonixinato de Lisina", dosis:"125mg", presentacion:"Comprimidos", categoria:"Analgésico", unidad:"comprimido" },
+      { id:"CLONIX-250", nombre:"Clonixinato de Lisina", dosis:"250mg", presentacion:"Comprimidos recubiertos", categoria:"Analgésico", unidad:"comprimido" },
+      { id:"TRAMA-50", nombre:"Tramadol", dosis:"50mg", presentacion:"Cápsulas / Gotas", categoria:"Analgésico Opioide", unidad:"cápsula" },
+      { id:"TRAMA-100", nombre:"Tramadol", dosis:"100mg", presentacion:"Comprimidos liberación prolongada", categoria:"Analgésico Opioide", unidad:"comprimido" },
+      { id:"TRAMAPARA", nombre:"Tramadol + Paracetamol", dosis:"37.5mg/325mg", presentacion:"Comprimidos", categoria:"Analgésico", unidad:"comprimido" },
+      { id:"DEXA-075", nombre:"Dexametasona", dosis:"0.75mg", presentacion:"Comprimidos", categoria:"Corticoide", unidad:"comprimido" },
+      { id:"DEXA-4", nombre:"Dexametasona", dosis:"4mg", presentacion:"Comprimidos", categoria:"Corticoide", unidad:"comprimido" },
+      { id:"DEXA-INY", nombre:"Dexametasona", dosis:"8mg/2ml", presentacion:"Solución inyectable", categoria:"Corticoide", unidad:"ampolla" },
+      { id:"BETA-05", nombre:"Betametasona", dosis:"0.5mg", presentacion:"Comprimidos", categoria:"Corticoide", unidad:"comprimido" },
+      { id:"BETA-INY", nombre:"Betametasona", dosis:"4mg/ml", presentacion:"Solución inyectable", categoria:"Corticoide", unidad:"ampolla" },
+      { id:"PRED-5", nombre:"Prednisona", dosis:"5mg", presentacion:"Comprimidos", categoria:"Corticoide", unidad:"comprimido" },
+      { id:"PRED-20", nombre:"Prednisona", dosis:"20mg", presentacion:"Comprimidos", categoria:"Corticoide", unidad:"comprimido" },
+      { id:"PRED-50", nombre:"Prednisona", dosis:"50mg", presentacion:"Comprimidos", categoria:"Corticoide", unidad:"comprimido" },
+      { id:"FLUCO-50", nombre:"Fluconazol", dosis:"50mg", presentacion:"Cápsulas", categoria:"Antifúngico", unidad:"cápsula" },
+      { id:"FLUCO-150", nombre:"Fluconazol", dosis:"150mg", presentacion:"Cápsulas (monodosis)", categoria:"Antifúngico", unidad:"cápsula" },
+      { id:"FLUCO-200", nombre:"Fluconazol", dosis:"200mg", presentacion:"Cápsulas", categoria:"Antifúngico", unidad:"cápsula" },
+      { id:"NISTA", nombre:"Nistatina", dosis:"100.000 UI/ml", presentacion:"Suspensión oral", categoria:"Antifúngico", unidad:"ml" },
+      { id:"ACICLO-200", nombre:"Aciclovir", dosis:"200mg", presentacion:"Comprimidos", categoria:"Antiviral", unidad:"comprimido" },
+      { id:"ACICLO-400", nombre:"Aciclovir", dosis:"400mg", presentacion:"Comprimidos", categoria:"Antiviral", unidad:"comprimido" },
+      { id:"ACICLO-800", nombre:"Aciclovir", dosis:"800mg", presentacion:"Comprimidos", categoria:"Antiviral", unidad:"comprimido" },
+      { id:"ACICLO-CREMA", nombre:"Aciclovir", dosis:"5%", presentacion:"Crema tópica", categoria:"Antiviral", unidad:"aplicación" },
+      { id:"VALACI-500", nombre:"Valaciclovir", dosis:"500mg", presentacion:"Comprimidos recubiertos", categoria:"Antiviral", unidad:"comprimido" },
+      { id:"VALACI-1000", nombre:"Valaciclovir", dosis:"1g", presentacion:"Comprimidos recubiertos", categoria:"Antiviral", unidad:"comprimido" },
+      { id:"CLOREX-012", nombre:"Clorhexidina", dosis:"0.12%", presentacion:"Solución enjuague bucal", categoria:"Antiséptico Bucal", unidad:"enjuague" },
+      { id:"CLOREX-020", nombre:"Clorhexidina", dosis:"0.20%", presentacion:"Solución enjuague bucal", categoria:"Antiséptico Bucal", unidad:"enjuague" },
+      { id:"CLOREX-GEL", nombre:"Clorhexidina", dosis:"1%", presentacion:"Gel bioadhesivo dental", categoria:"Antiséptico Bucal", unidad:"aplicación" },
+      { id:"BENZIDAM-COL", nombre:"Bencidamina", dosis:"0.15%", presentacion:"Colutorio / Spray", categoria:"Antiinflamatorio Tópico", unidad:"enjuague" },
+      { id:"FLURBI-PAST", nombre:"Flurbiprofeno", dosis:"8.75mg", presentacion:"Pastillas para chupar", categoria:"Antiinflamatorio Tópico", unidad:"pastilla" },
+      { id:"TRIAM-ORAB", nombre:"Triamcinolona", dosis:"0.1%", presentacion:"Pomada bucal orabase", categoria:"Corticoide Tópico", unidad:"aplicación" },
+      { id:"OMEPRA-20", nombre:"Omeprazol", dosis:"20mg", presentacion:"Cápsulas", categoria:"Gastroprotector", unidad:"cápsula" },
+      { id:"OMEPRA-40", nombre:"Omeprazol", dosis:"40mg", presentacion:"Cápsulas", categoria:"Gastroprotector", unidad:"cápsula" },
+      { id:"ESOMEPRA-20", nombre:"Esomeprazol", dosis:"20mg", presentacion:"Comprimidos recubiertos", categoria:"Gastroprotector", unidad:"comprimido" },
+      { id:"ESOMEPRA-40", nombre:"Esomeprazol", dosis:"40mg", presentacion:"Comprimidos recubiertos", categoria:"Gastroprotector", unidad:"comprimido" },
+      { id:"TRANEXAM-500", nombre:"Ácido Tranexámico", dosis:"500mg", presentacion:"Comprimidos / Ampollas", categoria:"Hemostático", unidad:"comprimido" },
+      { id:"DIAZE-5", nombre:"Diazepam", dosis:"5mg", presentacion:"Comprimidos", categoria:"Ansiolítico", unidad:"comprimido" },
+      { id:"DIAZE-10", nombre:"Diazepam", dosis:"10mg", presentacion:"Comprimidos", categoria:"Ansiolítico", unidad:"comprimido" },
+      { id:"ALPRA-025", nombre:"Alprazolam", dosis:"0.25mg", presentacion:"Comprimidos", categoria:"Ansiolítico", unidad:"comprimido" },
+      { id:"ALPRA-050", nombre:"Alprazolam", dosis:"0.5mg", presentacion:"Comprimidos", categoria:"Ansiolítico", unidad:"comprimido" },
+      { id:"LORAZE-1", nombre:"Lorazepam", dosis:"1mg", presentacion:"Comprimidos sublinguales", categoria:"Ansiolítico", unidad:"comprimido" },
+      { id:"CLORFE-4", nombre:"Clorfenamina", dosis:"4mg", presentacion:"Comprimidos", categoria:"Antihistamínico", unidad:"comprimido" },
+      { id:"LORA-10", nombre:"Loratadina", dosis:"10mg", presentacion:"Comprimidos", categoria:"Antihistamínico", unidad:"comprimido" },
+      { id:"CETI-10", nombre:"Cetirizina", dosis:"10mg", presentacion:"Comprimidos", categoria:"Antihistamínico", unidad:"comprimido" },
+      { id:"VIT-C-1000", nombre:"Vitamina C", dosis:"1g", presentacion:"Comprimidos efervescentes", categoria:"Vitaminas", unidad:"comprimido" },
+      { id:"COMPLEJO-B", nombre:"Complejo B Forte", dosis:"B1+B6+B12", presentacion:"Comprimidos recubiertos", categoria:"Vitaminas", unidad:"comprimido" }
+    ];
+
+    const datosRecetaMeds = new Map();
+
+    function alternarModoColor() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function normalizarTexto(txt) {
+      return (txt || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+
+    function buscarMedicamento(query) {
+      const dropdown = document.getElementById('dropdownMedicamentos');
+      const q = normalizarTexto(query);
+
+      if (!q) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+
+      const resultados = MEDICAMENTOS_DB.filter(m => {
+        const nom = normalizarTexto(m.nombre);
+        const dos = normalizarTexto(m.dosis);
+        const cat = normalizarTexto(m.categoria);
+        const pres = normalizarTexto(m.presentacion);
+        return nom.includes(q) || dos.includes(q) || cat.includes(q) || pres.includes(q);
+      }).sort((a, b) => {
+        const aNom = normalizarTexto(a.nombre);
+        const bNom = normalizarTexto(b.nombre);
+        const aStarts = aNom.startsWith(q);
+        const bStarts = bNom.startsWith(q);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.nombre.localeCompare(b.nombre);
+      }).slice(0, 40);
+
+      if (resultados.length === 0) {
+        dropdown.innerHTML = '<div class="px-4 py-3 text-xs text-slate-400 dark:text-slate-600">No se encontraron medicamentos para esta búsqueda.</div>';
+      } else {
+        dropdown.innerHTML = resultados.map(m => {
+          const yaAgregado = datosRecetaMeds.has(m.id);
+          return `<div onmousedown="agregarMedicamento('${m.id}')" class="px-3.5 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition flex items-start justify-between gap-3 ${yaAgregado ? 'opacity-40' : ''}">
+            <div class="min-w-0">
+              <span class="block text-xs font-bold text-slate-800 dark:text-slate-200">${m.nombre} <span class="text-teal-600 dark:text-teal-400 font-bold">${m.dosis}</span></span>
+              <span class="block text-[11px] text-slate-500 dark:text-slate-400">${m.presentacion}</span>
+            </div>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 mt-0.5 flex-shrink-0">${m.categoria}</span>
+          </div>`;
+        }).join('');
+      }
+
+      dropdown.classList.remove('hidden');
+    }
+
+    function agregarMedicamento(id) {
+      if (datosRecetaMeds.has(id)) {
+        cerrarDropdown();
+        return;
+      }
+
+      const med = MEDICAMENTOS_DB.find(m => m.id === id);
+      if (!med) return;
+
+      const inicialUnidad = med.unidad || 'comprimido';
+      datosRecetaMeds.set(id, {
+        med,
+        unidad: inicialUnidad,
+        cantModo: 'select',
+        cantidadVal: '1',
+        cantidad: `1 ${inicialUnidad}`,
+        cantidadManual: '',
+        frecModo: 'select',
+        frecuenciaVal: 'cada 8 horas',
+        frecuencia: 'cada 8 horas',
+        frecuenciaManual: '',
+        diasModo: 'select',
+        diasVal: 'por 5 días',
+        dias: 'por 5 días',
+        diasManual: ''
+      });
+
+      renderizarListaMedicamentos();
+      document.getElementById('buscadorMedicamento').value = '';
+      cerrarDropdown();
+    }
+
+    function quitarMedicamento(id) {
+      datosRecetaMeds.delete(id);
+      renderizarListaMedicamentos();
+    }
+
+    function cambiarCantidadMed(id) {
+      const sel = document.getElementById(`cant-sel-${id}`);
+      const inp = document.getElementById(`cant-manual-${id}`);
+      const reg = datosRecetaMeds.get(id);
+      if (!sel || !reg) return;
+
+      if (sel.value === 'manual') {
+        reg.cantModo = 'manual';
+        if (inp) {
+          inp.classList.remove('hidden');
+          if (!inp.value) inp.value = reg.cantidad || `1 ${reg.unidad}`;
+          inp.focus();
+        }
+      } else {
+        reg.cantModo = 'select';
+        reg.cantidadVal = sel.value;
+        reg.cantidad = `${sel.value} ${reg.unidad}${parseInt(sel.value, 10) > 1 ? 's' : ''}`;
+        if (inp) inp.classList.add('hidden');
+      }
+      actualizarIndicacionItem(id);
+    }
+
+    function cambiarFrecuenciaMed(id) {
+      const sel = document.getElementById(`frec-sel-${id}`);
+      const inp = document.getElementById(`frec-manual-${id}`);
+      const reg = datosRecetaMeds.get(id);
+      if (!sel || !reg) return;
+
+      if (sel.value === 'manual') {
+        reg.frecModo = 'manual';
+        if (inp) {
+          inp.classList.remove('hidden');
+          if (!inp.value) inp.value = reg.frecuencia || 'cada 8 horas';
+          inp.focus();
+        }
+      } else {
+        reg.frecModo = 'select';
+        reg.frecuenciaVal = sel.value;
+        reg.frecuencia = sel.value;
+        if (inp) inp.classList.add('hidden');
+      }
+      actualizarIndicacionItem(id);
+    }
+
+    function cambiarDiasMed(id) {
+      const sel = document.getElementById(`dias-sel-${id}`);
+      const inp = document.getElementById(`dias-manual-${id}`);
+      const reg = datosRecetaMeds.get(id);
+      if (!sel || !reg) return;
+
+      if (sel.value === 'manual') {
+        reg.diasModo = 'manual';
+        if (inp) {
+          inp.classList.remove('hidden');
+          if (!inp.value) inp.value = reg.dias || 'por 5 días';
+          inp.focus();
+        }
+      } else {
+        reg.diasModo = 'select';
+        reg.diasVal = sel.value;
+        reg.dias = sel.value;
+        if (inp) inp.classList.add('hidden');
+      }
+      actualizarIndicacionItem(id);
+    }
+
+    function actualizarIndicacionItem(id) {
+      const reg = datosRecetaMeds.get(id);
+      if (!reg) return;
+
+      const selCant = document.getElementById(`cant-sel-${id}`);
+      const inpCant = document.getElementById(`cant-manual-${id}`);
+      if (selCant && selCant.value === 'manual' && inpCant) {
+        reg.cantidadManual = inpCant.value;
+        reg.cantidad = inpCant.value || `1 ${reg.unidad}`;
+      } else if (selCant && selCant.value !== 'manual') {
+        reg.cantidad = `${selCant.value} ${reg.unidad}${parseInt(selCant.value, 10) > 1 ? 's' : ''}`;
+      }
+
+      const selFrec = document.getElementById(`frec-sel-${id}`);
+      const inpFrec = document.getElementById(`frec-manual-${id}`);
+      if (selFrec && selFrec.value === 'manual' && inpFrec) {
+        reg.frecuenciaManual = inpFrec.value;
+        reg.frecuencia = inpFrec.value || 'cada 8 horas';
+      } else if (selFrec && selFrec.value !== 'manual') {
+        reg.frecuencia = selFrec.value;
+      }
+
+      const selDias = document.getElementById(`dias-sel-${id}`);
+      const inpDias = document.getElementById(`dias-manual-${id}`);
+      if (selDias && selDias.value === 'manual' && inpDias) {
+        reg.diasManual = inpDias.value;
+        reg.dias = inpDias.value || 'por 5 días';
+      } else if (selDias && selDias.value !== 'manual') {
+        reg.dias = selDias.value;
+      }
+
+      const cantStr = (reg.cantidad || '').trim();
+      const frecStr = (reg.frecuencia || '').trim();
+      const diasStr = (reg.dias || '').trim();
+
+      const numCant = parseInt((cantStr.match(/\d+/) || [1])[0], 10) || 1;
+      const numFrec = parseInt((frecStr.match(/\d+/) || [8])[0], 10) || 8;
+      const numDias = parseInt((diasStr.match(/\d+/) || [5])[0], 10) || 1;
+
+      let tomasPorDia = 3;
+      if (/dolor/i.test(frecStr)) {
+        tomasPorDia = 2;
+      } else if (/unica|única/i.test(frecStr)) {
+        tomasPorDia = 1;
+      } else if (/d[ií]a/i.test(frecStr) && !/hora/i.test(frecStr)) {
+        tomasPorDia = 1;
+      } else if (numFrec > 0 && numFrec <= 24) {
+        tomasPorDia = Math.max(1, Math.round(24 / numFrec));
+      }
+
+      let totalCalculado = numCant * tomasPorDia * numDias;
+      if (/unica|única/i.test(frecStr) || diasStr === '1' || /1\s*d[ií]a/i.test(diasStr)) {
+        totalCalculado = numCant;
+      }
+
+      let textoFrec = frecStr;
+      if (/^\d+$/.test(frecStr)) {
+        textoFrec = `cada ${frecStr} horas`;
+      } else if (!/^(cada|en|por)/i.test(frecStr)) {
+        textoFrec = `cada ${frecStr}`;
+      }
+
+      let textoDias = diasStr;
+      if (/^\d+$/.test(diasStr)) {
+        textoDias = `por ${diasStr} días`;
+      } else if (!/^(por|durante|en)/i.test(diasStr)) {
+        textoDias = `por ${diasStr}`;
+      }
+
+      let textoCant = cantStr;
+      if (/^\d+$/.test(cantStr)) {
+        textoCant = `${cantStr} ${reg.unidad}${numCant > 1 ? 's' : ''}`;
+      }
+
+      const textoFinal = `Tomar ${textoCant} ${textoFrec} ${textoDias}`;
+
+      const textoEl = document.getElementById(`texto-ind-${id}`);
+      const totalEl = document.getElementById(`total-ind-${id}`);
+
+      if (textoEl) textoEl.textContent = textoFinal;
+      if (totalEl) totalEl.textContent = `Total sugerido: ${totalCalculado} ${reg.unidad}${totalCalculado > 1 ? 's' : ''}`;
+    }
+
+    function renderizarListaMedicamentos() {
+      const contenedor = document.getElementById('listaMedicamentosReceta');
+      const emptyMsg = document.getElementById('emptyMedsMsg');
+
+      if (!contenedor) return;
+
+      if (datosRecetaMeds.size === 0) {
+        contenedor.innerHTML = '';
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        return;
+      }
+
+      if (emptyMsg) emptyMsg.classList.add('hidden');
+
+      let html = '';
+      datosRecetaMeds.forEach((reg, id) => {
+        const med = reg.med;
+        const cantStr = (reg.cantidad || '').trim();
+        const frecStr = (reg.frecuencia || '').trim();
+        const diasStr = (reg.dias || '').trim();
+
+        const numCant = parseInt((cantStr.match(/\d+/) || [1])[0], 10) || 1;
+        const numFrec = parseInt((frecStr.match(/\d+/) || [8])[0], 10) || 8;
+        const numDias = parseInt((diasStr.match(/\d+/) || [5])[0], 10) || 1;
+
+        let tomasPorDia = 3;
+        if (/dolor/i.test(frecStr)) {
+          tomasPorDia = 2;
+        } else if (/unica|única/i.test(frecStr)) {
+          tomasPorDia = 1;
+        } else if (/d[ií]a/i.test(frecStr) && !/hora/i.test(frecStr)) {
+          tomasPorDia = 1;
+        } else if (numFrec > 0 && numFrec <= 24) {
+          tomasPorDia = Math.max(1, Math.round(24 / numFrec));
+        }
+
+        let totalCalculado = numCant * tomasPorDia * numDias;
+        if (/unica|única/i.test(frecStr) || diasStr === '1' || /1\s*d[ií]a/i.test(diasStr)) {
+          totalCalculado = numCant;
+        }
+
+        let textoFrec = frecStr;
+        if (/^\d+$/.test(frecStr)) {
+          textoFrec = `cada ${frecStr} horas`;
+        } else if (!/^(cada|en|por)/i.test(frecStr)) {
+          textoFrec = `cada ${frecStr}`;
+        }
+
+        let textoDias = diasStr;
+        if (/^\d+$/.test(diasStr)) {
+          textoDias = `por ${diasStr} días`;
+        } else if (!/^(por|durante|en)/i.test(diasStr)) {
+          textoDias = `por ${diasStr}`;
+        }
+
+        let textoCant = cantStr;
+        if (/^\d+$/.test(cantStr)) {
+          textoCant = `${cantStr} ${reg.unidad}${numCant > 1 ? 's' : ''}`;
+        }
+
+        const textoFinal = `Tomar ${textoCant} ${textoFrec} ${textoDias}`;
+
+        const isCantManual = reg.cantModo === 'manual';
+        const isFrecManual = reg.frecModo === 'manual';
+        const isDiasManual = reg.diasModo === 'manual';
+
+        html += `
+          <div class="p-4 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 transition">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-bold text-sm text-slate-900 dark:text-white">${med.nombre}</span>
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${med.dosis}</span>
+                  <span class="text-xs text-slate-500">(${med.presentacion})</span>
+                </div>
+                <span class="text-[10px] uppercase font-bold text-slate-400 mt-0.5 block">${med.categoria}</span>
+              </div>
+              <button onclick="quitarMedicamento('${med.id}')" class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 flex items-center justify-center font-bold text-xs transition">×</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Comprimido o Cantidad</label>
+                <select id="cant-sel-${med.id}" onchange="cambiarCantidadMed('${med.id}')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+                  <option value="1" ${(!isCantManual && reg.cantidadVal === '1') ? 'selected' : ''}>1 ${reg.unidad}</option>
+                  <option value="2" ${(!isCantManual && reg.cantidadVal === '2') ? 'selected' : ''}>2 ${reg.unidad}s</option>
+                  <option value="3" ${(!isCantManual && reg.cantidadVal === '3') ? 'selected' : ''}>3 ${reg.unidad}s</option>
+                  <option value="5" ${(!isCantManual && reg.cantidadVal === '5') ? 'selected' : ''}>5 ${reg.unidad}s (5ml)</option>
+                  <option value="10" ${(!isCantManual && reg.cantidadVal === '10') ? 'selected' : ''}>10 ${reg.unidad}s (10ml)</option>
+                  <option value="manual" ${isCantManual ? 'selected' : ''}>✏️ Ingresar manual...</option>
+                </select>
+                <input type="text" id="cant-manual-${med.id}" placeholder="Ej: 1 comprimido, 15 gotas..." value="${reg.cantidadManual || ''}" oninput="actualizarIndicacionItem('${med.id}')" class="w-full mt-1.5 ${isCantManual ? '' : 'hidden'} bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Frecuencia (Horas o Días)</label>
+                <select id="frec-sel-${med.id}" onchange="cambiarFrecuenciaMed('${med.id}')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+                  <option value="cada 6 horas" ${(!isFrecManual && reg.frecuenciaVal === 'cada 6 horas') ? 'selected' : ''}>Cada 6 horas</option>
+                  <option value="cada 8 horas" ${(!isFrecManual && reg.frecuenciaVal === 'cada 8 horas') ? 'selected' : ''}>Cada 8 horas</option>
+                  <option value="cada 12 horas" ${(!isFrecManual && reg.frecuenciaVal === 'cada 12 horas') ? 'selected' : ''}>Cada 12 horas</option>
+                  <option value="cada 24 horas" ${(!isFrecManual && reg.frecuenciaVal === 'cada 24 horas') ? 'selected' : ''}>Cada 24 horas (1 al día)</option>
+                  <option value="en caso de dolor" ${(!isFrecManual && reg.frecuenciaVal === 'en caso de dolor') ? 'selected' : ''}>En caso de dolor</option>
+                  <option value="dosis única" ${(!isFrecManual && reg.frecuenciaVal === 'dosis única') ? 'selected' : ''}>Dosis única</option>
+                  <option value="manual" ${isFrecManual ? 'selected' : ''}>✏️ Ingresar manual...</option>
+                </select>
+                <input type="text" id="frec-manual-${med.id}" placeholder="Ej: cada 4 horas, cada noche..." value="${reg.frecuenciaManual || ''}" oninput="actualizarIndicacionItem('${med.id}')" class="w-full mt-1.5 ${isFrecManual ? '' : 'hidden'} bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Cantidad de Días</label>
+                <select id="dias-sel-${med.id}" onchange="cambiarDiasMed('${med.id}')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+                  <option value="por 1 día" ${(!isDiasManual && reg.diasVal === 'por 1 día') ? 'selected' : ''}>Por 1 día</option>
+                  <option value="por 3 días" ${(!isDiasManual && reg.diasVal === 'por 3 días') ? 'selected' : ''}>Por 3 días</option>
+                  <option value="por 5 días" ${(!isDiasManual && reg.diasVal === 'por 5 días') ? 'selected' : ''}>Por 5 días</option>
+                  <option value="por 7 días" ${(!isDiasManual && reg.diasVal === 'por 7 días') ? 'selected' : ''}>Por 7 días</option>
+                  <option value="por 10 días" ${(!isDiasManual && reg.diasVal === 'por 10 días') ? 'selected' : ''}>Por 10 días</option>
+                  <option value="por 14 días" ${(!isDiasManual && reg.diasVal === 'por 14 días') ? 'selected' : ''}>Por 14 días</option>
+                  <option value="manual" ${isDiasManual ? 'selected' : ''}>✏️ Ingresar manual...</option>
+                </select>
+                <input type="text" id="dias-manual-${med.id}" placeholder="Ej: por 4 días, por 21 días..." value="${reg.diasManual || ''}" oninput="actualizarIndicacionItem('${med.id}')" class="w-full mt-1.5 ${isDiasManual ? '' : 'hidden'} bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
+              </div>
+            </div>
+
+            <div class="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+                <span class="font-bold text-teal-600 dark:text-teal-400">Instrucción:</span>
+                <span id="texto-ind-${med.id}">${textoFinal}</span>
+              </div>
+              <span id="total-ind-${med.id}" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">Total sugerido: ${totalCalculado} ${reg.unidad}${totalCalculado > 1 ? 's' : ''}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html;
+    }
+
+    let recetaAutenticada = false;
+
+    function solicitarClaveFirmaReceta() {
+      if (datosRecetaMeds.size === 0) {
+        alert('Debes tener al menos un medicamento agregado para emitir la receta médica.');
+        return;
+      }
+      document.getElementById('modalClaveFirmaReceta').classList.remove('hidden');
+      document.getElementById('inputClaveFirmaReceta').value = '';
+      document.getElementById('errorClaveFirmaReceta').classList.add('hidden');
+      setTimeout(() => {
+        const input = document.getElementById('inputClaveFirmaReceta');
+        if (input) input.focus();
+      }, 100);
+    }
+
+    function cerrarModalClaveFirmaReceta() {
+      document.getElementById('modalClaveFirmaReceta').classList.add('hidden');
+      document.getElementById('errorClaveFirmaReceta').classList.add('hidden');
+      document.getElementById('inputClaveFirmaReceta').value = '';
+    }
+
+    function validarYFirmarReceta() {
+      const input = document.getElementById('inputClaveFirmaReceta');
+      const err = document.getElementById('errorClaveFirmaReceta');
+      const clave = (input.value || '').trim();
+
+      if (clave !== 'SotoCirugia2026!Clinica') {
+        err.textContent = 'Contraseña incorrecta. Intento bloqueado y registrado en auditoría.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      err.classList.add('hidden');
+      cerrarModalClaveFirmaReceta();
+      recetaAutenticada = true;
+      mostrarModalRecetaOficial();
+    }
+
+    function imprimirRecetaSegura() {
+      if (!recetaAutenticada) {
+        solicitarClaveFirmaReceta();
+        return;
+      }
+      window.print();
+    }
+
+    function mostrarModalRecetaOficial() {
+      if (datosRecetaMeds.size === 0) {
+        alert('Debes agregar al menos un medicamento para emitir la receta médica.');
+        return;
+      }
+
+      const contenedor = document.getElementById('cuerpoRecetaImpresa');
+      const indTexto = document.getElementById('indicacionesReceta').value || 'Sin indicaciones adicionales.';
+      document.getElementById('textoIndicacionesImpresa').textContent = indTexto;
+
+      let html = '';
+      let index = 1;
+      datosRecetaMeds.forEach((reg) => {
+        const med = reg.med;
+        const cantStr = (reg.cantidad || '').trim();
+        const frecStr = (reg.frecuencia || '').trim();
+        const diasStr = (reg.dias || '').trim();
+
+        const numCant = parseInt((cantStr.match(/\d+/) || [1])[0], 10) || 1;
+        const numFrec = parseInt((frecStr.match(/\d+/) || [8])[0], 10) || 8;
+        const numDias = parseInt((diasStr.match(/\d+/) || [5])[0], 10) || 1;
+
+        let tomas = 24 / numFrec;
+        if (/dolor/i.test(frecStr)) {
+          tomas = 2;
+        } else if (/unica|única/i.test(frecStr)) {
+          tomas = 1;
+        } else if (/d[ií]a/i.test(frecStr) && !/hora/i.test(frecStr)) {
+          tomas = 1;
+        } else if (numFrec > 0 && numFrec <= 24) {
+          tomas = Math.max(1, Math.round(24 / numFrec));
+        }
+
+        let total = numCant * tomas * numDias;
+        if (/unica|única/i.test(frecStr) || diasStr === '1' || /1\s*d[ií]a/i.test(diasStr)) {
+          total = numCant;
+        }
+
+        let textoFrec = frecStr;
+        if (/^\d+$/.test(frecStr)) {
+          textoFrec = `cada ${frecStr} horas`;
+        } else if (!/^(cada|en|por)/i.test(frecStr)) {
+          textoFrec = `cada ${frecStr}`;
+        }
+
+        let textoDias = diasStr;
+        if (/^\d+$/.test(diasStr)) {
+          textoDias = `por ${diasStr} días`;
+        } else if (!/^(por|durante|en)/i.test(diasStr)) {
+          textoDias = `por ${diasStr}`;
+        }
+
+        let textoCant = cantStr;
+        if (/^\d+$/.test(cantStr)) {
+          textoCant = `${cantStr} ${reg.unidad}${numCant > 1 ? 's' : ''}`;
+        }
+
+        const posologiaFinal = `Tomar ${textoCant} ${textoFrec} ${textoDias}`;
+
+        html += `
+          <div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-teal-600 dark:text-teal-400">${index}.</span>
+                <span class="font-bold text-slate-900 dark:text-white text-xs">${med.nombre} ${med.dosis}</span>
+                <span class="text-[11px] text-slate-500">(${med.presentacion})</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 pl-4">
+                <strong>Posología:</strong> ${posologiaFinal}.
+              </p>
+            </div>
+            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-lg flex-shrink-0">
+              Total: ${total} ${reg.unidad}${total > 1 ? 's' : ''}
+            </span>
+          </div>
+        `;
+        index++;
+      });
+
+      contenedor.innerHTML = html;
+      document.getElementById('modalReceta').classList.remove('hidden');
+    }
+
+    function cerrarModalReceta() {
+      document.getElementById('modalReceta').classList.add('hidden');
+    }
+
+    function mostrarModalFichaClinica() {
+      document.getElementById('modalFichaClinica').classList.remove('hidden');
+    }
+
+    function cerrarModalFichaClinica() {
+      document.getElementById('modalFichaClinica').classList.add('hidden');
+    }
+
+    function solicitarClaveEdicion() {
+      document.getElementById('modalClave').classList.remove('hidden');
+    }
+
+    function cerrarModalClave() {
+      document.getElementById('modalClave').classList.add('hidden');
+      document.getElementById('errorClaveMedico').classList.add('hidden');
+      document.getElementById('inputClaveMedico').value = '';
+    }
+
+    function validarYDesbloquearFicha() {
+      const input = document.getElementById('inputClaveMedico');
+      const err = document.getElementById('errorClaveMedico');
+      if (input.value !== 'SotoCirugia2026!Clinica') {
+        err.classList.remove('hidden');
+        return;
+      }
+      err.classList.add('hidden');
+      document.getElementById('campoConsulta').removeAttribute('readonly');
+      document.getElementById('campoAlergia').removeAttribute('readonly');
+      document.getElementById('campoDiagnostico').removeAttribute('readonly');
+      document.getElementById('campoDiagnostico').focus();
+      cerrarModalClave();
+    }
+
+    document.addEventListener('click', (e) => {
+      const buscador = document.getElementById('buscadorMedicamento');
+      const dd = document.getElementById('dropdownMedicamentos');
+      if (dd && buscador && !buscador.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
+
+    agregarMedicamento('KETO-10');
+  </script>
+</body>
+</html>
