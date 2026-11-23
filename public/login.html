@@ -130,33 +130,41 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">RUT Chileno</label>
-          <input type="text" id="regRut" placeholder="ej: 19.876.543-0" oninput="formatearYValidarRutReg(this)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
-          <span id="feedbackRut" class="text-[11px] text-slate-400 mt-0.5 block">Algoritmo Módulo 11 oficial</span>
+          <input type="text" id="regRut" placeholder="ej: 6.123.456-7 o 19.876.543-0" oninput="formatearYValidarRutReg(this)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <span id="feedbackRut" class="text-[11px] text-slate-400 mt-0.5 block">Algoritmo Módulo 11 oficial (desde 6 dígitos)</span>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nombre Completo</label>
-          <input type="text" id="regNombre" placeholder="ej: Francisca Morales Gómez" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+          <input type="text" id="regNombre" oninput="limpiarErrorCampo('regNombre', 'feedbackNombre')" placeholder="ej: Francisca Morales Gómez" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <span id="feedbackNombre" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Correo Electrónico</label>
-          <input type="email" id="regEmail" placeholder="ej: francisca@correo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+          <input type="email" id="regEmail" oninput="limpiarErrorCampo('regEmail', 'feedbackEmail')" placeholder="ej: francisca@correo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <span id="feedbackEmail" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Teléfono Móvil</label>
-          <input type="tel" id="regTelefono" value="+56 9 " placeholder="+56 9 1234 5678" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Teléfono Móvil (Obligatorio)</label>
+          <div id="contenedorRegTelefono" class="flex rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 overflow-hidden focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition">
+            <span class="inline-flex items-center px-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 border-r border-slate-300 dark:border-slate-700 select-none">+56</span>
+            <input type="tel" id="regTelefono" maxlength="11" oninput="limpiarErrorCampo('contenedorRegTelefono', 'feedbackTelefono')" placeholder="9 3131 3131" class="w-full bg-transparent px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none">
+          </div>
+          <span id="feedbackTelefono" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña (Mínimo 8 caracteres)</label>
-          <input type="password" id="regPassword" placeholder="Crea una contraseña segura..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña Segura</label>
+          <input type="password" id="regPassword" oninput="limpiarErrorCampo('regPassword', 'feedbackPassword')" placeholder="Mínimo 8 car., mayúscula, número y especial" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <span id="feedbackPassword" class="text-[11px] text-slate-400 mt-0.5 block">Debe incluir mayúscula, minúscula, número y caracter especial (!@#$...)</span>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Confirmar Contraseña</label>
-          <input type="password" id="regPasswordConfirm" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+          <input type="password" id="regPasswordConfirm" oninput="limpiarErrorCampo('regPasswordConfirm', 'feedbackPasswordConfirm')" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <span id="feedbackPasswordConfirm" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
         </div>
 
         <button onclick="ejecutarRegistro()" class="w-full bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-500 hover:to-cyan-400 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-teal-500/25">
@@ -212,9 +220,37 @@
       }
     }
 
+    function marcarErrorCampo(idInput, idFeedback, mensaje) {
+      const el = document.getElementById(idInput);
+      const fb = document.getElementById(idFeedback);
+      if (el) {
+        el.classList.remove('border-slate-300', 'border-slate-700', 'border-teal-500');
+        el.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+      }
+      if (fb) {
+        fb.textContent = mensaje;
+        fb.classList.remove('hidden', 'text-slate-400');
+        fb.classList.add('text-red-500', 'font-semibold', 'block');
+      }
+    }
+
+    function limpiarErrorCampo(idInput, idFeedback) {
+      const el = document.getElementById(idInput);
+      const fb = document.getElementById(idFeedback);
+      if (el) {
+        el.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+        el.classList.add('border-slate-300');
+      }
+      if (fb) {
+        fb.classList.add('hidden');
+        fb.classList.remove('text-red-500', 'font-semibold');
+      }
+    }
+
     function validarRutModulo11(rutCompleto) {
+      if (!rutCompleto || typeof rutCompleto !== 'string') return false;
       const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
-      if (limpio.length < 8 || limpio.length > 9) return false;
+      if (limpio.length < 7 || limpio.length > 9) return false;
       const cuerpo = limpio.slice(0, -1);
       const dv = limpio.slice(-1);
       if (!/^\d+$/.test(cuerpo)) return false;
@@ -231,6 +267,7 @@
     }
 
     function formatearYValidarRutReg(input) {
+      limpiarErrorCampo('regRut', 'feedbackRut');
       let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
       if (valor.length > 9) valor = valor.slice(0, 9);
       if (valor.length > 1) {
@@ -241,30 +278,49 @@
         input.value = valor;
       }
       const feedback = document.getElementById('feedbackRut');
-      if (input.value.length >= 8) {
+      if (input.value.length >= 7) {
         if (validarRutModulo11(input.value)) {
-          input.classList.remove('border-red-500');
+          input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
           input.classList.add('border-teal-500');
           feedback.textContent = '✓ RUT válido según Módulo 11';
           feedback.className = 'text-[11px] text-teal-600 dark:text-teal-400 mt-0.5 block font-semibold';
         } else {
           input.classList.remove('border-teal-500');
-          input.classList.add('border-red-500');
-          feedback.textContent = '✗ Dígito verificador incorrecto';
+          input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+          feedback.textContent = '✗ Dígito verificador o RUT incorrecto';
           feedback.className = 'text-[11px] text-red-500 mt-0.5 block font-semibold';
         }
       } else {
-        input.classList.remove('border-teal-500', 'border-red-500');
-        feedback.textContent = 'Algoritmo Módulo 11 oficial';
+        input.classList.remove('border-teal-500', 'border-red-500', 'ring-1', 'ring-red-500');
+        feedback.textContent = 'Algoritmo Módulo 11 oficial (desde 6 dígitos)';
         feedback.className = 'text-[11px] text-slate-400 mt-0.5 block';
       }
+    }
+
+    function validarComplejidadClave(clave) {
+      if (!clave || clave.length < 8) {
+        return 'La contraseña debe tener al menos 8 caracteres.';
+      }
+      if (!/[A-Z]/.test(clave)) {
+        return 'Debe incluir al menos una letra mayúscula (A-Z).';
+      }
+      if (!/[a-z]/.test(clave)) {
+        return 'Debe incluir al menos una letra minúscula (a-z).';
+      }
+      if (!/[0-9]/.test(clave)) {
+        return 'Debe incluir al menos un número (0-9).';
+      }
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(clave)) {
+        return 'Debe incluir al menos un caracter especial (!@#$%...).';
+      }
+      return null;
     }
 
     async function ejecutarRegistro() {
       const rut = document.getElementById('regRut').value.trim();
       const nombre = document.getElementById('regNombre').value.trim();
       const email = document.getElementById('regEmail').value.trim();
-      const telefono = document.getElementById('regTelefono').value.trim();
+      const telefonoIngresado = document.getElementById('regTelefono').value.trim();
       const password = document.getElementById('regPassword').value;
       const confirmPass = document.getElementById('regPasswordConfirm').value;
       const err = document.getElementById('errorRegistro');
@@ -273,48 +329,71 @@
       err.classList.add('hidden');
       exito.classList.add('hidden');
 
-      if (!rut || !nombre || !email || !password) {
-        err.textContent = 'Todos los campos son obligatorios.';
-        err.classList.remove('hidden');
-        return;
+      let hayError = false;
+
+      if (!rut || !validarRutModulo11(rut)) {
+        marcarErrorCampo('regRut', 'feedbackRut', 'Ingresa un RUT chileno válido (Módulo 11).');
+        hayError = true;
       }
 
-      if (!validarRutModulo11(rut)) {
-        err.textContent = 'El RUT ingresado no es válido según Módulo 11.';
-        err.classList.remove('hidden');
-        return;
+      if (!nombre || nombre.length < 3) {
+        marcarErrorCampo('regNombre', 'feedbackNombre', 'El nombre completo es obligatorio (mínimo 3 letras).');
+        hayError = true;
       }
 
-      if (password.length < 8) {
-        err.textContent = 'La contraseña debe tener al menos 8 caracteres.';
-        err.classList.remove('hidden');
-        return;
+      const REGEX_EMAIL_VALIDO = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!email || !REGEX_EMAIL_VALIDO.test(email)) {
+        marcarErrorCampo('regEmail', 'feedbackEmail', 'Correo electrónico inválido (ej: usuario@correo.cl)');
+        hayError = true;
+      }
+
+      const telDigitos = telefonoIngresado.replace(/\D/g, '');
+      if (!telDigitos || telDigitos.length < 8) {
+        marcarErrorCampo('contenedorRegTelefono', 'feedbackTelefono', 'El teléfono es obligatorio y debe tener al menos 8 dígitos.');
+        hayError = true;
+      }
+
+      const errorClave = validarComplejidadClave(password);
+      if (errorClave) {
+        marcarErrorCampo('regPassword', 'feedbackPassword', errorClave);
+        hayError = true;
       }
 
       if (password !== confirmPass) {
-        err.textContent = 'Las contraseñas no coinciden.';
+        marcarErrorCampo('regPasswordConfirm', 'feedbackPasswordConfirm', 'Las contraseñas no coinciden.');
+        hayError = true;
+      }
+
+      if (hayError) {
+        err.textContent = 'Por favor corrige los campos marcados en rojo.';
         err.classList.remove('hidden');
         return;
       }
+
+      const telefonoCompleto = '+56 ' + telDigitos;
 
       try {
         const respuesta = await fetch('/api/auth/registro', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rut, nombre, email, telefono, password })
+          body: JSON.stringify({ rut, nombre, email, telefono: telefonoCompleto, password })
         });
 
+        const datos = await respuesta.json();
+
         if (respuesta.ok) {
-          const datos = await respuesta.json();
-          exito.textContent = '¡Cuenta creada con éxito! Redirigiendo al portal clínico...';
+          sessionStorage.setItem('dentalsis_token', datos.token);
+          sessionStorage.setItem('dentalsis_usuario', JSON.stringify(datos.usuario));
+          sessionStorage.setItem('dentalsis_login_timestamp', Date.now());
+
+          exito.textContent = '¡Cuenta creada con éxito! Redirigiendo a tu portal de paciente...';
           exito.classList.remove('hidden');
           setTimeout(() => {
             window.location.href = 'paciente.html';
-          }, 1200);
+          }, 1000);
           return;
         } else {
-          const errorDatos = await respuesta.json();
-          err.textContent = errorDatos.error || 'Error al procesar el registro.';
+          err.textContent = datos.error || 'Error al procesar el registro.';
           err.classList.remove('hidden');
           return;
         }

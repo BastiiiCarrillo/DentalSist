@@ -1,8 +1,41 @@
+const fs = require('fs');
+const path = require('path');
 const { Pool } = require('pg');
 
 let pool = null;
 
+function cargarEnv() {
+  if (process.env.DATABASE_URL) return;
+  const posiblesRutas = [
+    path.join(__dirname, '../../.env'),
+    path.join(__dirname, '../.env'),
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), 'backend/.env')
+  ];
+  for (const ruta of posiblesRutas) {
+    if (fs.existsSync(ruta)) {
+      try {
+        const contenido = fs.readFileSync(ruta, 'utf8');
+        contenido.split('\n').forEach(line => {
+          const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+          if (match) {
+            let valor = match[2] || '';
+            valor = valor.trim().replace(/^['"]|['"]$/g, '');
+            if (!process.env[match[1]]) {
+              process.env[match[1]] = valor;
+            }
+          }
+        });
+        break;
+      } catch (err) {}
+    }
+  }
+}
+
+cargarEnv();
+
 function obtenerPool() {
+  cargarEnv();
   if (!pool && process.env.DATABASE_URL) {
     const connStr = process.env.DATABASE_URL.replace(/['"]/g, '').trim();
     pool = new Pool({
@@ -38,5 +71,6 @@ async function verificarConexion() {
 module.exports = {
   obtenerPool,
   query,
-  verificarConexion
+  verificarConexion,
+  cargarEnv
 };

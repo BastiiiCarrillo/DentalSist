@@ -4,6 +4,9 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 
+const { cargarEnv, verificarConexion } = require('./models/db');
+cargarEnv();
+
 const {
   rechazarPayloadsXml,
   sanitizarEntradas,
@@ -81,6 +84,9 @@ app.use((err, req, res, next) => {
 const PUERTO = process.env.PORT || 3000;
 
 if (require.main === module) {
+  verificarConexion().then(conectado => {
+    console.log(`Conexion a Neon PostgreSQL: ${conectado ? 'EXITOSA' : 'MODO LOCAL'}`);
+  });
   app.listen(PUERTO, () => {
     console.log(`Servidor DentalSis ejecutandose en el puerto ${PUERTO}`);
   });

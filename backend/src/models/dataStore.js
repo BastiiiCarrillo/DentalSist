@@ -109,7 +109,7 @@ function formatearRut(rutLimpio) {
 function validarRutChileno(rutCompleto) {
   if (typeof rutCompleto !== 'string') return false;
   const limpio = limpiarRut(rutCompleto);
-  if (limpio.length < 8 || limpio.length > 9) return false;
+  if (limpio.length < 7 || limpio.length > 9) return false;
 
   const cuerpo = limpio.slice(0, -1);
   const dv = limpio.slice(-1);
@@ -167,6 +167,25 @@ function buscarUsuarioPorEmail(email) {
   return usuarios.find(u => u.email.toLowerCase() === clean) || null;
 }
 
+function validarPasswordSegura(password) {
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    return 'La contrasena debe tener al menos 8 caracteres.';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'La contrasena debe incluir al menos una letra mayuscula.';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'La contrasena debe incluir al menos una letra minuscula.';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'La contrasena debe incluir al menos un numero.';
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return 'La contrasena debe incluir al menos un caracter especial.';
+  }
+  return null;
+}
+
 function crearUsuario(datos) {
   const { rut, nombre, email, telefono, password } = datos;
 
@@ -178,12 +197,17 @@ function crearUsuario(datos) {
     throw new Error('El nombre ingresado es invalido.');
   }
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
     throw new Error('Correo electronico invalido.');
   }
 
-  if (!password || typeof password !== 'string' || password.length < 8) {
-    throw new Error('La contrasena debe tener al menos 8 caracteres.');
+  if (!telefono || typeof telefono !== 'string' || telefono.replace(/\D/g, '').length < 8) {
+    throw new Error('El telefono es obligatorio y debe contener al menos 8 digitos.');
+  }
+
+  const errPass = validarPasswordSegura(password);
+  if (errPass) {
+    throw new Error(errPass);
   }
 
   const rutLimpio = limpiarRut(rut);
