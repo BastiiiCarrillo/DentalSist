@@ -1061,9 +1061,9 @@
     }
 
     function cerrarSesionMedico() {
-      sessionStorage.removeItem('dentalsis_token');
-      sessionStorage.removeItem('dentalsis_usuario');
-      sessionStorage.removeItem('dentalsis_login_timestamp');
+      sessionStorage.clear();
+      localStorage.removeItem('dentalsis_token');
+      localStorage.removeItem('dentalsis_usuario');
       window.location.href = 'login.html';
     }
 

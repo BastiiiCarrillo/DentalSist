@@ -423,8 +423,8 @@
     }
 
     function inicializarEstadoPaciente() {
-      const token = sessionStorage.getItem('dentalsis_token');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
+      const token = sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token');
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
       const btnNavbar = document.getElementById('btnIniciarSesionNavbar');
       const perfilNavbar = document.getElementById('perfilUsuarioNavbar');
       const badge = document.getElementById('badgeEstadoPaciente');
@@ -463,26 +463,49 @@
         } catch (e) {
           if (btnNavbar) btnNavbar.classList.remove('hidden');
           if (perfilNavbar) perfilNavbar.classList.add('hidden');
+          const inpRut = document.getElementById('inputRutPaciente');
+          const inpNom = document.getElementById('inputNombrePaciente');
+          const inpTel = document.getElementById('inputTelefonoPaciente');
+          const inpMail = document.getElementById('inputEmailPaciente');
+          if (inpRut) {
+            inpRut.value = '';
+            inpRut.readOnly = false;
+            inpRut.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'cursor-not-allowed');
+          }
+          if (inpNom) inpNom.value = '';
+          if (inpTel) inpTel.value = '';
+          if (inpMail) inpMail.value = '';
         }
       } else {
         if (btnNavbar) btnNavbar.classList.remove('hidden');
         if (perfilNavbar) perfilNavbar.classList.add('hidden');
         if (badge) badge.classList.add('hidden');
+        const inpRut = document.getElementById('inputRutPaciente');
+        const inpNom = document.getElementById('inputNombrePaciente');
+        const inpTel = document.getElementById('inputTelefonoPaciente');
+        const inpMail = document.getElementById('inputEmailPaciente');
+        if (inpRut) {
+          inpRut.value = '';
+          inpRut.readOnly = false;
+          inpRut.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'cursor-not-allowed');
+        }
+        if (inpNom) inpNom.value = '';
+        if (inpTel) inpTel.value = '';
+        if (inpMail) inpMail.value = '';
       }
     }
 
     function cerrarSesionPaciente() {
-      sessionStorage.removeItem('dentalsis_token');
-      sessionStorage.removeItem('dentalsis_usuario');
-      sessionStorage.removeItem('dentalsis_login_timestamp');
-      window.location.reload();
+      sessionStorage.clear();
+      localStorage.removeItem('dentalsis_token');
+      localStorage.removeItem('dentalsis_usuario');
+      window.location.href = 'login.html';
     }
 
     function validarRutChileno(rutCompleto) {
       if (!rutCompleto || typeof rutCompleto !== 'string') return false;
       const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
       if (limpio.length < 7 || limpio.length > 9) return false;
-      if (/^(\d)\1+$/.test(limpio)) return true;
 
       const cuerpo = limpio.slice(0, -1);
       const dv = limpio.slice(-1);
@@ -506,12 +529,14 @@
     function formatearYValidarRutPaciente(input) {
       let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
       if (valor.length > 9) valor = valor.slice(0, 9);
-      if (valor.length > 1) {
+      if (valor.length === 1) {
+        input.value = valor + '-';
+      } else if (valor.length > 1) {
         const cuerpo = valor.slice(0, -1);
         const dv = valor.slice(-1);
         input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
       } else {
-        input.value = valor;
+        input.value = '';
       }
       const msg = document.getElementById('mensajeErrorRut');
       const esValido = validarRutChileno(input.value);

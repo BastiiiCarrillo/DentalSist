@@ -89,12 +89,20 @@
         <div class="space-y-3.5">
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Correo Electrónico o RUT</label>
-            <input type="text" id="loginUsuario" value="" placeholder="ej: camilo.vega@correo.cl o 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <input type="text" id="loginUsuario" oninput="formatearUsuarioLogin(this)" placeholder="ej: 18.234.901-1 o usuario@correo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500 transition">
+            <span id="feedbackLoginUsuario" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña</label>
-            <input type="password" id="loginPassword" value="" placeholder="Ingresa tu contraseña segura..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña segura..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500 transition">
+          </div>
+
+          <div class="flex items-center justify-between py-1">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="checkRecordarme" class="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500">
+              <span class="text-xs text-slate-600 dark:text-slate-400">Recordarme en este equipo</span>
+            </label>
           </div>
 
           <button onclick="ejecutarLogin()" class="w-full bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-500/25">
@@ -110,7 +118,7 @@
 
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 text-center space-y-3">
           <p class="text-xs text-slate-500 dark:text-slate-400">¿No tienes cuenta y necesitas atenderte?</p>
-          <a href="paciente.html" class="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5">
+          <a href="paciente.html" onclick="sessionStorage.clear(); localStorage.removeItem('dentalsis_token'); localStorage.removeItem('dentalsis_usuario');" class="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -272,7 +280,6 @@
       if (!rutCompleto || typeof rutCompleto !== 'string') return false;
       const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
       if (limpio.length < 7 || limpio.length > 9) return false;
-      if (/^(\d)\1+$/.test(limpio)) return true;
       const cuerpo = limpio.slice(0, -1);
       const dv = limpio.slice(-1);
       if (!/^\d+$/.test(cuerpo)) return false;
@@ -368,12 +375,14 @@
       limpiarErrorCampo('regRut', 'feedbackRut');
       let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
       if (valor.length > 9) valor = valor.slice(0, 9);
-      if (valor.length > 1) {
+      if (valor.length === 1) {
+        input.value = valor + '-';
+      } else if (valor.length > 1) {
         const cuerpo = valor.slice(0, -1);
         const dv = valor.slice(-1);
         input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
       } else {
-        input.value = valor;
+        input.value = '';
       }
       const feedback = document.getElementById('feedbackRut');
       if (input.value.length >= 7) {
@@ -501,15 +510,44 @@
       }
     }
 
+    function formatearUsuarioLogin(input) {
+      limpiarErrorCampo('loginUsuario', 'feedbackLoginUsuario');
+      const val = input.value;
+      if (val.includes('@') || /[a-zA-Z]/.test(val.replace(/[kK]/g, ''))) {
+        return;
+      }
+      let digits = val.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (digits.length > 9) digits = digits.slice(0, 9);
+      if (digits.length === 1) {
+        input.value = digits + '-';
+      } else if (digits.length > 1) {
+        const cuerpo = digits.slice(0, -1);
+        const dv = digits.slice(-1);
+        input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+      } else {
+        input.value = '';
+      }
+    }
+
     async function ejecutarLogin() {
       const identificador = document.getElementById('loginUsuario').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
+      const recordarme = document.getElementById('checkRecordarme') ? document.getElementById('checkRecordarme').checked : false;
       const err = document.getElementById('errorLogin');
 
       if (!identificador || !password) {
         err.textContent = 'Por favor ingresa usuario y contraseña.';
         err.classList.remove('hidden');
         return;
+      }
+
+      if (!identificador.includes('@')) {
+        if (!validarRutModulo11(identificador)) {
+          marcarErrorCampo('loginUsuario', 'feedbackLoginUsuario', 'Formato de RUT chileno inválido (ej: 18.234.901-1 o 6.666.666-6).');
+          err.textContent = 'Por favor ingresa un RUT o correo válido.';
+          err.classList.remove('hidden');
+          return;
+        }
       }
 
       err.classList.add('hidden');
@@ -537,6 +575,14 @@
         sessionStorage.setItem('dentalsis_usuario', JSON.stringify(datos.usuario));
         sessionStorage.setItem('dentalsis_login_timestamp', Date.now());
 
+        if (recordarme) {
+          localStorage.setItem('dentalsis_token', datos.token);
+          localStorage.setItem('dentalsis_usuario', JSON.stringify(datos.usuario));
+        } else {
+          localStorage.removeItem('dentalsis_token');
+          localStorage.removeItem('dentalsis_usuario');
+        }
+
         const rolUsuario = (datos.usuario && datos.usuario.rol) ? datos.usuario.rol.toLowerCase() : '';
         if (rolUsuario === 'odontologo' || rolUsuario === 'odontólogo') {
           window.location.href = 'especialista.html';
@@ -547,6 +593,7 @@
         err.textContent = 'Error al comunicarse con el servidor.';
         err.classList.remove('hidden');
       }
+    }
     function mostrarAlertaClinica(mensaje, titulo = 'Aviso del Sistema') {
       const modal = document.getElementById('modalAlertaClinica');
       const txt = document.getElementById('mensajeAlertaClinica');
