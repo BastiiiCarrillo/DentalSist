@@ -1,21 +1,42 @@
-const store = require('./dataStore');
+const { Pool } = require('pg');
 
-const db = {
-  obtenerEspecialistas: () => store.obtenerEspecialistas(),
-  obtenerEspecialistaPorId: (id) => store.obtenerEspecialistaPorId(id),
-  obtenerSillones: () => store.obtenerSillones(),
-  obtenerCitas: () => store.obtenerCitas(),
-  obtenerCitaPorId: (id) => store.obtenerCitaPorId(id),
-  crearCita: (datos) => store.crearCita(datos),
-  actualizarEstadoCita: (id, estado) => store.actualizarEstadoCita(id, estado),
-  obtenerPacientes: () => store.obtenerPacientes(),
-  obtenerPacientePorRut: (rut) => store.obtenerPacientePorRut(rut),
-  crearPaciente: (datos) => store.crearPaciente(datos),
-  obtenerFichaClinicaPorPacienteId: (pacienteId) => store.obtenerFichaClinicaPorPacienteId(pacienteId),
-  actualizarFichaClinica: (pacienteId, datos) => store.actualizarFichaClinica(pacienteId, datos),
-  crearReceta: (datos) => store.crearReceta(datos),
-  obtenerRecetaPorFolio: (folio) => store.obtenerRecetaPorFolio(folio),
-  validarRutChileno: (rut) => store.validarRutChileno(rut)
+let pool = null;
+
+function obtenerPool() {
+  if (!pool && process.env.DATABASE_URL) {
+    const connStr = process.env.DATABASE_URL.replace(/['"]/g, '').trim();
+    pool = new Pool({
+      connectionString: connStr,
+      ssl: { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    });
+  }
+  return pool;
+}
+
+async function query(texto, parametros) {
+  const p = obtenerPool();
+  if (!p) {
+    return { rows: [] };
+  }
+  return await p.query(texto, parametros);
+}
+
+async function verificarConexion() {
+  const p = obtenerPool();
+  if (!p) return false;
+  try {
+    const res = await p.query('SELECT 1 AS conectado;');
+    return res.rows.length > 0;
+  } catch (err) {
+    return false;
+  }
+}
+
+module.exports = {
+  obtenerPool,
+  query,
+  verificarConexion
 };
-
-module.exports = db;

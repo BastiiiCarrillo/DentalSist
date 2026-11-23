@@ -36,12 +36,28 @@ describe('Pruebas de Integracion del Servidor Express', () => {
   });
 
   test('Endpoint de auditoria retorna lista de eventos inmutables', async () => {
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { id: 'admin-1', rol: 'SuperAdmin' },
+      process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key'
+    );
+    const opciones = {
+      hostname: '127.0.0.1',
+      port: puerto,
+      path: '/api/auditoria',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
     const respuesta = await new Promise((resolve, reject) => {
-      http.get(`http://127.0.0.1:${puerto}/api/auditoria`, (res) => {
+      const req = http.request(opciones, (res) => {
         let raw = '';
         res.on('data', chunk => raw += chunk);
         res.on('end', () => resolve({ status: res.statusCode, data: JSON.parse(raw) }));
-      }).on('error', reject);
+      });
+      req.on('error', reject);
+      req.end();
     });
 
     assert.strictEqual(respuesta.status, 200);

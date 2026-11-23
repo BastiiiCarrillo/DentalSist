@@ -59,7 +59,7 @@ describe('Modulo de Pacientes y Agendamiento', () => {
     assert.ok(cita.id);
     assert.strictEqual(cita.rutPaciente, '182349011');
     assert.strictEqual(cita.sillon, 'Sillón 1');
-    assert.strictEqual(cita.estado, 'CONFIRMADA');
+    assert.strictEqual(cita.estado, 'PENDIENTE');
     assert.strictEqual(cita.esInvitado, true);
 
     const citasRegistradas = obtenerCitasPorPaciente('18.234.901-1');

@@ -94,6 +94,18 @@ function consultarMisCitas(req, res) {
     return res.status(400).json({ error: 'RUT chileno invalido.' });
   }
 
+  if (req.usuario) {
+    const rol = (req.usuario.rol || '').toUpperCase();
+    const esPersonalClinico = rol === 'ADMIN' || rol === 'SUPERADMIN' || rol === 'ODONTOLOGO' || rol === 'RECEPCIONISTA';
+    if (!esPersonalClinico && req.usuario.rut) {
+      const rutToken = req.usuario.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+      const rutParam = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (rutToken !== rutParam) {
+        return res.status(403).json({ error: 'Acceso denegado: No tiene autorizacion para consultar citas de otro paciente.' });
+      }
+    }
+  }
+
   const citas = obtenerCitasPorPaciente(rut);
   return res.status(200).json({
     rut,

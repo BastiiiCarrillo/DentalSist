@@ -55,9 +55,31 @@
         </svg>
       </button>
 
-      <a href="login.html" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-        Cerrar Sesión
-      </a>
+      <div id="contenedorAuthNavbar">
+        <a id="btnIniciarSesionNavbar" href="login.html" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-2 shadow-sm transition">
+          <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <span>Iniciar Sesión / Registrarse</span>
+        </a>
+
+        <div id="perfilUsuarioNavbar" class="hidden flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <div id="avatarUsuarioNavbar" class="w-9 h-9 rounded-xl bg-cyan-600 text-white font-bold flex items-center justify-center text-xs shadow-md shadow-cyan-600/20">
+              CV
+            </div>
+            <div class="hidden sm:block text-left">
+              <span id="nombreUsuarioNavbar" class="text-xs font-bold text-slate-900 dark:text-white block">Camilo Vega Ortiz</span>
+              <span id="rolUsuarioNavbar" class="text-[10px] text-teal-600 dark:text-teal-400 font-semibold block">Paciente Autenticado</span>
+            </div>
+          </div>
+          <button onclick="cerrarSesionPaciente()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -176,40 +198,36 @@
       <div class="space-y-6">
 
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm sticky top-20">
-          <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h2 class="text-base font-bold text-slate-900 dark:text-white">Datos del Paciente</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Completa tus datos para emitir la reserva</p>
-          </div>
-
-          <div class="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
-            <button id="tabModoInvitado" onclick="cambiarModoReserva('invitado')" class="flex-1 py-1.5 rounded-lg font-bold bg-cyan-600 text-white shadow">
-              Como Invitado
-            </button>
-            <button id="tabModoCuenta" onclick="cambiarModoReserva('cuenta')" class="flex-1 py-1.5 rounded-lg font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-              Tengo Cuenta
-            </button>
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Datos del Paciente</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Completa tus datos para emitir la reserva</p>
+            </div>
+            <div id="badgeEstadoPaciente" class="hidden px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-300 text-[10px] font-bold">
+              Cuenta Verificada
+            </div>
           </div>
 
           <div class="space-y-3.5 text-xs">
             <div>
               <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">RUT Chileno (con guión)</label>
-              <input type="text" id="inputRutPaciente" oninput="validarRutEnVivo(this)" value="18.234.901-1" placeholder="Ej: 18234901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <input type="text" id="inputRutPaciente" oninput="validarRutEnVivo(this)" value="" placeholder="Ej: 18234901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
               <span id="mensajeErrorRut" class="text-[10px] text-red-500 font-semibold hidden block mt-0.5">RUT chileno inválido (Módulo 11 incorrecto).</span>
             </div>
 
             <div>
               <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre Completo</label>
-              <input type="text" id="inputNombrePaciente" value="Camilo Vega Ortiz" placeholder="Nombre y Apellidos" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <input type="text" id="inputNombrePaciente" value="" placeholder="Nombre y Apellidos" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
             </div>
 
             <div>
               <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Teléfono Móvil</label>
-              <input type="tel" id="inputTelefonoPaciente" value="+56 9 8765 4321" placeholder="+56 9 1234 5678" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <input type="tel" id="inputTelefonoPaciente" value="" placeholder="+56 9 1234 5678" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
             </div>
 
             <div>
               <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo Electrónico</label>
-              <input type="email" id="inputEmailPaciente" value="camilo.vega@correo.cl" placeholder="correo@ejemplo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <input type="email" id="inputEmailPaciente" value="" placeholder="correo@ejemplo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
             </div>
           </div>
 
@@ -256,7 +274,7 @@
       <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
         <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
           <span class="text-slate-500">Folio de Reserva:</span>
-          <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">#RES-2026-9901</span>
+          <span id="folioReservaModal" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">#RES-2026-9901</span>
         </div>
         <div class="flex justify-between items-center">
           <span class="text-slate-500">Paciente:</span>
@@ -385,17 +403,58 @@
       document.getElementById('resumenMedicoSidebar').textContent = nombre;
     }
 
-    function cambiarModoReserva(modo) {
-      const bInvitado = document.getElementById('tabModoInvitado');
-      const bCuenta = document.getElementById('tabModoCuenta');
+    function inicializarEstadoPaciente() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
+      const btnNavbar = document.getElementById('btnIniciarSesionNavbar');
+      const perfilNavbar = document.getElementById('perfilUsuarioNavbar');
+      const badge = document.getElementById('badgeEstadoPaciente');
 
-      if (modo === 'invitado') {
-        bInvitado.className = 'flex-1 py-1.5 rounded-lg font-bold bg-cyan-600 text-white shadow';
-        bCuenta.className = 'flex-1 py-1.5 rounded-lg font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      if (token && usuarioRaw) {
+        try {
+          const usuario = JSON.parse(usuarioRaw);
+          if (btnNavbar) btnNavbar.classList.add('hidden');
+          if (perfilNavbar) perfilNavbar.classList.remove('hidden');
+          if (badge) badge.classList.remove('hidden');
+
+          const nombreEl = document.getElementById('nombreUsuarioNavbar');
+          const avatarEl = document.getElementById('avatarUsuarioNavbar');
+          if (nombreEl && usuario.nombre) nombreEl.textContent = usuario.nombre;
+          if (avatarEl && usuario.nombre) {
+            const partes = usuario.nombre.trim().split(' ');
+            const ini = (partes[0][0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
+            avatarEl.textContent = ini;
+          }
+
+          const inpRut = document.getElementById('inputRutPaciente');
+          const inpNom = document.getElementById('inputNombrePaciente');
+          const inpTel = document.getElementById('inputTelefonoPaciente');
+          const inpMail = document.getElementById('inputEmailPaciente');
+
+          if (inpRut && usuario.rut) {
+            inpRut.value = usuario.rut;
+            inpRut.readOnly = true;
+            inpRut.classList.add('bg-slate-100', 'dark:bg-slate-800', 'cursor-not-allowed');
+          }
+          if (inpNom && usuario.nombre) inpNom.value = usuario.nombre;
+          if (inpMail && usuario.email) inpMail.value = usuario.email;
+          if (inpTel && usuario.telefono) inpTel.value = usuario.telefono;
+        } catch (e) {
+          if (btnNavbar) btnNavbar.classList.remove('hidden');
+          if (perfilNavbar) perfilNavbar.classList.add('hidden');
+        }
       } else {
-        bCuenta.className = 'flex-1 py-1.5 rounded-lg font-bold bg-cyan-600 text-white shadow';
-        bInvitado.className = 'flex-1 py-1.5 rounded-lg font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+        if (btnNavbar) btnNavbar.classList.remove('hidden');
+        if (perfilNavbar) perfilNavbar.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
       }
+    }
+
+    function cerrarSesionPaciente() {
+      sessionStorage.removeItem('dentalsis_token');
+      sessionStorage.removeItem('dentalsis_usuario');
+      sessionStorage.removeItem('dentalsis_login_timestamp');
+      window.location.reload();
     }
 
     function validarRutChileno(rutCompleto) {
@@ -434,22 +493,75 @@
       }
     }
 
-    function confirmarAgendamiento() {
+    async function confirmarAgendamiento() {
       const rut = document.getElementById('inputRutPaciente').value.trim();
       const nombre = document.getElementById('inputNombrePaciente').value.trim();
+      const telefono = document.getElementById('inputTelefonoPaciente').value.trim();
+      const email = document.getElementById('inputEmailPaciente').value.trim();
+
       if (!validarRutChileno(rut)) {
         alert('Por favor ingresa un RUT chileno válido (Módulo 11).');
         return;
       }
-      if (!nombre) {
-        alert('Por favor ingresa el nombre del paciente.');
+      if (!nombre || nombre.length < 3) {
+        alert('Por favor ingresa el nombre completo del paciente.');
+        return;
+      }
+      if (!telefono) {
+        alert('Por favor ingresa un teléfono de contacto.');
+        return;
+      }
+      if (!email || !email.includes('@')) {
+        alert('Por favor ingresa un correo electrónico válido.');
         return;
       }
 
-      document.getElementById('resumenPaciente').textContent = nombre;
-      document.getElementById('resumenMedico').textContent = medicoSeleccionado;
-      document.getElementById('resumenFechaHora').textContent = `${fechaSeleccionada} · ${horaSeleccionada} hrs`;
-      document.getElementById('modalConfirmacionCita').classList.remove('hidden');
+      const mesPadded = String(mesSeleccionado + 1).padStart(2, '0');
+      const diaPadded = String(diaSeleccionado).padStart(2, '0');
+      const fechaISO = `${anoSeleccionado}-${mesPadded}-${diaPadded}`;
+      const esInvitado = !sessionStorage.getItem('dentalsis_token');
+
+      let idMedicoFinal = 'DOC-1';
+      if (especialidadSeleccionada === 'Odontología General') idMedicoFinal = 'DOC-2';
+      else if (especialidadSeleccionada === 'Endodoncia') idMedicoFinal = 'DOC-3';
+      else if (especialidadSeleccionada === 'Ortodoncia') idMedicoFinal = 'DOC-4';
+      else if (medicoSeleccionado.includes('Fernanda')) idMedicoFinal = 'DOC-2';
+      else if (medicoSeleccionado.includes('Matías')) idMedicoFinal = 'DOC-3';
+      else if (medicoSeleccionado.includes('Marcela')) idMedicoFinal = 'DOC-4';
+
+      try {
+        const respuesta = await fetch('/api/pacientes/reservar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rut,
+            nombre,
+            email,
+            telefono,
+            idMedico: idMedicoFinal,
+            fecha: fechaISO,
+            hora: horaSeleccionada,
+            especialidad: especialidadSeleccionada,
+            esInvitado
+          })
+        });
+
+        const datos = await respuesta.json();
+        if (!respuesta.ok) {
+          alert(datos.error || 'No fue posible registrar la reserva.');
+          return;
+        }
+
+        const citaId = datos.cita ? datos.cita.id : 'CIT-OK';
+        const folioEl = document.getElementById('folioReservaModal');
+        if (folioEl) folioEl.textContent = '#' + citaId;
+        document.getElementById('resumenPaciente').textContent = nombre;
+        document.getElementById('resumenMedico').textContent = medicoSeleccionado;
+        document.getElementById('resumenFechaHora').textContent = `${fechaSeleccionada} · ${horaSeleccionada} hrs`;
+        document.getElementById('modalConfirmacionCita').classList.remove('hidden');
+      } catch (err) {
+        alert('Error de conexión al servidor clínico. Inténtalo nuevamente.');
+      }
     }
 
     function cerrarModalConfirmacion() {
@@ -457,6 +569,7 @@
     }
 
     renderizarMesCompleto();
+    inicializarEstadoPaciente();
   </script>
 </body>
 </html>

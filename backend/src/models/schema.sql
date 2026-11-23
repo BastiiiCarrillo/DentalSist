@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nombre VARCHAR(120) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  rol VARCHAR(25) NOT NULL CHECK (rol IN ('ADMIN', 'ODONTOLOGO', 'RECEPCIONISTA', 'PACIENTE')),
+  rol VARCHAR(25) NOT NULL CHECK (rol IN ('ADMIN', 'RECEPCIONISTA', 'PACIENTE')),
   estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -21,7 +21,10 @@ CREATE TABLE IF NOT EXISTS especialidades (
 
 CREATE TABLE IF NOT EXISTS especialistas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  rut VARCHAR(12) NOT NULL UNIQUE,
+  nombre VARCHAR(120) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
   especialidad_id INT NOT NULL REFERENCES especialidades(id),
   registro_sis VARCHAR(30) NOT NULL UNIQUE,
   registro_colegio VARCHAR(30) NOT NULL UNIQUE,
@@ -51,10 +54,22 @@ CREATE TABLE IF NOT EXISTS citas (
   hora_inicio TIME NOT NULL,
   hora_fin TIME NOT NULL,
   tipo_consulta VARCHAR(80) NOT NULL,
-  estado VARCHAR(25) NOT NULL DEFAULT 'CONFIRMADA' CHECK (estado IN ('CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA')),
+  estado VARCHAR(25) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT uq_sillon_horario UNIQUE (sillon_numero, fecha, hora_inicio),
   CONSTRAINT uq_especialista_horario UNIQUE (especialista_id, fecha, hora_inicio)
+);
+
+CREATE TABLE IF NOT EXISTS turnos_especialistas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  especialista_id UUID NOT NULL REFERENCES especialistas(id) ON DELETE CASCADE,
+  fecha DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  sillon_numero INT NOT NULL DEFAULT 1,
+  estado VARCHAR(20) NOT NULL DEFAULT 'DISPONIBLE',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_turno_especialista UNIQUE (especialista_id, fecha, hora_inicio)
 );
 
 CREATE TABLE IF NOT EXISTS fichas_clinicas (
@@ -106,9 +121,16 @@ CREATE TABLE IF NOT EXISTS auditoria_seguridad (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE especialidades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE especialistas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pacientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE citas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE turnos_especialistas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fichas_clinicas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recetas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pacientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receta_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auditoria_seguridad ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION funcion_auditar_cambio_inmutable()
 RETURNS TRIGGER AS $$
@@ -151,20 +173,16 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO usuarios (id, rut, nombre, email, password_hash, rol, estado) VALUES
   ('11111111-1111-1111-1111-111111111111', '15.432.890-K', 'Ing. Admin DentalSis', 'admin@dentalsis.cl', '$2b$10$xOoBM3N7FKtCxET2Vxc7R.Ae8sTwea13ecHhOJqZD0X4eh2IMlFH.', 'ADMIN', 'ACTIVO'),
-  ('22222222-2222-2222-2222-222222222221', '14.892.341-2', 'Dr. Álvaro Soto M.', 'alvaro.soto@dentalsis.cl', '$2b$10$jI3qdM1G/OXKyjHSvxzc1ue6jk5cVrwt.S8gTYXBA.9SafAEEhLEW', 'ODONTOLOGO', 'ACTIVO'),
-  ('22222222-2222-2222-2222-222222222222', '16.781.423-5', 'Dra. Fernanda Ríos', 'fernanda.rios@dentalsis.cl', '$2b$10$cJpv4cuV.Fqavv0d0yCSI.bIM1k5GmTuCi3qVxmGgj9SbIjPbij6y', 'ODONTOLOGO', 'ACTIVO'),
-  ('22222222-2222-2222-2222-222222222223', '15.932.114-8', 'Dr. Matías Silva', 'matias.silva@dentalsis.cl', '$2b$10$RQbH2e77uL5C6lufb5719ubVxZbTdN1hZc8Is3IlctrZqc6SgkKD2', 'ODONTOLOGO', 'ACTIVO'),
-  ('22222222-2222-2222-2222-222222222224', '16.204.912-3', 'Dra. Marcela Lagos', 'marcela.lagos@dentalsis.cl', '$2b$10$nr/c9qxwGQFQtnH70Bz6XemZjN4JtjjBAB0fNJax34QAsJNf0jkIu', 'ODONTOLOGO', 'ACTIVO'),
   ('33333333-3333-3333-3333-333333333333', '17.452.809-6', 'Valeria Muñoz (Recepción)', 'recepcion@dentalsis.cl', '$2b$10$Z5fhlJsSkhmpepSK6VSSYulHXTTlM.iJeD4RbqYvPuXdFYdIGbpma', 'RECEPCIONISTA', 'ACTIVO'),
   ('44444444-4444-4444-4444-444444444441', '18.234.901-1', 'Camilo Vega Ortiz', 'camilo.vega@correo.cl', '$2b$10$IOOc/VBzysdLY6oX.4V/n.HFJ8YJRg1vGL3EC9QGyhFebtfYa60Pi', 'PACIENTE', 'ACTIVO')
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO especialistas (id, usuario_id, especialidad_id, registro_sis, registro_colegio, sillon_habitual) VALUES
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', '22222222-2222-2222-2222-222222222221', 1, 'MED-SIS-2026-081', 'COL-ODONT-4491', 1),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', '22222222-2222-2222-2222-222222222222', 2, 'MED-SIS-2026-104', 'COL-ODONT-5102', 2),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', '22222222-2222-2222-2222-222222222223', 3, 'MED-SIS-2026-192', 'COL-ODONT-6391', 3),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4', '22222222-2222-2222-2222-222222222224', 4, 'MED-SIS-2026-215', 'COL-ODONT-7801', 4)
-ON CONFLICT (registro_sis) DO NOTHING;
+INSERT INTO especialistas (id, rut, nombre, email, password_hash, especialidad_id, registro_sis, registro_colegio, sillon_habitual) VALUES
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', '14.892.341-2', 'Dr. Álvaro Soto M.', 'alvaro.soto@dentalsis.cl', '$2b$10$jI3qdM1G/OXKyjHSvxzc1ue6jk5cVrwt.S8gTYXBA.9SafAEEhLEW', 1, 'MED-SIS-2026-081', 'COL-ODONT-4491', 1),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', '16.781.423-5', 'Dra. Fernanda Ríos', 'fernanda.rios@dentalsis.cl', '$2b$10$cJpv4cuV.Fqavv0d0yCSI.bIM1k5GmTuCi3qVxmGgj9SbIjPbij6y', 2, 'MED-SIS-2026-104', 'COL-ODONT-5102', 2),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', '15.932.114-8', 'Dr. Matías Silva', 'matias.silva@dentalsis.cl', '$2b$10$RQbH2e77uL5C6lufb5719ubVxZbTdN1hZc8Is3IlctrZqc6SgkKD2', 3, 'MED-SIS-2026-192', 'COL-ODONT-6391', 3),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4', '16.204.912-3', 'Dra. Marcela Lagos', 'marcela.lagos@dentalsis.cl', '$2b$10$nr/c9qxwGQFQtnH70Bz6XemZjN4JtjjBAB0fNJax34QAsJNf0jkIu', 4, 'MED-SIS-2026-215', 'COL-ODONT-7801', 4)
+ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO pacientes (id, rut, nombre, apellido, fecha_nacimiento, telefono, email, alergias_cifradas, antecedentes_cifrados) VALUES
   ('55555555-5555-5555-5555-555555555551', '18.234.901-1', 'Camilo', 'Vega Ortiz', '1995-06-14', '+56 9 8765 4321', 'camilo.vega@correo.cl', 'AES256GCM:a7b8c9d0:PENICILINA_SHOCK_ANAFILACTICO', 'AES256GCM:1a2b3c4d:HIPERTENSION_CONTROLADA')

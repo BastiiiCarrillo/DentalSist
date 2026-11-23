@@ -10,7 +10,7 @@ function obtenerClaveIntento(ip, identificador) {
 
 function verificarBloqueoEscalonado(req, res, next) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
-  const identificador = req.body.email || req.body.rut || 'anonimo';
+  const identificador = req.body.identificador || req.body.email || req.body.rut || 'anonimo';
   const clave = obtenerClaveIntento(ip, identificador);
   const registro = intentosFallidos.get(clave);
 

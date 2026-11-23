@@ -19,14 +19,18 @@ function descifrarDatoSensible(cadenaCifrada) {
   }
   const partes = cadenaCifrada.split(':');
   if (partes.length !== 3) return cadenaCifrada;
-  const [ivHex, tagHex, contenidoHex] = partes;
-  const iv = Buffer.from(ivHex, 'hex');
-  const tag = Buffer.from(tagHex, 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITMO, CLAVE_SECRETA, iv);
-  decipher.setAuthTag(tag);
-  let descifrado = decipher.update(contenidoHex, 'hex', 'utf8');
-  descifrado += decipher.final('utf8');
-  return descifrado;
+  try {
+    const [ivHex, tagHex, contenidoHex] = partes;
+    const iv = Buffer.from(ivHex, 'hex');
+    const tag = Buffer.from(tagHex, 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITMO, CLAVE_SECRETA, iv);
+    decipher.setAuthTag(tag);
+    let descifrado = decipher.update(contenidoHex, 'hex', 'utf8');
+    descifrado += decipher.final('utf8');
+    return descifrado;
+  } catch (error) {
+    return null;
+  }
 }
 
 module.exports = {

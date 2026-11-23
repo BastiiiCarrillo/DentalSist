@@ -7,7 +7,8 @@ const {
   registrarAtencionEnFicha,
   guardarReceta,
   obtenerRecetaPorId,
-  validarRutChileno
+  validarRutChileno,
+  guardarTurnoMedico
 } = require('../models/dataStore');
 const { firmarReceta, verificarFirmaReceta } = require('../services/recetaCrypto');
 const { registrarEvento } = require('../services/logger');
@@ -64,8 +65,8 @@ function obtenerFichaPaciente(req, res) {
 
 function actualizarFichaConReautenticacion(req, res) {
   const { rut } = req.params;
+  const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
   const {
-    idMedico,
     passwordConfirmacion,
     tipoAtencion,
     diagnostico,
@@ -126,9 +127,9 @@ function actualizarFichaConReautenticacion(req, res) {
 }
 
 function emitirReceta(req, res) {
+  const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
   const {
     rutPaciente,
-    idMedico,
     medicamentos,
     indicaciones,
     passwordConfirmacion
@@ -215,11 +216,29 @@ function verificarRecetaPublica(req, res) {
   });
 }
 
+function ingresarTurno(req, res) {
+  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
+  const { fecha, horaInicio, horaFin, sillon } = req.body;
+
+  try {
+    const turno = guardarTurnoMedico({ idMedico, fecha, horaInicio, horaFin, sillon });
+    registrarEvento('TURNO_MEDICO_REGISTRADO', `Nuevo turno para ${turno.nombreMedico} el ${fecha} a las ${horaInicio}`, ip, idMedico, 'INFO');
+    return res.status(201).json({
+      mensaje: 'Turno registrado exitosamente.',
+      turno
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+}
+
 module.exports = {
   obtenerAgenda,
   cambiarEstado,
   obtenerFichaPaciente,
   actualizarFichaConReautenticacion,
   emitirReceta,
-  verificarRecetaPublica
+  verificarRecetaPublica,
+  ingresarTurno
 };

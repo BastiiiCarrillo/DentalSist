@@ -153,7 +153,7 @@ function buscarMedicoPorId(idMedico) {
 function buscarMedicoPorEmail(email) {
   if (!email) return null;
   const clean = email.toLowerCase().trim();
-  return medicos.find(m => m.email.toLowerCase() === clean || (clean === 'doctor@correo.cl' && m.id === 'DOC-1')) || null;
+  return medicos.find(m => m.email.toLowerCase() === clean) || null;
 }
 
 function buscarUsuarioPorRut(rut) {
@@ -164,7 +164,7 @@ function buscarUsuarioPorRut(rut) {
 function buscarUsuarioPorEmail(email) {
   if (!email) return null;
   const clean = email.toLowerCase().trim();
-  return usuarios.find(u => u.email.toLowerCase() === clean || (clean === 'paciente@correo.cl' && u.id === 'USR-PAC-1')) || null;
+  return usuarios.find(u => u.email.toLowerCase() === clean) || null;
 }
 
 function crearUsuario(datos) {
@@ -235,11 +235,13 @@ function cambiarPassword(identificador, passwordActual, nuevaPassword) {
     throw new Error('Usuario no encontrado.');
   }
 
-  if (passwordActual) {
-    const valida = bcrypt.compareSync(passwordActual, usuario.passwordHash);
-    if (!valida) {
-      throw new Error('La contrasena actual es incorrecta.');
-    }
+  if (!passwordActual) {
+    throw new Error('Debe ingresar la contrasena actual.');
+  }
+
+  const valida = bcrypt.compareSync(passwordActual, usuario.passwordHash);
+  if (!valida) {
+    throw new Error('La contrasena actual es incorrecta.');
   }
 
   usuario.passwordHash = bcrypt.hashSync(nuevaPassword, 10);
@@ -310,7 +312,7 @@ function crearCita(datos) {
     especialidad: especialidad || medico.especialidad,
     fecha,
     hora,
-    estado: 'CONFIRMADA',
+    estado: datos.estado || 'PENDIENTE',
     esInvitado: Boolean(esInvitado),
     creadoEn: new Date().toISOString()
   };
@@ -332,8 +334,16 @@ function obtenerCitasPorPaciente(rutPaciente) {
   return citas.filter(c => c.rutPaciente === rutLimpio);
 }
 
+const TRANSICIONES_VALIDAS = {
+  PENDIENTE: ['CONFIRMADA', 'EN_ATENCION', 'CANCELADA'],
+  CONFIRMADA: ['EN_ATENCION', 'CANCELADA'],
+  EN_ATENCION: ['ATENDIDA', 'CANCELADA'],
+  ATENDIDA: [],
+  CANCELADA: []
+};
+
 function actualizarEstadoCita(idCita, nuevoEstado) {
-  const estadosValidos = ['CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA'];
+  const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA'];
   if (!estadosValidos.includes(nuevoEstado)) {
     throw new Error('Estado de cita invalido.');
   }
@@ -341,6 +351,11 @@ function actualizarEstadoCita(idCita, nuevoEstado) {
   const cita = citas.find(c => c.id === idCita);
   if (!cita) {
     throw new Error('Cita no encontrada.');
+  }
+
+  const permitidos = TRANSICIONES_VALIDAS[cita.estado] || [];
+  if (!permitidos.includes(nuevoEstado) && cita.estado !== nuevoEstado) {
+    throw new Error(`Transicion de estado no permitida desde ${cita.estado} a ${nuevoEstado}.`);
   }
 
   cita.estado = nuevoEstado;
@@ -397,10 +412,58 @@ function obtenerRecetasPorPaciente(rutPaciente) {
   return recetas.filter(r => r.rutPaciente === rutLimpio);
 }
 
+let turnosMedicos = [];
+
+function guardarTurnoMedico(datos) {
+  const { idMedico, fecha, horaInicio, horaFin, sillon } = datos;
+  const medico = buscarMedicoPorId(idMedico);
+  if (!medico) {
+    throw new Error('Medico especialista no encontrado.');
+  }
+  if (!fecha || !horaInicio || !horaFin) {
+    throw new Error('Fecha, hora de inicio y fin son obligatorias.');
+  }
+
+  const yaExiste = turnosMedicos.some(t => t.idMedico === idMedico && t.fecha === fecha && t.horaInicio === horaInicio);
+  if (yaExiste) {
+    throw new Error('Ya existe un turno registrado para ese especialista en dicho horario.');
+  }
+
+  const nuevoTurno = {
+    id: `TURNO-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    idMedico,
+    nombreMedico: medico.nombre,
+    especialidad: medico.especialidad,
+    sillon: sillon || medico.sillon,
+    fecha,
+    horaInicio,
+    horaFin,
+    estado: 'DISPONIBLE',
+    creadoEn: new Date().toISOString()
+  };
+
+  turnosMedicos.push(nuevoTurno);
+  if (!medico.horariosBase.includes(horaInicio)) {
+    medico.horariosBase.push(horaInicio);
+    medico.horariosBase.sort();
+  }
+
+  return nuevoTurno;
+}
+
+function obtenerTurnosPorMedico(idMedico, fecha = null) {
+  return turnosMedicos.filter(t => {
+    if (t.idMedico !== idMedico) return false;
+    if (fecha && t.fecha !== fecha) return false;
+    return true;
+  });
+}
+
 function reiniciarEstadoParaPruebas() {
   medicos = [...medicosSemilla];
   usuarios = [...usuariosSemilla];
   citas = [];
+  turnosMedicos = [];
   fichasClinicas = [
     {
       id: 'FICHA-182349011',
@@ -443,5 +506,7 @@ module.exports = {
   guardarReceta,
   obtenerRecetaPorId,
   obtenerRecetasPorPaciente,
+  guardarTurnoMedico,
+  obtenerTurnosPorMedico,
   reiniciarEstadoParaPruebas
 };

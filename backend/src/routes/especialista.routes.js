@@ -6,15 +6,18 @@ const {
   obtenerFichaPaciente,
   actualizarFichaConReautenticacion,
   emitirReceta,
-  verificarRecetaPublica
+  verificarRecetaPublica,
+  ingresarTurno
 } = require('../controllers/especialista');
+const { verificarToken, verificarRol } = require('../controllers/auth.controller');
 const { limiteOperacionesSensibles } = require('../middleware/seguridad');
 
-router.get('/agenda/:idMedico', obtenerAgenda);
-router.patch('/citas/:idCita/estado', cambiarEstado);
-router.get('/ficha/:rut', obtenerFichaPaciente);
-router.post('/ficha/:rut', limiteOperacionesSensibles, actualizarFichaConReautenticacion);
-router.post('/recetas', limiteOperacionesSensibles, emitirReceta);
+router.get('/agenda/:idMedico', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), obtenerAgenda);
+router.patch('/citas/:idCita/estado', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), cambiarEstado);
+router.get('/ficha/:rut', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), obtenerFichaPaciente);
+router.post('/ficha/:rut', verificarToken, verificarRol('Odontologo'), limiteOperacionesSensibles, actualizarFichaConReautenticacion);
+router.post('/recetas', verificarToken, verificarRol('Odontologo'), limiteOperacionesSensibles, emitirReceta);
+router.post('/turnos', verificarToken, verificarRol('Odontologo'), limiteOperacionesSensibles, ingresarTurno);
 router.post('/recetas/verificar', verificarRecetaPublica);
 
 module.exports = router;

@@ -15,6 +15,7 @@ const authRutas = require('./routes/auth.routes');
 const pacienteRutas = require('./routes/paciente.routes');
 const especialistaRutas = require('./routes/especialista.routes');
 const medicamentosRutas = require('./routes/medicamentos.routes');
+const { verificarToken, verificarRol } = require('./controllers/auth.controller');
 
 const app = express();
 
@@ -44,7 +45,7 @@ app.use('/api/pacientes', pacienteRutas);
 app.use('/api/especialistas', especialistaRutas);
 app.use('/api/medicamentos', medicamentosRutas);
 
-app.get('/api/auditoria', (req, res) => {
+app.get('/api/auditoria', verificarToken, verificarRol('SuperAdmin', 'Admin'), (req, res) => {
   res.status(200).json({
     total: obtenerLogs().length,
     logs: obtenerLogs()

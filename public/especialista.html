@@ -41,14 +41,14 @@
       </a>
       <div>
         <span class="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300 bg-clip-text text-transparent">DentalSis</span>
-        <span class="text-xs block text-slate-500 dark:text-slate-400">Portal Médico Especialista · Dr. Álvaro Soto M.</span>
+        <span id="subtituloPortalMedico" class="text-xs block text-slate-500 dark:text-slate-400">Portal Médico Especialista</span>
       </div>
     </div>
 
     <div class="flex items-center gap-3">
-      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+      <div id="badgeTurnoActivo" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        Turno Mañana Activo · Sillón 1
+        <span id="textoTurnoNavbar">Turno Activo</span>
       </div>
 
       <button onclick="alternarModoColor()" class="w-9 h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cambiar modo claro/oscuro">
@@ -60,9 +60,9 @@
         </svg>
       </button>
 
-      <a href="login.html" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+      <button onclick="cerrarSesionMedico()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
         Cerrar Sesión
-      </a>
+      </button>
     </div>
   </nav>
 
@@ -74,7 +74,7 @@
         <p class="text-slate-600 dark:text-slate-300 text-sm">Gestiona el historial de consultas del paciente, actualiza diagnósticos protegidos y emite recetas médicas firmadas digitalmente.</p>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-xs px-3 py-1.5 rounded-xl bg-cyan-600 text-white font-bold shadow">Cirujano Dentista</span>
+        <span id="badgeRolMedico" class="text-xs px-3 py-1.5 rounded-xl bg-cyan-600 text-white font-bold shadow">Cirujano Dentista</span>
         <span class="text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">Reg. SIS #589.211</span>
       </div>
     </div>
@@ -86,42 +86,19 @@
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 class="text-base font-bold text-slate-900 dark:text-white">Agenda de Pacientes</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Pacientes programados para hoy</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Pacientes programados</p>
             </div>
-            <span class="text-xs font-bold text-teal-600 dark:text-teal-400">24 Nov 2026</span>
+            <div class="flex items-center gap-2">
+              <button onclick="abrirModalTurno()" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow transition flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Turno
+              </button>
+              <span id="fechaAgendaHoy" class="text-xs font-bold text-teal-600 dark:text-teal-400">Hoy</span>
+            </div>
           </div>
 
-          <div class="space-y-3">
-            <div class="p-3.5 rounded-2xl border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30 space-y-2.5 transition">
-              <div class="flex items-start justify-between">
-                <div>
-                  <span class="text-xs font-bold text-teal-600 dark:text-teal-400">11:00 hrs · Sillón 1</span>
-                  <h4 class="text-sm font-bold text-slate-900 dark:text-white">Camilo Vega Ortiz</h4>
-                  <p class="text-[11px] text-slate-500 font-mono">18.234.901-1</p>
-                </div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">En Atención</span>
-              </div>
-              <div class="pt-2 border-t border-teal-500/20 flex items-center justify-between text-xs">
-                <span class="text-slate-600 dark:text-slate-300 font-medium">Extracción Pieza 38</span>
-                <select class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-800 dark:text-slate-200 focus:outline-none">
-                  <option selected>En Atención</option>
-                  <option>Atendida</option>
-                  <option>Cancelada</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 opacity-60 space-y-2">
-              <div class="flex items-start justify-between">
-                <div>
-                  <span class="text-xs font-bold text-slate-400">12:00 hrs · Sillón 1</span>
-                  <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300">Ana Morales Díaz</h4>
-                  <p class="text-[11px] text-slate-400 font-mono">16.489.120-4</p>
-                </div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">Confirmada</span>
-              </div>
-              <p class="text-xs text-slate-500">Control Post-Operatorio</p>
-            </div>
+          <div id="contenedorAgendaCitas" class="space-y-3">
+            <div class="p-4 text-center text-xs text-slate-400">Cargando agenda médica...</div>
           </div>
         </div>
       </div>
@@ -132,7 +109,7 @@
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 class="text-lg font-bold text-slate-900 dark:text-white">Ficha Clínica del Paciente</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Camilo Vega Ortiz · RUT: 18.234.901-1</p>
+              <p id="subtituloFichaPaciente" class="text-xs text-slate-500 dark:text-slate-400">Camilo Vega Ortiz · RUT: 18.234.901-1</p>
             </div>
 
             <div class="flex items-center gap-2">
@@ -147,7 +124,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
-                Editar con Clave
+                Guardar con Clave
               </button>
             </div>
           </div>
@@ -155,18 +132,23 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo de Consulta</label>
-              <input id="campoConsulta" type="text" readonly value="Extracción Quirúrgica (Pieza 38)" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
+              <input id="campoConsulta" type="text" value="Extracción Quirúrgica (Pieza 38)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Alergias del Paciente</label>
-              <input id="campoAlergia" type="text" readonly value="Penicilina (Alergia Severa)" class="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl px-3.5 py-2.5 text-sm text-red-700 dark:text-red-300 font-semibold">
+              <input id="campoAlergia" type="text" value="Penicilina (Alergia Severa)" class="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl px-3.5 py-2.5 text-sm text-red-700 dark:text-red-300 font-semibold">
             </div>
           </div>
 
           <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tratamiento Realizado</label>
+            <input id="campoTratamiento" type="text" value="Odontosección y osteotomía simple sin complicaciones. Sutura 3-0." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
+          </div>
+
+          <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Diagnóstico y Evolución Clínica</label>
-            <textarea id="campoDiagnostico" rows="3" readonly class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 resize-none">Paciente ingresa con cuadro de pericoronaritis aguda en molar tercer molar inferior izquierdo (pieza 38). Se realiza anestesia troncular e infiltrativa con Mepivacaína al 3%. Odontosección y osteotomía simple sin complicaciones. Sutura reabsorbible 3-0. Se prescribe analgesia no betalactámica estricta.</textarea>
+            <textarea id="campoDiagnostico" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 resize-none">Paciente ingresa con cuadro de pericoronaritis aguda en molar tercer molar inferior izquierdo (pieza 38). Se realiza anestesia troncular e infiltrativa con Mepivacaína al 3%. Odontosección y osteotomía simple sin complicaciones. Sutura reabsorbible 3-0. Se prescribe analgesia no betalactámica estricta.</textarea>
           </div>
         </div>
 
@@ -298,15 +280,15 @@
       </div>
       <div class="text-center">
         <h3 class="text-lg font-bold text-slate-900 dark:text-white">Confirmación de Seguridad</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ingresa tu clave de especialista para habilitar la edición de esta ficha clínica.</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Ingresa tu clave de especialista para registrar o modificar esta ficha clínica.</p>
       </div>
       <div id="errorClaveMedico" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center">
         Contraseña incorrecta. Re-autenticación denegada.
       </div>
-      <input type="password" id="inputClaveMedico" placeholder="Ingresa tu contraseña de médico..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+      <input type="password" id="inputClaveMedico" onkeydown="if(event.key==='Enter') guardarFichaConReautenticacion()" placeholder="Ingresa tu contraseña de médico..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
       <div class="flex gap-2 pt-1">
         <button onclick="cerrarModalClave()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
-        <button onclick="validarYDesbloquearFicha()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950">Validar y Editar</button>
+        <button onclick="guardarFichaConReautenticacion()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950">Validar y Guardar</button>
       </div>
     </div>
   </div>
@@ -328,7 +310,51 @@
       <input type="password" id="inputClaveFirmaReceta" onkeydown="if(event.key==='Enter') validarYFirmarReceta()" placeholder="Ingresa tu contraseña de especialista..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
       <div class="flex gap-2 pt-1">
         <button onclick="cerrarModalClaveFirmaReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
-        <button onclick="validarYFirmarReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20">Firmar y Visualizar</button>
+        <button onclick="validarYFirmarReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20">Firmar y Emitir</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalTurnoMedico" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mx-auto">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div class="text-center">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Definir Turno de Especialista</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Registra tu bloque de atención clínica y sillón asignado.</p>
+      </div>
+      <div id="errorTurnoMedico" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center"></div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Fecha del Turno</label>
+          <input type="date" id="inputFechaTurno" value="2026-11-24" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Hora Inicio</label>
+            <input type="text" id="inputHoraInicioTurno" value="09:00" placeholder="09:00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Hora Fin</label>
+            <input type="text" id="inputHoraFinTurno" value="14:00" placeholder="14:00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Sillón Asignado</label>
+          <select id="selectSillonTurno" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+            <option value="Sillón 1">Sillón 1 (Quirúrgico)</option>
+            <option value="Sillón 2">Sillón 2 (General)</option>
+            <option value="Sillón 3">Sillón 3 (Endodoncia)</option>
+            <option value="Sillón 4">Sillón 4 (Ortodoncia)</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="cerrarModalTurno()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
+        <button onclick="guardarTurnoMedico()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Registrar Turno</button>
       </div>
     </div>
   </div>
@@ -1004,7 +1030,226 @@
       contenedor.innerHTML = html;
     }
 
+    let medicoActual = null;
+    let rutPacienteActual = '182349011';
     let recetaAutenticada = false;
+
+    function verificarSesionEspecialista() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
+      if (!token || !usuarioRaw) {
+        window.location.href = 'login.html';
+        return null;
+      }
+      try {
+        const u = JSON.parse(usuarioRaw);
+        const rol = (u.rol || '').toLowerCase();
+        if (rol !== 'odontologo' && rol !== 'odontólogo' && rol !== 'superadmin' && rol !== 'admin') {
+          window.location.href = 'login.html';
+          return null;
+        }
+        medicoActual = u;
+        const subtitulo = document.getElementById('subtituloPortalMedico');
+        if (subtitulo && u.nombre) subtitulo.textContent = `Portal Médico Especialista · ${u.nombre}`;
+        const badgeTurno = document.getElementById('badgeTurnoActivo');
+        if (badgeTurno) badgeTurno.classList.remove('hidden');
+        return u;
+      } catch (e) {
+        window.location.href = 'login.html';
+        return null;
+      }
+    }
+
+    function cerrarSesionMedico() {
+      sessionStorage.removeItem('dentalsis_token');
+      sessionStorage.removeItem('dentalsis_usuario');
+      sessionStorage.removeItem('dentalsis_login_timestamp');
+      window.location.href = 'login.html';
+    }
+
+    async function cargarAgendaMedico() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      if (!medicoActual || !token) return;
+
+      const contenedor = document.getElementById('contenedorAgendaCitas');
+      if (!contenedor) return;
+
+      try {
+        const res = await fetch('/api/especialistas/agenda/' + encodeURIComponent(medicoActual.id), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) {
+          contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error al cargar citas de la agenda.</div>';
+          return;
+        }
+
+        const datos = await res.json();
+        const citas = datos.citas || [];
+
+        if (citas.length === 0) {
+          contenedor.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay citas registradas en tu agenda.</div>';
+          return;
+        }
+
+        let html = '';
+        citas.forEach(c => {
+          let claseBadge = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
+          if (c.estado === 'PENDIENTE') claseBadge = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+          else if (c.estado === 'CONFIRMADA') claseBadge = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+          else if (c.estado === 'EN_ATENCION') claseBadge = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
+          else if (c.estado === 'ATENDIDA') claseBadge = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+          else if (c.estado === 'CANCELADA') claseBadge = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+
+          let botonesAccion = '';
+          if (c.estado === 'PENDIENTE') {
+            botonesAccion = `
+              <div class="flex gap-1.5 pt-1">
+                <button onclick="cambiarEstadoCita('${c.id}', 'CONFIRMADA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white shadow">Confirmar</button>
+                <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
+              </div>
+            `;
+          } else if (c.estado === 'CONFIRMADA') {
+            botonesAccion = `
+              <div class="flex gap-1.5 pt-1">
+                <button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar Atención</button>
+                <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
+              </div>
+            `;
+          } else if (c.estado === 'EN_ATENCION') {
+            botonesAccion = `
+              <div class="flex gap-1.5 pt-1">
+                <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Finalizar Atención</button>
+              </div>
+            `;
+          }
+
+          const esSeleccionado = c.rutPaciente === rutPacienteActual;
+          html += `
+            <div class="p-3.5 rounded-2xl border ${esSeleccionado ? 'border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'} space-y-2.5 transition">
+              <div class="flex items-start justify-between cursor-pointer" onclick="seleccionarPacienteAgenda('${c.rutPaciente}', '${c.nombrePaciente}')">
+                <div>
+                  <span class="text-xs font-bold text-teal-600 dark:text-teal-400">${c.hora} hrs · ${c.sillon}</span>
+                  <h4 class="text-sm font-bold text-slate-900 dark:text-white">${c.nombrePaciente}</h4>
+                  <p class="text-[11px] text-slate-500 font-mono">${c.rutFormateado || c.rutPaciente}</p>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${claseBadge}">${c.estado}</span>
+              </div>
+              <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-600 dark:text-slate-300 font-medium">${c.especialidad}</span>
+                ${botonesAccion}
+              </div>
+            </div>
+          `;
+        });
+
+        contenedor.innerHTML = html;
+      } catch (e) {
+        contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error de conexión al cargar agenda.</div>';
+      }
+    }
+
+    async function cambiarEstadoCita(idCita, nuevoEstado) {
+      const token = sessionStorage.getItem('dentalsis_token');
+      try {
+        const res = await fetch(`/api/especialistas/citas/${idCita}/estado`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ nuevoEstado })
+        });
+        const datos = await res.json();
+        if (!res.ok) {
+          alert(datos.error || 'Error al actualizar estado.');
+          return;
+        }
+        cargarAgendaMedico();
+      } catch (e) {
+        alert('Error de conexión con el servidor.');
+      }
+    }
+
+    function seleccionarPacienteAgenda(rut, nombre) {
+      rutPacienteActual = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+      const subtitulo = document.getElementById('subtituloFichaPaciente');
+      if (subtitulo) subtitulo.textContent = `${nombre} · RUT: ${rut}`;
+      cargarFichaPaciente(rutPacienteActual);
+    }
+
+    async function cargarFichaPaciente(rut) {
+      const token = sessionStorage.getItem('dentalsis_token');
+      try {
+        const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rut), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const datos = await res.json();
+        const ficha = datos.ficha;
+        if (ficha && ficha.historialConsultas && ficha.historialConsultas.length > 0) {
+          const ult = ficha.historialConsultas[ficha.historialConsultas.length - 1];
+          document.getElementById('campoConsulta').value = ult.tipoAtencion || 'Consulta Odontológica';
+          document.getElementById('campoDiagnostico').value = ult.diagnostico || '';
+          document.getElementById('campoTratamiento').value = ult.tratamiento || '';
+          document.getElementById('campoAlergia').value = ult.observaciones || 'Sin alergias registradas';
+        }
+      } catch (e) {}
+    }
+
+    function abrirModalTurno() {
+      document.getElementById('modalTurnoMedico').classList.remove('hidden');
+      document.getElementById('errorTurnoMedico').classList.add('hidden');
+    }
+
+    function cerrarModalTurno() {
+      document.getElementById('modalTurnoMedico').classList.add('hidden');
+      document.getElementById('errorTurnoMedico').classList.add('hidden');
+    }
+
+    async function guardarTurnoMedico() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const fecha = document.getElementById('inputFechaTurno').value;
+      const horaInicio = document.getElementById('inputHoraInicioTurno').value.trim();
+      const horaFin = document.getElementById('inputHoraFinTurno').value.trim();
+      const sillon = document.getElementById('selectSillonTurno').value;
+      const err = document.getElementById('errorTurnoMedico');
+
+      if (!fecha || !horaInicio || !horaFin) {
+        err.textContent = 'Todos los campos son requeridos.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/especialistas/turnos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            idMedico: medicoActual ? medicoActual.id : 'DOC-1',
+            fecha,
+            horaInicio,
+            horaFin,
+            sillon
+          })
+        });
+
+        const datos = await res.json();
+        if (!res.ok) {
+          err.textContent = datos.error || 'Error al registrar turno.';
+          err.classList.remove('hidden');
+          return;
+        }
+
+        cerrarModalTurno();
+        alert('¡Turno registrado exitosamente en DentalSis!');
+      } catch (e) {
+        err.textContent = 'Error al comunicarse con el servidor.';
+        err.classList.remove('hidden');
+      }
+    }
 
     function solicitarClaveFirmaReceta() {
       if (datosRecetaMeds.size === 0) {
@@ -1026,21 +1271,59 @@
       document.getElementById('inputClaveFirmaReceta').value = '';
     }
 
-    function validarYFirmarReceta() {
+    async function validarYFirmarReceta() {
       const input = document.getElementById('inputClaveFirmaReceta');
       const err = document.getElementById('errorClaveFirmaReceta');
       const clave = (input.value || '').trim();
+      const token = sessionStorage.getItem('dentalsis_token');
 
-      if (clave !== 'SotoCirugia2026!Clinica') {
-        err.textContent = 'Contraseña incorrecta. Intento bloqueado y registrado en auditoría.';
+      if (!clave) {
+        err.textContent = 'Por favor ingresa tu contraseña de especialista.';
         err.classList.remove('hidden');
         return;
       }
 
-      err.classList.add('hidden');
-      cerrarModalClaveFirmaReceta();
-      recetaAutenticada = true;
-      mostrarModalRecetaOficial();
+      const listaMeds = [];
+      datosRecetaMeds.forEach((reg) => {
+        listaMeds.push({
+          id: reg.med.id,
+          nombre: reg.med.nombre,
+          dosis: reg.med.dosis,
+          presentacion: reg.med.presentacion,
+          posologia: `${reg.cantidad} ${reg.frecuencia} ${reg.dias}`
+        });
+      });
+
+      try {
+        const res = await fetch('/api/especialistas/recetas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            rutPaciente: rutPacienteActual,
+            medicamentos: listaMeds,
+            indicaciones: document.getElementById('indicacionesReceta').value || 'Sin indicaciones adicionales.',
+            passwordConfirmacion: clave
+          })
+        });
+
+        const datos = await res.json();
+        if (!res.ok) {
+          err.textContent = datos.error || 'Contraseña incorrecta. No se pudo firmar la receta.';
+          err.classList.remove('hidden');
+          return;
+        }
+
+        err.classList.add('hidden');
+        cerrarModalClaveFirmaReceta();
+        recetaAutenticada = true;
+        mostrarModalRecetaOficial(datos.receta);
+      } catch (e) {
+        err.textContent = 'Error de comunicación con el servidor.';
+        err.classList.remove('hidden');
+      }
     }
 
     function imprimirRecetaSegura() {
@@ -1051,7 +1334,7 @@
       window.print();
     }
 
-    function mostrarModalRecetaOficial() {
+    function mostrarModalRecetaOficial(receta) {
       if (datosRecetaMeds.size === 0) {
         alert('Debes agregar al menos un medicamento para emitir la receta médica.');
         return;
@@ -1148,6 +1431,8 @@
 
     function solicitarClaveEdicion() {
       document.getElementById('modalClave').classList.remove('hidden');
+      document.getElementById('inputClaveMedico').value = '';
+      document.getElementById('errorClaveMedico').classList.add('hidden');
     }
 
     function cerrarModalClave() {
@@ -1156,19 +1441,48 @@
       document.getElementById('inputClaveMedico').value = '';
     }
 
-    function validarYDesbloquearFicha() {
-      const input = document.getElementById('inputClaveMedico');
+    async function guardarFichaConReautenticacion() {
+      const clave = document.getElementById('inputClaveMedico').value.trim();
       const err = document.getElementById('errorClaveMedico');
-      if (input.value !== 'SotoCirugia2026!Clinica') {
+      const token = sessionStorage.getItem('dentalsis_token');
+
+      if (!clave) {
+        err.textContent = 'Por favor ingresa tu contraseña de especialista.';
         err.classList.remove('hidden');
         return;
       }
-      err.classList.add('hidden');
-      document.getElementById('campoConsulta').removeAttribute('readonly');
-      document.getElementById('campoAlergia').removeAttribute('readonly');
-      document.getElementById('campoDiagnostico').removeAttribute('readonly');
-      document.getElementById('campoDiagnostico').focus();
-      cerrarModalClave();
+
+      try {
+        const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rutPacienteActual), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            passwordConfirmacion: clave,
+            tipoAtencion: document.getElementById('campoConsulta').value.trim() || 'Consulta Quirúrgica',
+            diagnostico: document.getElementById('campoDiagnostico').value.trim(),
+            tratamiento: document.getElementById('campoTratamiento').value.trim(),
+            observaciones: document.getElementById('campoAlergia').value.trim()
+          })
+        });
+
+        const datos = await res.json();
+        if (!res.ok) {
+          err.textContent = datos.error || 'Contraseña incorrecta. Re-autenticación denegada.';
+          err.classList.remove('hidden');
+          return;
+        }
+
+        err.classList.add('hidden');
+        cerrarModalClave();
+        alert('¡Ficha clínica actualizada y protegida con éxito!');
+        cargarFichaPaciente(rutPacienteActual);
+      } catch (e) {
+        err.textContent = 'Error al comunicarse con el servidor clínico.';
+        err.classList.remove('hidden');
+      }
     }
 
     document.addEventListener('click', (e) => {
@@ -1180,6 +1494,8 @@
     });
 
     agregarMedicamento('KETO-10');
+    verificarSesionEspecialista();
+    cargarAgendaMedico();
   </script>
 </body>
 </html>

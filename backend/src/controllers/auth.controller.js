@@ -11,6 +11,8 @@ const {
 const { registrarFalloLogin, limpiarFallosLogin } = require('../middleware/seguridad');
 const { registrarEvento } = require('../services/logger');
 
+const { ROLES } = require('../auth');
+
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
 
 function login(req, res) {
@@ -23,11 +25,22 @@ function login(req, res) {
   }
 
   let usuarioEncontrado = null;
-  let tipoUsuario = rol || 'paciente';
+  const tipoUsuario = (rol || '').toLowerCase();
 
-  if (tipoUsuario === 'especialista') {
+  if (tipoUsuario === 'especialista' || tipoUsuario === 'medico' || tipoUsuario === 'odontologo') {
     usuarioEncontrado = buscarMedicoPorEmail(identificador);
   } else {
+    if (identificador.includes('@')) {
+      usuarioEncontrado = buscarUsuarioPorEmail(identificador);
+    } else {
+      usuarioEncontrado = buscarUsuarioPorRut(identificador);
+    }
+  }
+
+  if (!usuarioEncontrado) {
+    usuarioEncontrado = buscarMedicoPorEmail(identificador);
+  }
+  if (!usuarioEncontrado) {
     if (identificador.includes('@')) {
       usuarioEncontrado = buscarUsuarioPorEmail(identificador);
     } else {
@@ -48,11 +61,24 @@ function login(req, res) {
 
   limpiarFallosLogin(ip, identificador);
 
+  let rolAsignado = 'Paciente';
+  const rolUpper = (usuarioEncontrado.rol || '').toUpperCase();
+  if (rolUpper === 'ADMIN' || rolUpper === 'SUPERADMIN' || usuarioEncontrado.rol === 'SuperAdmin') {
+    rolAsignado = ROLES.SUPER_ADMIN;
+  } else if (rolUpper === 'ODONTOLOGO' || tipoUsuario === 'especialista') {
+    rolAsignado = ROLES.ODONTOLOGO;
+  } else if (rolUpper === 'RECEPCIONISTA') {
+    rolAsignado = ROLES.RECEPCIONISTA;
+  } else if (rolUpper === 'ADMINFINANCIERO' || rolUpper === 'ADMIN_FINANCIERO') {
+    rolAsignado = ROLES.ADMIN_FINANCIERO;
+  }
+
   const payload = {
     id: usuarioEncontrado.id,
     nombre: usuarioEncontrado.nombre,
     email: usuarioEncontrado.email,
-    rol: tipoUsuario === 'especialista' ? 'Odontologo' : 'Paciente'
+    rut: usuarioEncontrado.rut,
+    rol: rolAsignado
   };
 
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
@@ -113,6 +139,14 @@ function actualizarPassword(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const { identificador, passwordActual, nuevaPassword } = req.body;
 
+  if (!passwordActual) {
+    return res.status(400).json({ error: 'Debe ingresar la contrasena actual para cambiar su clave.' });
+  }
+
+  if (!nuevaPassword || nuevaPassword.length < 8) {
+    return res.status(400).json({ error: 'La nueva contrasena debe tener al menos 8 caracteres.' });
+  }
+
   try {
     cambiarPassword(identificador, passwordActual, nuevaPassword);
     registrarEvento('CAMBIO_PASSWORD_EXITOSO', `Actualizacion de clave exitosa para ${identificador}`, ip, null, 'INFO');
@@ -123,9 +157,24 @@ function actualizarPassword(req, res) {
   }
 }
 
+function verificarRol(...rolesPermitidos) {
+  return (req, res, next) => {
+    if (!req.usuario) {
+      return res.status(401).json({ error: 'Acceso no autorizado: Sesion no iniciada.' });
+    }
+    const rolActual = (req.usuario.rol || '').toUpperCase();
+    const permitidos = rolesPermitidos.map(r => r.toUpperCase());
+    if (!permitidos.includes(rolActual) && !permitidos.includes('ALL')) {
+      return res.status(403).json({ error: 'Acceso denegado: No posee los permisos requeridos para esta accion.' });
+    }
+    next();
+  };
+}
+
 module.exports = {
   login,
   registro,
   actualizarPassword,
-  verificarToken
+  verificarToken,
+  verificarRol
 };
