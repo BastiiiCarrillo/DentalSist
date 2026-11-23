@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolUsuario {
+  ADMIN
+  ODONTOLOGO
+  RECEPCIONISTA
+  PACIENTE
+}
+
+enum EstadoCita {
+  CONFIRMADA
+  EN_ATENCION
+  ATENDIDA
+  CANCELADA
+}
+
+model Usuario {
+  id           String        @id @default(uuid())
+  rut          String        @unique
+  nombre       String
+  email        String        @unique
+  passwordHash String
+  rol          RolUsuario    @default(PACIENTE)
+  estado       String        @default("ACTIVO")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  especialista Especialista?
+
+  @@map("usuarios")
+}
+
+model Especialidad {
+  id            Int            @id @default(autoincrement())
+  nombre        String         @unique
+  descripcion   String?
+  especialistas Especialista[]
+
+  @@map("especialidades")
+}
+
+model Especialista {
+  id                String         @id @default(uuid())
+  usuarioId         String         @unique
+  usuario           Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  especialidadId    Int
+  especialidad      Especialidad   @relation(fields: [especialidadId], references: [id])
+  registroSis       String         @unique
+  registroColegio   String         @unique
+  sillonHabitual    Int            @default(1)
+  createdAt         DateTime       @default(now())
+  citas             Cita[]
+  fichasClinicas    FichaClinica[]
+  recetas           Receta[]
+
+  @@map("especialistas")
+}
+
+model Paciente {
+  id                   String         @id @default(uuid())
+  rut                  String         @unique
+  nombre               String
+  apellido             String
+  fechaNacimiento      DateTime
+  telefono             String?
+  email                String?
+  alergiasCifradas     String?
+  antecedentesCifrados String?
+  createdAt            DateTime       @default(now())
+  citas                Cita[]
+  fichasClinicas       FichaClinica[]
+  recetas              Receta[]
+
+  @@map("pacientes")
+}
+
+model Cita {
+  id             String         @id @default(uuid())
+  pacienteId     String
+  paciente       Paciente       @relation(fields: [pacienteId], references: [id])
+  especialistaId String
+  especialista   Especialista   @relation(fields: [especialistaId], references: [id])
+  sillonNumero   Int
+  fecha          DateTime       @db.Date
+  horaInicio     String
+  horaFin        String
+  tipoConsulta   String
+  estado         EstadoCita     @default(CONFIRMADA)
+  createdAt      DateTime       @default(now())
+  fichasClinicas FichaClinica[]
+  recetas        Receta[]
+
+  @@unique([sillonNumero, fecha, horaInicio])
+  @@unique([especialistaId, fecha, horaInicio])
+  @@map("citas")
+}
+
+model FichaClinica {
+  id                   String       @id @default(uuid())
+  pacienteId           String
+  paciente             Paciente     @relation(fields: [pacienteId], references: [id])
+  especialistaId       String
+  especialista         Especialista @relation(fields: [especialistaId], references: [id])
+  citaId               String?
+  cita                 Cita?        @relation(fields: [citaId], references: [id])
+  tipoConsulta         String
+  diagnosticoCifrado   String
+  tratamientoRealizado String
+  observaciones        String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@map("fichas_clinicas")
+}
+
+model Receta {
+  id                    String       @id @default(uuid())
+  folio                 String       @unique
+  pacienteId            String
+  paciente              Paciente     @relation(fields: [pacienteId], references: [id])
+  especialistaId        String
+  especialista          Especialista @relation(fields: [especialistaId], references: [id])
+  citaId                String?
+  cita                  Cita?        @relation(fields: [citaId], references: [id])
+  indicacionesGenerales String
+  firmaHmac             String
+  createdAt             DateTime     @default(now())
+  items                 RecetaItem[]
+
+  @@map("recetas")
+}
+
+model RecetaItem {
+  id            String   @id @default(uuid())
+  recetaId      String
+  receta        Receta   @relation(fields: [recetaId], references: [id], onDelete: Cascade)
+  medicamentoId String
+  nombre        String
+  dosis         String
+  presentacion  String
+  cantidad      String
+  frecuencia    String
+  dias          String
+  posologia     String
+  totalUnidades Int
+
+  @@map("receta_items")
+}
+
+model AuditoriaSeguridad {
+  id            BigInt   @id @default(autoincrement())
+  evento        String
+  usuarioId     String?
+  ipOrigen      String
+  severidad     String
+  detalle       Json
+  hashInmutable String
+  createdAt     DateTime @default(now())
+
+  @@map("auditoria_seguridad")
+}
