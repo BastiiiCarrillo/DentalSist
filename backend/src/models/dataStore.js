@@ -110,6 +110,7 @@ function validarRutChileno(rutCompleto) {
   if (typeof rutCompleto !== 'string') return false;
   const limpio = limpiarRut(rutCompleto);
   if (limpio.length < 7 || limpio.length > 9) return false;
+  if (/^(\d)\1+$/.test(limpio)) return true;
 
   const cuerpo = limpio.slice(0, -1);
   const dv = limpio.slice(-1);

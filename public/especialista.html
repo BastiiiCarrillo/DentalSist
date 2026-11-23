@@ -1161,12 +1161,12 @@
         });
         const datos = await res.json();
         if (!res.ok) {
-          alert(datos.error || 'Error al actualizar estado.');
+          mostrarAlertaClinica(datos.error || 'Error al actualizar estado.');
           return;
         }
         cargarAgendaMedico();
       } catch (e) {
-        alert('Error de conexión con el servidor.');
+        mostrarAlertaClinica('Error de conexión con el servidor.');
       }
     }
 
@@ -1244,7 +1244,7 @@
         }
 
         cerrarModalTurno();
-        alert('¡Turno registrado exitosamente en DentalSis!');
+        mostrarAlertaClinica('¡Turno registrado exitosamente en DentalSis!');
       } catch (e) {
         err.textContent = 'Error al comunicarse con el servidor.';
         err.classList.remove('hidden');
@@ -1253,7 +1253,7 @@
 
     function solicitarClaveFirmaReceta() {
       if (datosRecetaMeds.size === 0) {
-        alert('Debes tener al menos un medicamento agregado para emitir la receta médica.');
+        mostrarAlertaClinica('Debes tener al menos un medicamento agregado para emitir la receta médica.');
         return;
       }
       document.getElementById('modalClaveFirmaReceta').classList.remove('hidden');
@@ -1336,7 +1336,7 @@
 
     function mostrarModalRecetaOficial(receta) {
       if (datosRecetaMeds.size === 0) {
-        alert('Debes agregar al menos un medicamento para emitir la receta médica.');
+        mostrarAlertaClinica('Debes agregar al menos un medicamento para emitir la receta médica.');
         return;
       }
 
@@ -1477,12 +1477,26 @@
 
         err.classList.add('hidden');
         cerrarModalClave();
-        alert('¡Ficha clínica actualizada y protegida con éxito!');
+        mostrarAlertaClinica('¡Ficha clínica actualizada y protegida con éxito!');
         cargarFichaPaciente(rutPacienteActual);
       } catch (e) {
         err.textContent = 'Error al comunicarse con el servidor clínico.';
         err.classList.remove('hidden');
       }
+    }
+
+    function mostrarAlertaClinica(mensaje, titulo = 'Aviso del Sistema') {
+      const modal = document.getElementById('modalAlertaClinica');
+      const txt = document.getElementById('mensajeAlertaClinica');
+      const tit = document.getElementById('tituloAlertaClinica');
+      if (txt) txt.textContent = mensaje;
+      if (tit) tit.textContent = titulo;
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function cerrarAlertaClinica() {
+      const modal = document.getElementById('modalAlertaClinica');
+      if (modal) modal.classList.add('hidden');
     }
 
     document.addEventListener('click', (e) => {
@@ -1497,5 +1511,22 @@
     verificarSesionEspecialista();
     cargarAgendaMedico();
   </script>
+
+  <div id="modalAlertaClinica" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+      <div id="iconoAlertaClinica" class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto bg-amber-500/10 text-amber-500 border border-amber-500/20">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 id="tituloAlertaClinica" class="text-base font-bold text-slate-800 dark:text-white">Aviso del Sistema</h3>
+        <p id="mensajeAlertaClinica" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+      </div>
+      <button onclick="cerrarAlertaClinica()" class="w-full py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-600/20 transition">
+        Entendido
+      </button>
+    </div>
+  </div>
 </body>
 </html>

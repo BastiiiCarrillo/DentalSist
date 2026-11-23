@@ -35,10 +35,17 @@ function validarDatosReserva(body) {
     return 'Debe seleccionar una fecha y bloque horario validos.';
   }
 
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fRes = new Date(fecha + 'T00:00:00');
+  if (isNaN(fRes.getTime()) || fRes < hoy) {
+    return 'No es posible agendar citas en fechas pasadas.';
+  }
+
   return null;
 }
 
-async function reservarCita(req, res) {
+function reservarCita(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const errorValidacion = validarDatosReserva(req.body);
 
@@ -66,10 +73,41 @@ async function reservarCita(req, res) {
         const partes = req.body.nombre.trim().split(' ');
         const nom = partes[0] || 'Paciente';
         const ape = partes.slice(1).join(' ') || 'Registrado';
-        await db.query(
-          'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO NOTHING;',
+        db.query(
+          'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = EXCLUDED.telefono, email = EXCLUDED.email RETURNING id;',
           [cita.rutFormateado, nom, ape, '2000-01-01', req.body.telefono.trim(), req.body.email.trim().toLowerCase()]
-        );
+        ).then(async (resPac) => {
+          let pacId = (resPac && resPac.rows && resPac.rows[0]) ? resPac.rows[0].id : null;
+          if (!pacId) {
+            const rBusq = await db.query('SELECT id FROM pacientes WHERE rut = $1;', [cita.rutFormateado]);
+            if (rBusq.rows.length > 0) pacId = rBusq.rows[0].id;
+          }
+          if (pacId) {
+            let espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1';
+            let sillon = 1;
+            if (cita.idMedico === 'DOC-2' || (cita.especialidad && cita.especialidad.includes('General'))) {
+              espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
+              sillon = 2;
+            } else if (cita.idMedico === 'DOC-3' || (cita.especialidad && cita.especialidad.includes('Endodoncia'))) {
+              espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
+              sillon = 3;
+            } else if (cita.idMedico === 'DOC-4' || (cita.especialidad && cita.especialidad.includes('Ortodoncia'))) {
+              espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
+              sillon = 4;
+            }
+            const horaInicio = cita.hora.length === 5 ? cita.hora + ':00' : cita.hora;
+            const partesHora = cita.hora.split(':');
+            const h = parseInt(partesHora[0], 10);
+            const m = parseInt(partesHora[1] || '0', 10);
+            const finMin = m + 45;
+            const horaFin = (finMin >= 60 ? `${String(h + 1).padStart(2, '0')}:${String(finMin - 60).padStart(2, '0')}:00` : `${String(h).padStart(2, '0')}:${String(finMin).padStart(2, '0')}:00`);
+
+            await db.query(
+              'INSERT INTO citas (paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;',
+              [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA']
+            );
+          }
+        }).catch(() => {});
       }
     } catch (eDb) {
     }

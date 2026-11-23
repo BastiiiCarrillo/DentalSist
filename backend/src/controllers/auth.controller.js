@@ -161,6 +161,23 @@ function actualizarPassword(req, res) {
 
   try {
     cambiarPassword(identificador, passwordActual, nuevaPassword);
+
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const nuevoHash = bcrypt.hashSync(nuevaPassword, 10);
+        db.query(
+          'UPDATE usuarios SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2) OR rut = $2;',
+          [nuevoHash, identificador.trim()]
+        ).catch(() => {});
+        db.query(
+          'UPDATE especialistas SET password_hash = $1 WHERE LOWER(email) = LOWER($2) OR rut = $2;',
+          [nuevoHash, identificador.trim()]
+        ).catch(() => {});
+      }
+    } catch (eDb) {
+    }
+
     registrarEvento('CAMBIO_PASSWORD_EXITOSO', `Actualizacion de clave exitosa para ${identificador}`, ip, null, 'INFO');
     return res.status(200).json({ mensaje: 'Contrasena actualizada exitosamente y hasheada con Bcrypt.' });
   } catch (error) {

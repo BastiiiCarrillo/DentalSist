@@ -211,7 +211,7 @@
           <div class="space-y-3.5 text-xs">
             <div>
               <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">RUT Chileno (con guión)</label>
-              <input type="text" id="inputRutPaciente" oninput="validarRutEnVivo(this)" value="" placeholder="Ej: 18234901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <input type="text" id="inputRutPaciente" oninput="formatearYValidarRutPaciente(this)" value="" placeholder="Ej: 6.666.666-6 o 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
               <span id="mensajeErrorRut" class="text-[10px] text-red-500 font-semibold hidden block mt-0.5">RUT chileno inválido (Módulo 11 incorrecto).</span>
             </div>
 
@@ -300,18 +300,25 @@
   </div>
 
   <script>
-    let diaSeleccionado = 24;
-    let mesSeleccionado = 10;
-    let anoSeleccionado = 2026;
-    let fechaSeleccionada = '24 de Noviembre de 2026';
+    const hoyReal = new Date();
+    hoyReal.setHours(0, 0, 0, 0);
+
+    let diaSeleccionado = hoyReal.getDate();
+    let mesSeleccionado = hoyReal.getMonth();
+    let anoSeleccionado = hoyReal.getFullYear();
+
+    if (new Date(anoSeleccionado, mesSeleccionado, diaSeleccionado).getDay() === 0) {
+      diaSeleccionado++;
+    }
+
+    let mesVisualizado = mesSeleccionado;
+    let anoVisualizado = anoSeleccionado;
+
+    const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    let fechaSeleccionada = `${diaSeleccionado} de ${nombresMeses[mesSeleccionado]} de ${anoSeleccionado}`;
     let horaSeleccionada = '11:00';
     let medicoSeleccionado = 'Dr. Álvaro Soto M.';
     let especialidadSeleccionada = 'Cirugía Bucal';
-
-    let mesVisualizado = 10;
-    let anoVisualizado = 2026;
-
-    const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     function alternarModoColor() {
       document.documentElement.classList.toggle('dark');
@@ -327,18 +334,24 @@
     }
 
     function cambiarMesCalendario(delta) {
-      mesVisualizado += delta;
-      if (mesVisualizado < 0) {
-        mesVisualizado = 11;
-        anoVisualizado--;
-      } else if (mesVisualizado > 11) {
-        mesVisualizado = 0;
-        anoVisualizado++;
+      const nuevoMes = mesVisualizado + delta;
+      const nuevoAno = nuevoMes < 0 ? anoVisualizado - 1 : nuevoMes > 11 ? anoVisualizado + 1 : anoVisualizado;
+      const mesFinal = nuevoMes < 0 ? 11 : nuevoMes > 11 ? 0 : nuevoMes;
+
+      if (nuevoAno < hoyReal.getFullYear() || (nuevoAno === hoyReal.getFullYear() && mesFinal < hoyReal.getMonth())) {
+        return;
       }
+
+      mesVisualizado = mesFinal;
+      anoVisualizado = nuevoAno;
       renderizarMesCompleto();
     }
 
     function seleccionarDiaCalendario(dia, mes, ano) {
+      const fCheck = new Date(ano, mes, dia);
+      fCheck.setHours(0, 0, 0, 0);
+      if (fCheck < hoyReal || fCheck.getDay() === 0) return;
+
       diaSeleccionado = dia;
       mesSeleccionado = mes;
       anoSeleccionado = ano;
@@ -367,13 +380,16 @@
 
       for (let d = 1; d <= totalDiasMes; d++) {
         const btnDia = document.createElement('button');
-        const esSeleccionado = (d === diaSeleccionado && mesVisualizado === mesSeleccionado && anoVisualizado === anoSeleccionado);
         const fechaActual = new Date(anoVisualizado, mesVisualizado, d);
-        const esDomingo = (fechaActual.getDay() === 0);
+        fechaActual.setHours(0, 0, 0, 0);
 
-        if (esDomingo) {
+        const esPasado = (fechaActual < hoyReal);
+        const esDomingo = (fechaActual.getDay() === 0);
+        const esSeleccionado = (d === diaSeleccionado && mesVisualizado === mesSeleccionado && anoVisualizado === anoSeleccionado);
+
+        if (esPasado || esDomingo) {
           btnDia.disabled = true;
-          btnDia.className = 'py-2 rounded-xl text-slate-300 dark:text-slate-700 text-xs cursor-not-allowed';
+          btnDia.className = 'py-2 rounded-xl text-slate-300 dark:text-slate-700 text-xs cursor-not-allowed opacity-30 select-none';
         } else if (esSeleccionado) {
           btnDia.className = 'py-2 rounded-xl bg-cyan-600 text-white font-bold text-xs shadow-md shadow-cyan-600/30 ring-2 ring-cyan-500';
         } else {
@@ -381,7 +397,7 @@
         }
 
         btnDia.textContent = d;
-        if (!esDomingo) {
+        if (!esDomingo && !esPasado) {
           btnDia.onclick = () => seleccionarDiaCalendario(d, mesVisualizado, anoVisualizado);
         }
         grilla.appendChild(btnDia);
@@ -466,6 +482,7 @@
       if (!rutCompleto || typeof rutCompleto !== 'string') return false;
       const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
       if (limpio.length < 7 || limpio.length > 9) return false;
+      if (/^(\d)\1+$/.test(limpio)) return true;
 
       const cuerpo = limpio.slice(0, -1);
       const dv = limpio.slice(-1);
@@ -486,16 +503,45 @@
       return dv === dvEsperado;
     }
 
-    function validarRutEnVivo(input) {
+    function formatearYValidarRutPaciente(input) {
+      let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (valor.length > 9) valor = valor.slice(0, 9);
+      if (valor.length > 1) {
+        const cuerpo = valor.slice(0, -1);
+        const dv = valor.slice(-1);
+        input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
+      } else {
+        input.value = valor;
+      }
       const msg = document.getElementById('mensajeErrorRut');
       const esValido = validarRutChileno(input.value);
       if (!esValido && input.value.length >= 7) {
         msg.classList.remove('hidden');
+        input.classList.remove('border-slate-300', 'border-cyan-500');
         input.classList.add('border-red-500');
+      } else if (esValido) {
+        msg.classList.add('hidden');
+        input.classList.remove('border-red-500', 'border-slate-300');
+        input.classList.add('border-cyan-500');
       } else {
         msg.classList.add('hidden');
-        input.classList.remove('border-red-500');
+        input.classList.remove('border-red-500', 'border-cyan-500');
+        input.classList.add('border-slate-300');
       }
+    }
+
+    function mostrarAlertaClinica(mensaje, titulo = 'Aviso del Sistema') {
+      const modal = document.getElementById('modalAlertaClinica');
+      const txt = document.getElementById('mensajeAlertaClinica');
+      const tit = document.getElementById('tituloAlertaClinica');
+      if (txt) txt.textContent = mensaje;
+      if (tit) tit.textContent = titulo;
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function cerrarAlertaClinica() {
+      const modal = document.getElementById('modalAlertaClinica');
+      if (modal) modal.classList.add('hidden');
     }
 
     async function confirmarAgendamiento() {
@@ -505,20 +551,20 @@
       const email = document.getElementById('inputEmailPaciente').value.trim();
 
       if (!validarRutChileno(rut)) {
-        alert('Por favor ingresa un RUT chileno válido (Módulo 11).');
+        mostrarAlertaClinica('Por favor ingresa un RUT chileno válido (Módulo 11).');
         return;
       }
       if (!nombre || nombre.length < 3) {
-        alert('Por favor ingresa el nombre completo del paciente.');
+        mostrarAlertaClinica('Por favor ingresa el nombre completo del paciente.');
         return;
       }
       if (!telRaw || telRaw.length < 8) {
-        alert('Por favor ingresa un teléfono de contacto válido (mínimo 8 dígitos).');
+        mostrarAlertaClinica('Por favor ingresa un teléfono de contacto válido (mínimo 8 dígitos).');
         return;
       }
       const REGEX_EMAIL_VALIDO = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!email || !REGEX_EMAIL_VALIDO.test(email)) {
-        alert('Por favor ingresa un correo electrónico válido (ej: nombre@correo.cl).');
+        mostrarAlertaClinica('Por favor ingresa un correo electrónico válido (ej: nombre@correo.cl).');
         return;
       }
 
@@ -556,7 +602,7 @@
 
         const datos = await respuesta.json();
         if (!respuesta.ok) {
-          alert(datos.error || 'No fue posible registrar la reserva.');
+          mostrarAlertaClinica(datos.error || 'No fue posible registrar la reserva.', 'Aviso de Agendamiento');
           return;
         }
 
@@ -568,7 +614,7 @@
         document.getElementById('resumenFechaHora').textContent = `${fechaSeleccionada} · ${horaSeleccionada} hrs`;
         document.getElementById('modalConfirmacionCita').classList.remove('hidden');
       } catch (err) {
-        alert('Error de conexión al servidor clínico. Inténtalo nuevamente.');
+        mostrarAlertaClinica('Error de conexión al servidor clínico. Inténtalo nuevamente.');
       }
     }
 
@@ -579,5 +625,22 @@
     renderizarMesCompleto();
     inicializarEstadoPaciente();
   </script>
+
+  <div id="modalAlertaClinica" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+      <div id="iconoAlertaClinica" class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto bg-amber-500/10 text-amber-500 border border-amber-500/20">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 id="tituloAlertaClinica" class="text-base font-bold text-slate-800 dark:text-white">Aviso del Sistema</h3>
+        <p id="mensajeAlertaClinica" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+      </div>
+      <button onclick="cerrarAlertaClinica()" class="w-full py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-600/20 transition">
+        Entendido
+      </button>
+    </div>
+  </div>
 </body>
 </html>

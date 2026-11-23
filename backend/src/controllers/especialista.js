@@ -38,6 +38,15 @@ function cambiarEstado(req, res) {
 
   try {
     const citaActualizada = actualizarEstadoCita(idCita, nuevoEstado);
+
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        db.query('UPDATE citas SET estado = $1 WHERE id::text = $2;', [nuevoEstado, idCita]).catch(() => {});
+      }
+    } catch (eDb) {
+    }
+
     registrarEvento('ESTADO_CITA_ACTUALIZADO', `Cita ${idCita} cambio a ${nuevoEstado}`, ip, citaActualizada.idMedico, 'INFO');
     return res.status(200).json({
       mensaje: 'Estado de cita actualizado exitosamente.',
@@ -118,6 +127,17 @@ function actualizarFichaConReautenticacion(req, res) {
     observaciones
   });
 
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      db.query(
+        'INSERT INTO fichas_clinicas (paciente_id, especialista_id, tipo_consulta, diagnostico_cifrado, tratamiento_realizado, observaciones) VALUES ((SELECT id FROM pacientes WHERE rut = $1 LIMIT 1), (SELECT id FROM especialistas WHERE nombre ILIKE $2 LIMIT 1), $3, $4, $5, $6);',
+        [rut, `%${medico.nombre}%`, tipoAtencion, diagnostico, tratamiento, observaciones || '']
+      ).catch(() => {});
+    }
+  } catch (eDb) {
+  }
+
   registrarEvento('FICHA_MODIFICADA_CON_EXITO', `Ficha del paciente ${rut} actualizada por ${medico.nombre}`, ip, idMedico, 'INFO');
 
   return res.status(200).json({
@@ -175,6 +195,27 @@ function emitirReceta(req, res) {
   const recetaFirmada = firmarReceta(recetaBase);
   guardarReceta(recetaFirmada);
 
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      db.query(
+        'INSERT INTO recetas (folio, paciente_id, especialista_id, indicaciones_generales, firma_hmac) VALUES ($1, (SELECT id FROM pacientes WHERE rut = $2 LIMIT 1), (SELECT id FROM especialistas WHERE nombre ILIKE $3 LIMIT 1), $4, $5) RETURNING id;',
+        [recetaFirmada.id, rutPaciente, `%${medico.nombre}%`, recetaFirmada.indicaciones, recetaFirmada.firmaHMAC]
+      ).then(rIns => {
+        if (rIns && rIns.rows && rIns.rows[0]) {
+          const recId = rIns.rows[0].id;
+          for (const item of medicamentos) {
+            db.query(
+              'INSERT INTO receta_items (receta_id, medicamento_id, nombre, dosis, presentacion, cantidad, frecuencia, dias, posologia, total_unidades) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);',
+              [recId, item.medicamentoId || 'MED-01', item.nombre || 'Medicamento', item.dosis || '', item.presentacion || '', String(item.cantidad || 1), item.frecuencia || '', String(item.dias || 1), item.posologia || '', parseInt(item.totalUnidades || 1, 10)]
+            ).catch(() => {});
+          }
+        }
+      }).catch(() => {});
+    }
+  } catch (eDb) {
+  }
+
   registrarEvento('RECETA_FIRMADA_EMITIDA', `Receta digital ${idReceta} emitida con HMAC-SHA256 para ${rutPaciente}`, ip, idMedico, 'INFO');
 
   return res.status(201).json({
@@ -223,6 +264,18 @@ function ingresarTurno(req, res) {
 
   try {
     const turno = guardarTurnoMedico({ idMedico, fecha, horaInicio, horaFin, sillon });
+
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        db.query(
+          'INSERT INTO turnos_especialistas (especialista_id, fecha, hora_inicio, hora_fin, sillon_numero, estado) VALUES ((SELECT id FROM especialistas WHERE nombre ILIKE $1 OR id::text = $2 LIMIT 1), $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING;',
+          [`%${turno.nombreMedico}%`, turno.idMedico, fecha, horaInicio, horaFin, parseInt(sillon || 1, 10), 'DISPONIBLE']
+        ).catch(() => {});
+      }
+    } catch (eDb) {
+    }
+
     registrarEvento('TURNO_MEDICO_REGISTRADO', `Nuevo turno para ${turno.nombreMedico} el ${fecha} a las ${horaInicio}`, ip, idMedico, 'INFO');
     return res.status(201).json({
       mensaje: 'Turno registrado exitosamente.',

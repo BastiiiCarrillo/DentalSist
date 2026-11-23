@@ -157,14 +157,35 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña Segura</label>
-          <input type="password" id="regPassword" oninput="limpiarErrorCampo('regPassword', 'feedbackPassword')" placeholder="Mínimo 8 car., mayúscula, número y especial" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
-          <span id="feedbackPassword" class="text-[11px] text-slate-400 mt-0.5 block">Debe incluir mayúscula, minúscula, número y caracter especial (!@#$...)</span>
+          <input type="password" id="regPassword" oninput="evaluarPasswordEnVivo()" placeholder="Mínimo 8 car., mayúscula, número y especial" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <div id="checklistPassword" class="mt-2 p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1 text-[11px]">
+            <div id="checkLargo" class="flex items-center gap-1.5 text-slate-400">
+              <span id="icoLargo" class="font-bold text-xs">○</span>
+              <span>Mínimo 8 caracteres</span>
+            </div>
+            <div id="checkMayus" class="flex items-center gap-1.5 text-slate-400">
+              <span id="icoMayus" class="font-bold text-xs">○</span>
+              <span>Al menos una letra mayúscula (A-Z)</span>
+            </div>
+            <div id="checkMinus" class="flex items-center gap-1.5 text-slate-400">
+              <span id="icoMinus" class="font-bold text-xs">○</span>
+              <span>Al menos una letra minúscula (a-z)</span>
+            </div>
+            <div id="checkNum" class="flex items-center gap-1.5 text-slate-400">
+              <span id="icoNum" class="font-bold text-xs">○</span>
+              <span>Al menos un número (0-9)</span>
+            </div>
+            <div id="checkEsp" class="flex items-center gap-1.5 text-slate-400">
+              <span id="icoEsp" class="font-bold text-xs">○</span>
+              <span>Al menos un caracter especial (!@#$...)</span>
+            </div>
+          </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Confirmar Contraseña</label>
-          <input type="password" id="regPasswordConfirm" oninput="limpiarErrorCampo('regPasswordConfirm', 'feedbackPasswordConfirm')" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
-          <span id="feedbackPasswordConfirm" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
+          <input type="password" id="regPasswordConfirm" oninput="evaluarConfirmacionEnVivo()" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <span id="feedbackPasswordConfirm" class="text-[11px] mt-0.5 block font-semibold hidden"></span>
         </div>
 
         <button onclick="ejecutarRegistro()" class="w-full bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-500 hover:to-cyan-400 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-teal-500/25">
@@ -251,6 +272,7 @@
       if (!rutCompleto || typeof rutCompleto !== 'string') return false;
       const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
       if (limpio.length < 7 || limpio.length > 9) return false;
+      if (/^(\d)\1+$/.test(limpio)) return true;
       const cuerpo = limpio.slice(0, -1);
       const dv = limpio.slice(-1);
       if (!/^\d+$/.test(cuerpo)) return false;
@@ -264,6 +286,82 @@
       const dvCalculadoNum = 11 - resto;
       let dvEsperado = dvCalculadoNum === 11 ? '0' : dvCalculadoNum === 10 ? 'K' : dvCalculadoNum.toString();
       return dv === dvEsperado;
+    }
+
+    function evaluarItemCheck(idItem, idIco, cumple) {
+      const el = document.getElementById(idItem);
+      const ico = document.getElementById(idIco);
+      if (!el || !ico) return;
+      if (cumple) {
+        el.className = 'flex items-center gap-1.5 text-teal-600 dark:text-teal-400 font-semibold';
+        ico.textContent = '✓';
+      } else {
+        el.className = 'flex items-center gap-1.5 text-slate-400 dark:text-slate-500 font-normal';
+        ico.textContent = '○';
+      }
+    }
+
+    function evaluarPasswordEnVivo() {
+      const input = document.getElementById('regPassword');
+      if (!input) return false;
+      const val = input.value;
+      const cLargo = val.length >= 8;
+      const cMayus = /[A-Z]/.test(val);
+      const cMinus = /[a-z]/.test(val);
+      const cNum = /[0-9]/.test(val);
+      const cEsp = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val);
+
+      evaluarItemCheck('checkLargo', 'icoLargo', cLargo);
+      evaluarItemCheck('checkMayus', 'icoMayus', cMayus);
+      evaluarItemCheck('checkMinus', 'icoMinus', cMinus);
+      evaluarItemCheck('checkNum', 'icoNum', cNum);
+      evaluarItemCheck('checkEsp', 'icoEsp', cEsp);
+
+      const todoOk = cLargo && cMayus && cMinus && cNum && cEsp;
+      if (val.length === 0) {
+        input.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-teal-500', 'ring-teal-500');
+        input.classList.add('border-slate-300');
+      } else if (todoOk) {
+        input.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-slate-300');
+        input.classList.add('border-teal-500', 'ring-1', 'ring-teal-500');
+      } else {
+        input.classList.remove('border-teal-500', 'ring-1', 'ring-teal-500', 'border-slate-300');
+        input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+      }
+
+      evaluarConfirmacionEnVivo();
+      return todoOk;
+    }
+
+    function evaluarConfirmacionEnVivo() {
+      const p1 = document.getElementById('regPassword').value;
+      const p2Input = document.getElementById('regPasswordConfirm');
+      const fb = document.getElementById('feedbackPasswordConfirm');
+      if (!p2Input || !fb) return false;
+      const p2 = p2Input.value;
+
+      if (p2.length === 0) {
+        p2Input.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-teal-500', 'ring-teal-500');
+        p2Input.classList.add('border-slate-300');
+        fb.classList.add('hidden');
+        return false;
+      }
+
+      if (p1 === p2 && p1.length >= 8) {
+        p2Input.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-slate-300');
+        p2Input.classList.add('border-teal-500', 'ring-1', 'ring-teal-500');
+        fb.textContent = '✓ Las contraseñas coinciden';
+        fb.className = 'text-[11px] text-teal-600 dark:text-teal-400 mt-0.5 block font-semibold';
+        fb.classList.remove('hidden');
+        return true;
+      } else {
+        p2Input.classList.remove('border-teal-500', 'ring-1', 'ring-teal-500', 'border-slate-300');
+        p2Input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+        fb.textContent = '✗ Las contraseñas no coinciden';
+        fb.className = 'text-[11px] text-red-500 mt-0.5 block font-semibold';
+        fb.classList.remove('hidden');
+        return false;
+      }
     }
 
     function formatearYValidarRutReg(input) {
@@ -449,7 +547,36 @@
         err.textContent = 'Error al comunicarse con el servidor.';
         err.classList.remove('hidden');
       }
+    function mostrarAlertaClinica(mensaje, titulo = 'Aviso del Sistema') {
+      const modal = document.getElementById('modalAlertaClinica');
+      const txt = document.getElementById('mensajeAlertaClinica');
+      const tit = document.getElementById('tituloAlertaClinica');
+      if (txt) txt.textContent = mensaje;
+      if (tit) tit.textContent = titulo;
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function cerrarAlertaClinica() {
+      const modal = document.getElementById('modalAlertaClinica');
+      if (modal) modal.classList.add('hidden');
     }
   </script>
+
+  <div id="modalAlertaClinica" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 text-center">
+      <div id="iconoAlertaClinica" class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto bg-amber-500/10 text-amber-500 border border-amber-500/20">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 id="tituloAlertaClinica" class="text-base font-bold text-slate-800 dark:text-white">Aviso del Sistema</h3>
+        <p id="mensajeAlertaClinica" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+      </div>
+      <button onclick="cerrarAlertaClinica()" class="w-full py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-600/20 transition">
+        Entendido
+      </button>
+    </div>
+  </div>
 </body>
 </html>
