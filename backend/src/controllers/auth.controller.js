@@ -15,7 +15,7 @@ const { ROLES } = require('../auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
 
-function login(req, res) {
+async function login(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const { identificador, password, rol } = req.body;
 
@@ -45,6 +45,30 @@ function login(req, res) {
       usuarioEncontrado = buscarUsuarioPorEmail(identificador);
     } else {
       usuarioEncontrado = buscarUsuarioPorRut(identificador);
+    }
+  }
+
+  if (!usuarioEncontrado) {
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const resDb = await db.query(
+          'SELECT * FROM usuarios WHERE LOWER(email) = LOWER($1) OR rut = $1 LIMIT 1;',
+          [identificador.trim()]
+        );
+        if (resDb.rows.length > 0) {
+          const uDb = resDb.rows[0];
+          usuarioEncontrado = {
+            id: uDb.id,
+            rut: uDb.rut,
+            nombre: uDb.nombre,
+            email: uDb.email,
+            rol: uDb.rol,
+            passwordHash: uDb.password_hash
+          };
+        }
+      }
+    } catch (eDb) {
     }
   }
 
@@ -110,12 +134,25 @@ function verificarToken(req, res, next) {
   }
 }
 
-function registro(req, res) {
+async function registro(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const { rut, nombre, email, telefono, password } = req.body;
 
   try {
     const nuevoUsuario = crearUsuario({ rut, nombre, email, telefono, password });
+
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const hash = bcrypt.hashSync(password, 10);
+        await db.query(
+          'INSERT INTO usuarios (rut, nombre, email, password_hash, rol, estado) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING;',
+          [nuevoUsuario.rutFormateado, nuevoUsuario.nombre, nuevoUsuario.email, hash, 'PACIENTE', 'ACTIVO']
+        );
+      }
+    } catch (eDb) {
+    }
+
     registrarEvento('REGISTRO_USUARIO_EXITOSO', `Nuevo usuario registrado: ${nuevoUsuario.email} (RUT: ${nuevoUsuario.rut})`, ip, nuevoUsuario.id, 'INFO');
 
     const token = jwt.sign(

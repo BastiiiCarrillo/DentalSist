@@ -38,7 +38,7 @@ function validarDatosReserva(body) {
   return null;
 }
 
-function reservarCita(req, res) {
+async function reservarCita(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const errorValidacion = validarDatosReserva(req.body);
 
@@ -59,6 +59,20 @@ function reservarCita(req, res) {
       especialidad: req.body.especialidad,
       esInvitado: req.body.esInvitado !== false
     });
+
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const partes = req.body.nombre.trim().split(' ');
+        const nom = partes[0] || 'Paciente';
+        const ape = partes.slice(1).join(' ') || 'Registrado';
+        await db.query(
+          'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO NOTHING;',
+          [cita.rutFormateado, nom, ape, '2000-01-01', req.body.telefono.trim(), req.body.email.trim().toLowerCase()]
+        );
+      }
+    } catch (eDb) {
+    }
 
     registrarEvento('RESERVA_CONFIRMADA', `Cita ${cita.id} agendada para ${cita.rutFormateado}`, ip, cita.rutPaciente, 'INFO');
     return res.status(201).json({
