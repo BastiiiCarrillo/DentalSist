@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DentalSis - Portal Paciente y Reserva de Horas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="login.html" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center shadow-md shadow-cyan-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </a>
+      <div>
+        <span class="text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300 bg-clip-text text-transparent">DentalSis</span>
+        <span class="text-xs block text-slate-500 dark:text-slate-400">Portal del Paciente · Agendamiento Seguro</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="alternarModoColor()" class="w-9 h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cambiar modo claro/oscuro">
+        <svg id="iconoSol" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg id="iconoLuna" class="w-4 h-4 block dark:hidden text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+
+      <a href="login.html" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        Cerrar Sesión
+      </a>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+
+    <div class="bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-cyan-500/20 rounded-2xl p-6">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Reserva y Agendamiento de Horas</h1>
+      <p class="text-slate-600 dark:text-slate-300 text-sm">Selecciona especialidad, día en el calendario interactivo y horario de atención para confirmar tu consulta dental.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <div class="lg:col-span-2 space-y-6">
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+          <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs flex items-center justify-center font-bold">1</span>
+            Selecciona Especialidad Dental
+          </h2>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <button onclick="seleccionarEspecialidad('Cirugía Bucal', this)" class="btn-especialidad p-3 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 text-xs font-bold text-left transition">
+              Cirugía Bucal
+            </button>
+            <button onclick="seleccionarEspecialidad('Odontología General', this)" class="btn-especialidad p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold text-left transition">
+              Odontología General
+            </button>
+            <button onclick="seleccionarEspecialidad('Ortodoncia', this)" class="btn-especialidad p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold text-left transition">
+              Ortodoncia
+            </button>
+            <button onclick="seleccionarEspecialidad('Endodoncia', this)" class="btn-especialidad p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold text-left transition">
+              Endodoncia
+            </button>
+            <button onclick="seleccionarEspecialidad('Periodoncia', this)" class="btn-especialidad p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold text-left transition">
+              Periodoncia
+            </button>
+            <button onclick="seleccionarEspecialidad('Odontopediatría', this)" class="btn-especialidad p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold text-left transition">
+              Odontopediatría
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs flex items-center justify-center font-bold">2</span>
+              Selecciona Fecha en el Calendario
+            </h2>
+            <div class="flex items-center gap-1.5 text-xs">
+              <button onclick="cambiarMesCalendario(-1)" class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <span id="tituloMesCalendario" class="font-bold px-2 text-slate-800 dark:text-slate-200">Noviembre 2026</span>
+              <button onclick="cambiarMesCalendario(1)" class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-bold text-slate-400 mb-1">
+            <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+          </div>
+          <div id="grillaDiasCalendario" class="grid grid-cols-7 gap-1.5 text-center text-xs">
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+          <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs flex items-center justify-center font-bold">3</span>
+            Horarios y Especialistas Disponibles
+          </h2>
+
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">Horarios para el <span id="textoFechaHorario" class="text-cyan-600 dark:text-cyan-400 font-bold">24 de Noviembre de 2026</span></label>
+            <div id="contenedorHoras" class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              <button onclick="seleccionarHora('09:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">09:00</button>
+              <button onclick="seleccionarHora('10:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">10:00</button>
+              <button onclick="seleccionarHora('11:00', this)" class="btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold">11:00</button>
+              <button onclick="seleccionarHora('12:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">12:00</button>
+              <button onclick="seleccionarHora('15:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">15:00</button>
+              <button onclick="seleccionarHora('16:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">16:00</button>
+              <button onclick="seleccionarHora('17:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">17:00</button>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">Médico asignado a ese bloque:</label>
+            <div id="contenedorMedicos" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div onclick="seleccionarMedico('Dr. Álvaro Soto M.', this)" class="card-medico p-3.5 rounded-2xl border-2 border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/30 flex items-center justify-between cursor-pointer transition">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-cyan-600 text-white font-bold flex items-center justify-center text-sm">AS</div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-white">Dr. Álvaro Soto M.</h4>
+                    <p class="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold">Cirugía Bucal · Sillón 1</p>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Disponible</span>
+              </div>
+
+              <div onclick="seleccionarMedico('Dra. Marcela Lagos V.', this)" class="card-medico p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center justify-between cursor-pointer transition">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold flex items-center justify-center text-sm">ML</div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-white">Dra. Marcela Lagos V.</h4>
+                    <p class="text-[11px] text-slate-500">Cirugía Bucal · Sillón 2</p>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Disponible</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="space-y-6">
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm sticky top-20">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">Datos del Paciente</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Completa tus datos para emitir la reserva</p>
+          </div>
+
+          <div class="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+            <button id="tabModoInvitado" onclick="cambiarModoReserva('invitado')" class="flex-1 py-1.5 rounded-lg font-bold bg-cyan-600 text-white shadow">
+              Como Invitado
+            </button>
+            <button id="tabModoCuenta" onclick="cambiarModoReserva('cuenta')" class="flex-1 py-1.5 rounded-lg font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+              Tengo Cuenta
+            </button>
+          </div>
+
+          <div class="space-y-3.5 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">RUT Chileno (con guión)</label>
+              <input type="text" id="inputRutPaciente" oninput="validarRutEnVivo(this)" value="18.234.901-1" placeholder="Ej: 18234901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <span id="mensajeErrorRut" class="text-[10px] text-red-500 font-semibold hidden block mt-0.5">RUT chileno inválido (Módulo 11 incorrecto).</span>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre Completo</label>
+              <input type="text" id="inputNombrePaciente" value="Camilo Vega Ortiz" placeholder="Nombre y Apellidos" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Teléfono Móvil</label>
+              <input type="tel" id="inputTelefonoPaciente" value="+56 9 8765 4321" placeholder="+56 9 1234 5678" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Correo Electrónico</label>
+              <input type="email" id="inputEmailPaciente" value="camilo.vega@correo.cl" placeholder="correo@ejemplo.cl" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+            <span class="text-[11px] font-bold text-slate-500 uppercase block">Resumen de Cita:</span>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Especialidad:</span>
+              <span id="resumenEspecialidad" class="font-bold text-slate-800 dark:text-slate-200">Cirugía Bucal</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Médico:</span>
+              <span id="resumenMedicoSidebar" class="font-bold text-slate-800 dark:text-slate-200">Dr. Álvaro Soto M.</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Fecha y Hora:</span>
+              <span id="resumenFechaHoraSidebar" class="font-bold text-cyan-600 dark:text-cyan-400">24 Nov 2026 · 11:00 hrs</span>
+            </div>
+          </div>
+
+          <button onclick="confirmarAgendamiento()" class="w-full bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-500/25 text-xs">
+            Confirmar Reserva de Hora
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <div id="modalConfirmacionCita" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-7 space-y-5 shadow-2xl">
+      <div class="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mx-auto shadow-inner">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+
+      <div class="text-center space-y-1">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">¡Cita Confirmada con Éxito!</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Comprobante de reserva oficial de DentalSis emitido</p>
+      </div>
+
+      <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
+          <span class="text-slate-500">Folio de Reserva:</span>
+          <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">#RES-2026-9901</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500">Paciente:</span>
+          <span id="resumenPaciente" class="font-bold text-slate-800 dark:text-slate-200">Camilo Vega Ortiz</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500">Especialista:</span>
+          <span id="resumenMedico" class="font-semibold text-slate-800 dark:text-slate-200">Dr. Álvaro Soto M.</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500">Fecha y Hora:</span>
+          <span id="resumenFechaHora" class="font-bold text-cyan-600 dark:text-cyan-400">24 Nov 2026 · 11:00 hrs</span>
+        </div>
+      </div>
+
+      <button onclick="cerrarModalConfirmacion()" class="w-full py-3 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/25 transition">
+        Aceptar y Guardar Comprobante
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let diaSeleccionado = 24;
+    let mesSeleccionado = 10;
+    let anoSeleccionado = 2026;
+    let fechaSeleccionada = '24 de Noviembre de 2026';
+    let horaSeleccionada = '11:00';
+    let medicoSeleccionado = 'Dr. Álvaro Soto M.';
+    let especialidadSeleccionada = 'Cirugía Bucal';
+
+    let mesVisualizado = 10;
+    let anoVisualizado = 2026;
+
+    const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    function alternarModoColor() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function seleccionarEspecialidad(esp, btn) {
+      especialidadSeleccionada = esp;
+      document.querySelectorAll('.btn-especialidad').forEach(b => {
+        b.className = 'btn-especialidad p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold text-left transition';
+      });
+      btn.className = 'btn-especialidad p-3 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 text-xs font-bold text-left transition';
+      document.getElementById('resumenEspecialidad').textContent = esp;
+    }
+
+    function cambiarMesCalendario(delta) {
+      mesVisualizado += delta;
+      if (mesVisualizado < 0) {
+        mesVisualizado = 11;
+        anoVisualizado--;
+      } else if (mesVisualizado > 11) {
+        mesVisualizado = 0;
+        anoVisualizado++;
+      }
+      renderizarMesCompleto();
+    }
+
+    function seleccionarDiaCalendario(dia, mes, ano) {
+      diaSeleccionado = dia;
+      mesSeleccionado = mes;
+      anoSeleccionado = ano;
+      fechaSeleccionada = `${dia} de ${nombresMeses[mes]} de ${ano}`;
+      document.getElementById('textoFechaHorario').textContent = fechaSeleccionada;
+      document.getElementById('resumenFechaHoraSidebar').textContent = `${dia} ${nombresMeses[mes].substring(0,3)} ${ano} · ${horaSeleccionada} hrs`;
+      renderizarMesCompleto();
+    }
+
+    function renderizarMesCompleto() {
+      const titulo = document.getElementById('tituloMesCalendario');
+      if (titulo) titulo.textContent = `${nombresMeses[mesVisualizado]} ${anoVisualizado}`;
+
+      const grilla = document.getElementById('grillaDiasCalendario');
+      if (!grilla) return;
+      grilla.innerHTML = '';
+
+      const primerDiaSemana = new Date(anoVisualizado, mesVisualizado, 1).getDay();
+      const totalDiasMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
+
+      for (let i = 0; i < primerDiaSemana; i++) {
+        const spanVacio = document.createElement('div');
+        spanVacio.className = 'py-2';
+        grilla.appendChild(spanVacio);
+      }
+
+      for (let d = 1; d <= totalDiasMes; d++) {
+        const btnDia = document.createElement('button');
+        const esSeleccionado = (d === diaSeleccionado && mesVisualizado === mesSeleccionado && anoVisualizado === anoSeleccionado);
+        const fechaActual = new Date(anoVisualizado, mesVisualizado, d);
+        const esDomingo = (fechaActual.getDay() === 0);
+
+        if (esDomingo) {
+          btnDia.disabled = true;
+          btnDia.className = 'py-2 rounded-xl text-slate-300 dark:text-slate-700 text-xs cursor-not-allowed';
+        } else if (esSeleccionado) {
+          btnDia.className = 'py-2 rounded-xl bg-cyan-600 text-white font-bold text-xs shadow-md shadow-cyan-600/30 ring-2 ring-cyan-500';
+        } else {
+          btnDia.className = 'py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-xs transition';
+        }
+
+        btnDia.textContent = d;
+        if (!esDomingo) {
+          btnDia.onclick = () => seleccionarDiaCalendario(d, mesVisualizado, anoVisualizado);
+        }
+        grilla.appendChild(btnDia);
+      }
+    }
+
+    function seleccionarHora(h, btn) {
+      horaSeleccionada = h;
+      document.querySelectorAll('.btn-hora').forEach(b => {
+        b.className = 'btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500';
+      });
+      btn.className = 'btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold';
+      document.getElementById('resumenFechaHoraSidebar').textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · ${horaSeleccionada} hrs`;
+    }
+
+    function seleccionarMedico(nombre, card) {
+      medicoSeleccionado = nombre;
+      document.querySelectorAll('.card-medico').forEach(c => {
+        c.className = 'card-medico p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-center justify-between cursor-pointer transition';
+      });
+      card.className = 'card-medico p-3.5 rounded-2xl border-2 border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/30 flex items-center justify-between cursor-pointer transition';
+      document.getElementById('resumenMedicoSidebar').textContent = nombre;
+    }
+
+    function cambiarModoReserva(modo) {
+      const bInvitado = document.getElementById('tabModoInvitado');
+      const bCuenta = document.getElementById('tabModoCuenta');
+
+      if (modo === 'invitado') {
+        bInvitado.className = 'flex-1 py-1.5 rounded-lg font-bold bg-cyan-600 text-white shadow';
+        bCuenta.className = 'flex-1 py-1.5 rounded-lg font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      } else {
+        bCuenta.className = 'flex-1 py-1.5 rounded-lg font-bold bg-cyan-600 text-white shadow';
+        bInvitado.className = 'flex-1 py-1.5 rounded-lg font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      }
+    }
+
+    function validarRutChileno(rutCompleto) {
+      if (!rutCompleto || typeof rutCompleto !== 'string') return false;
+      const limpio = rutCompleto.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (limpio.length < 8 || limpio.length > 9) return false;
+
+      const cuerpo = limpio.slice(0, -1);
+      const dv = limpio.slice(-1);
+
+      let suma = 0;
+      let multiplo = 2;
+      for (let i = cuerpo.length - 1; i >= 0; i--) {
+        suma += parseInt(cuerpo[i], 10) * multiplo;
+        multiplo = multiplo < 7 ? multiplo + 1 : 2;
+      }
+
+      const resto = 11 - (suma % 11);
+      let dvEsperado = '0';
+      if (resto === 11) dvEsperado = '0';
+      else if (resto === 10) dvEsperado = 'K';
+      else dvEsperado = String(resto);
+
+      return dv === dvEsperado;
+    }
+
+    function validarRutEnVivo(input) {
+      const msg = document.getElementById('mensajeErrorRut');
+      const esValido = validarRutChileno(input.value);
+      if (!esValido && input.value.length >= 8) {
+        msg.classList.remove('hidden');
+        input.classList.add('border-red-500');
+      } else {
+        msg.classList.add('hidden');
+        input.classList.remove('border-red-500');
+      }
+    }
+
+    function confirmarAgendamiento() {
+      const rut = document.getElementById('inputRutPaciente').value.trim();
+      const nombre = document.getElementById('inputNombrePaciente').value.trim();
+      if (!validarRutChileno(rut)) {
+        alert('Por favor ingresa un RUT chileno válido (Módulo 11).');
+        return;
+      }
+      if (!nombre) {
+        alert('Por favor ingresa el nombre del paciente.');
+        return;
+      }
+
+      document.getElementById('resumenPaciente').textContent = nombre;
+      document.getElementById('resumenMedico').textContent = medicoSeleccionado;
+      document.getElementById('resumenFechaHora').textContent = `${fechaSeleccionada} · ${horaSeleccionada} hrs`;
+      document.getElementById('modalConfirmacionCita').classList.remove('hidden');
+    }
+
+    function cerrarModalConfirmacion() {
+      document.getElementById('modalConfirmacionCita').classList.add('hidden');
+    }
+
+    renderizarMesCompleto();
+  </script>
+</body>
+</html>
