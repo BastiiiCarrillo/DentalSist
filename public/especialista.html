@@ -34,7 +34,7 @@
 
   <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <a href="login.html" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center shadow-md shadow-cyan-500/20">
+      <a href="/login" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center shadow-md shadow-cyan-500/20">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
         </svg>
@@ -648,6 +648,11 @@
   </div>
 
   <script>
+    if (window.location.pathname.endsWith('.html')) {
+      const rutaLimpia = window.location.pathname.replace(/\.html$/, '') || '/';
+      window.history.replaceState(null, '', rutaLimpia + window.location.search);
+    }
+
     const MEDICAMENTOS_DB = [
       { id:"AMOX-250", nombre:"Amoxicilina", dosis:"250mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
       { id:"AMOX-500", nombre:"Amoxicilina", dosis:"500mg", presentacion:"Cápsulas", categoria:"Antibiótico", unidad:"cápsula" },
@@ -1143,14 +1148,14 @@
       const token = sessionStorage.getItem('dentalsis_token');
       const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
       if (!token || !usuarioRaw) {
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return null;
       }
       try {
         const u = JSON.parse(usuarioRaw);
         const rol = (u.rol || '').toLowerCase();
         if (rol !== 'odontologo' && rol !== 'odontólogo' && rol !== 'superadmin' && rol !== 'admin') {
-          window.location.href = 'login.html';
+          window.location.href = '/login';
           return null;
         }
         medicoActual = u;
@@ -1160,7 +1165,7 @@
         if (badgeTurno) badgeTurno.classList.remove('hidden');
         return u;
       } catch (e) {
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return null;
       }
     }
@@ -1169,7 +1174,7 @@
       sessionStorage.clear();
       localStorage.removeItem('dentalsis_token');
       localStorage.removeItem('dentalsis_usuario');
-      window.location.href = 'login.html';
+      window.location.href = '/login';
     }
 
     async function cargarAgendaMedico() {

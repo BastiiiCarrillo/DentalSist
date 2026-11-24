@@ -54,7 +54,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
         </svg>
       </button>
-      <a href="paciente.html" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white shadow transition">
+      <a href="/paciente" class="px-4 py-2 text-xs font-bold rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white shadow transition">
         Reservar Hora
       </a>
     </div>
@@ -126,7 +126,7 @@
 
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 text-center space-y-3">
           <p class="text-xs text-slate-500 dark:text-slate-400">¿No tienes cuenta y necesitas atenderte?</p>
-          <a href="paciente.html" onclick="sessionStorage.clear(); localStorage.removeItem('dentalsis_token'); localStorage.removeItem('dentalsis_usuario');" class="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5">
+          <a href="/paciente" onclick="sessionStorage.clear(); localStorage.removeItem('dentalsis_token'); localStorage.removeItem('dentalsis_usuario');" class="w-full py-2.5 rounded-xl border border-dashed border-cyan-500/50 hover:bg-cyan-50 dark:hover:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -242,6 +242,11 @@
   </footer>
 
   <script>
+    if (window.location.pathname.endsWith('.html')) {
+      const rutaLimpia = window.location.pathname.replace(/\.html$/, '') || '/';
+      window.history.replaceState(null, '', rutaLimpia + window.location.search);
+    }
+
     let rolSeleccionado = 'paciente';
 
     function seleccionarRolLogin(rol) {
@@ -565,7 +570,7 @@
           exito.textContent = '¡Cuenta creada con éxito! Redirigiendo a tu portal de paciente...';
           exito.classList.remove('hidden');
           setTimeout(() => {
-            window.location.href = 'paciente.html';
+            window.location.href = '/paciente';
           }, 1000);
           return;
         } else {
@@ -659,9 +664,9 @@
 
         const rolUsuario = (datos.usuario && datos.usuario.rol) ? datos.usuario.rol.toLowerCase() : '';
         if (rolUsuario === 'odontologo' || rolUsuario === 'odontólogo' || rolUsuario === 'medico' || rolUsuario === 'especialista' || rolUsuario === 'superadmin' || rolUsuario === 'admin') {
-          window.location.href = 'especialista.html';
+          window.location.href = '/especialista';
         } else {
-          window.location.href = 'paciente.html';
+          window.location.href = '/paciente';
         }
       } catch (e) {
         err.textContent = 'Error al comunicarse con el servidor.';

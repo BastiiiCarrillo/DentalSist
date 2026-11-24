@@ -41,6 +41,15 @@ const rutaPublica = fs.existsSync(path.join(__dirname, '../../public'))
   ? path.join(__dirname, '../../public')
   : path.join(__dirname, '../public');
 
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path.endsWith('.html')) {
+    const base = req.path.slice(0, -5);
+    const destino = (base === '/index' || base === '') ? '/' : base;
+    return res.redirect(301, destino);
+  }
+  next();
+});
+
 app.use(express.static(rutaPublica));
 
 app.use('/api/auth', authRutas);
@@ -57,6 +66,10 @@ app.get('/api/auditoria', verificarToken, verificarRol('SuperAdmin', 'Admin'), (
 
 app.get('/api/salud', (req, res) => {
   res.status(200).json({ estado: 'OPERATIVO', timestamp: new Date().toISOString() });
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(rutaPublica, 'index.html'));
 });
 
 app.get('/login', (req, res) => {
