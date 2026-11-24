@@ -211,7 +211,7 @@ async function consultarDisponibilidad(req, res) {
   try {
     const db = require('../models/db');
     if (db.obtenerPool()) {
-      let q = 'SELECT TO_CHAR(hora_inicio, \'HH24:MI\') as hora FROM citas WHERE fecha = $1::date AND estado != \'CANCELADA\'';
+      let q = 'SELECT hora_inicio::text as hora FROM citas WHERE fecha = $1::date AND estado != \'CANCELADA\'';
       const params = [fecha];
       if (espUuid || sillon) {
         q += ' AND (especialista_id = $2 OR sillon_numero = $3)';
@@ -220,7 +220,7 @@ async function consultarDisponibilidad(req, res) {
       const r = await db.query(q, params);
       if (r && r.rows) {
         r.rows.forEach(row => {
-          const h = (row.hora || '').slice(0, 5);
+          const h = (String(row.hora || '')).slice(0, 5);
           if (h && !horasOcupadas.includes(h)) {
             horasOcupadas.push(h);
           }
