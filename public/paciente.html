@@ -740,14 +740,12 @@
     function formatearYValidarRutPaciente(input) {
       let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
       if (valor.length > 9) valor = valor.slice(0, 9);
-      if (valor.length === 1) {
-        input.value = valor + '-';
-      } else if (valor.length > 1) {
+      if (valor.length <= 1) {
+        input.value = valor;
+      } else {
         const cuerpo = valor.slice(0, -1);
         const dv = valor.slice(-1);
         input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
-      } else {
-        input.value = '';
       }
       const msg = document.getElementById('mensajeErrorRut');
       const esValido = validarRutChileno(input.value);
