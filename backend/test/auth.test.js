@@ -49,7 +49,7 @@ describe('Modulo de autenticacion y roles', () => {
 
 });
 
-test('Flujo de autenticacion exitosa y generacion de token JWT', () => {
+test('Flujo de autenticacion exitosa y generacion de token JWT', async () => {
   let statusCapturado = null;
   let jsonCapturado = null;
 
@@ -72,7 +72,7 @@ test('Flujo de autenticacion exitosa y generacion de token JWT', () => {
     }
   };
 
-  login(reqEspecialista, resMock);
+  await login(reqEspecialista, resMock);
   assert.strictEqual(statusCapturado, 200);
   assert.ok(jsonCapturado.token);
   assert.strictEqual(jsonCapturado.usuario.email, 'alvaro.soto@dentalsis.cl');
@@ -91,7 +91,7 @@ test('Flujo de autenticacion exitosa y generacion de token JWT', () => {
   assert.strictEqual(reqVerificar.usuario.id, 'DOC-1');
 });
 
-test('Rechazo de login ante credenciales erroneas', () => {
+test('Rechazo de login ante credenciales erroneas', async () => {
   let statusCapturado = null;
   let jsonCapturado = null;
 
@@ -114,12 +114,12 @@ test('Rechazo de login ante credenciales erroneas', () => {
     }
   };
 
-  login(reqErroneo, resMock);
+  await login(reqErroneo, resMock);
   assert.strictEqual(statusCapturado, 401);
   assert.ok(jsonCapturado.error.includes('invalidas'));
 });
 
-test('Registro de nuevo usuario con validacion de RUT y hashing de clave', () => {
+test('Registro de nuevo usuario con validacion de RUT y hashing de clave', async () => {
   let statusCapturado = null;
   let jsonCapturado = null;
 
@@ -144,7 +144,7 @@ test('Registro de nuevo usuario con validacion de RUT y hashing de clave', () =>
     }
   };
 
-  registro(reqRegistroValido, resMock);
+  await registro(reqRegistroValido, resMock);
   assert.strictEqual(statusCapturado, 201);
   assert.ok(jsonCapturado.token);
   assert.strictEqual(jsonCapturado.usuario.rut, '198765430');
@@ -173,12 +173,12 @@ test('Registro de nuevo usuario con validacion de RUT y hashing de clave', () =>
     }
   };
 
-  registro(reqRutMalo, resFalloMock);
+  await registro(reqRutMalo, resFalloMock);
   assert.strictEqual(statusFallo, 400);
   assert.ok(jsonFallo.error.includes('invalido'));
 });
 
-test('Autenticacion exitosa de Super Admin con clave segura actualizada', () => {
+test('Autenticacion exitosa de Super Admin con clave segura actualizada', async () => {
   let statusCapturado = null;
   let jsonCapturado = null;
 
@@ -201,7 +201,7 @@ test('Autenticacion exitosa de Super Admin con clave segura actualizada', () => 
     }
   };
 
-  login(reqAdmin, resMock);
+  await login(reqAdmin, resMock);
   assert.strictEqual(statusCapturado, 200);
   assert.ok(jsonCapturado.token);
   assert.strictEqual(jsonCapturado.usuario.email, 'admin@dentalsis.cl');

@@ -16,7 +16,7 @@ const { ROLES } = require('../auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
 
-function login(req, res) {
+async function login(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const { identificador, password, rol } = req.body;
 
@@ -40,6 +40,31 @@ function login(req, res) {
       usuarioEncontrado = buscarUsuarioPorRut(identificador);
     }
     if (!usuarioEncontrado) {
+      try {
+        const db = require('../models/db');
+        if (db.obtenerPool()) {
+          const idLimpio = identificador.trim().toLowerCase();
+          const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
+          const rEsp = await db.query(
+            'SELECT id, nombre, email, rut, especialidad, password_hash as "passwordHash", sillon_numero as sillon, activo FROM especialistas WHERE LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+            [idLimpio, '.', '', '-', '', rutLimpio]
+          );
+          if (rEsp.rows && rEsp.rows.length > 0) {
+            usuarioEncontrado = { ...rEsp.rows[0], rol: 'Odontologo' };
+          } else {
+            const rDb = await db.query(
+              'SELECT id, nombre, email, rut, telefono, password_hash as "passwordHash", rol, estado FROM usuarios WHERE (LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6) AND (UPPER(rol) = $7 OR UPPER(rol) = $8) LIMIT 1;',
+              [idLimpio, '.', '', '-', '', rutLimpio, 'ODONTOLOGO', 'SUPERADMIN']
+            );
+            if (rDb.rows && rDb.rows.length > 0) {
+              usuarioEncontrado = rDb.rows[0];
+            }
+          }
+        }
+      } catch (eDb) {
+      }
+    }
+    if (!usuarioEncontrado) {
       registrarFalloLogin(ip, identificador);
       return res.status(401).json({ error: 'No se encontro una cuenta de especialista con estas credenciales.' });
     }
@@ -53,6 +78,31 @@ function login(req, res) {
       usuarioEncontrado = buscarUsuarioPorRut(identificador);
       if (!usuarioEncontrado) {
         usuarioEncontrado = buscarMedicoPorRut(identificador);
+      }
+    }
+    if (!usuarioEncontrado) {
+      try {
+        const db = require('../models/db');
+        if (db.obtenerPool()) {
+          const idLimpio = identificador.trim().toLowerCase();
+          const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
+          const rDb = await db.query(
+            'SELECT id, nombre, email, rut, telefono, password_hash as "passwordHash", rol, estado FROM usuarios WHERE LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+            [idLimpio, '.', '', '-', '', rutLimpio]
+          );
+          if (rDb.rows && rDb.rows.length > 0) {
+            usuarioEncontrado = rDb.rows[0];
+          } else {
+            const rEsp = await db.query(
+              'SELECT id, nombre, email, rut, especialidad, password_hash as "passwordHash", sillon_numero as sillon, activo FROM especialistas WHERE LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+              [idLimpio, '.', '', '-', '', rutLimpio]
+            );
+            if (rEsp.rows && rEsp.rows.length > 0) {
+              usuarioEncontrado = { ...rEsp.rows[0], rol: 'Odontologo' };
+            }
+          }
+        }
+      } catch (eDb) {
       }
     }
     if (!usuarioEncontrado) {
@@ -119,7 +169,7 @@ function verificarToken(req, res, next) {
   }
 }
 
-function registro(req, res) {
+async function registro(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const { rut, nombre, email, telefono, password } = req.body;
 
@@ -130,38 +180,34 @@ function registro(req, res) {
       const db = require('../models/db');
       if (db.obtenerPool()) {
         const hash = bcrypt.hashSync(password, 10);
-        db.query('SELECT id FROM usuarios WHERE email = $1 OR rut = $2;', [nuevoUsuario.email, nuevoUsuario.rutFormateado])
-          .then(async (rCheck) => {
-            if (rCheck.rows && rCheck.rows.length > 0) {
-              await db.query(
-                'UPDATE usuarios SET password_hash = $1, nombre = $2, rut = $3, email = $4 WHERE id = $5;',
-                [hash, nuevoUsuario.nombre, nuevoUsuario.rutFormateado, nuevoUsuario.email, rCheck.rows[0].id]
-              );
-            } else {
-              await db.query(
-                'INSERT INTO usuarios (rut, nombre, email, password_hash, rol, estado) VALUES ($1, $2, $3, $4, $5, $6);',
-                [nuevoUsuario.rutFormateado, nuevoUsuario.nombre, nuevoUsuario.email, hash, 'PACIENTE', 'ACTIVO']
-              );
-            }
-          }).catch(() => {});
+        const rCheck = await db.query('SELECT id FROM usuarios WHERE email = $1 OR rut = $2;', [nuevoUsuario.email, nuevoUsuario.rutFormateado]);
+        if (rCheck.rows && rCheck.rows.length > 0) {
+          await db.query(
+            'UPDATE usuarios SET password_hash = $1, nombre = $2, rut = $3, email = $4 WHERE id = $5;',
+            [hash, nuevoUsuario.nombre, nuevoUsuario.rutFormateado, nuevoUsuario.email, rCheck.rows[0].id]
+          );
+        } else {
+          await db.query(
+            'INSERT INTO usuarios (rut, nombre, email, password_hash, rol, estado) VALUES ($1, $2, $3, $4, $5, $6);',
+            [nuevoUsuario.rutFormateado, nuevoUsuario.nombre, nuevoUsuario.email, hash, 'PACIENTE', 'ACTIVO']
+          );
+        }
 
         const partes = nuevoUsuario.nombre.trim().split(' ');
         const nomP = partes[0] || 'Paciente';
         const apeP = partes.slice(1).join(' ') || 'Registrado';
-        db.query('SELECT id FROM pacientes WHERE rut = $1 OR email = $2;', [nuevoUsuario.rutFormateado, nuevoUsuario.email])
-          .then(async (rPacCheck) => {
-            if (rPacCheck.rows && rPacCheck.rows.length > 0) {
-              await db.query(
-                'UPDATE pacientes SET nombre = $1, apellido = $2, telefono = $3, email = $4, rut = $5 WHERE id = $6;',
-                [nomP, apeP, nuevoUsuario.telefono, nuevoUsuario.email, nuevoUsuario.rutFormateado, rPacCheck.rows[0].id]
-              );
-            } else {
-              await db.query(
-                'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6);',
-                [nuevoUsuario.rutFormateado, nomP, apeP, '2000-01-01', nuevoUsuario.telefono, nuevoUsuario.email]
-              );
-            }
-          }).catch(() => {});
+        const rPacCheck = await db.query('SELECT id FROM pacientes WHERE rut = $1 OR email = $2;', [nuevoUsuario.rutFormateado, nuevoUsuario.email]);
+        if (rPacCheck.rows && rPacCheck.rows.length > 0) {
+          await db.query(
+            'UPDATE pacientes SET nombre = $1, apellido = $2, telefono = $3, email = $4, rut = $5 WHERE id = $6;',
+            [nomP, apeP, nuevoUsuario.telefono, nuevoUsuario.email, nuevoUsuario.rutFormateado, rPacCheck.rows[0].id]
+          );
+        } else {
+          await db.query(
+            'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6);',
+            [nuevoUsuario.rutFormateado, nomP, apeP, '2000-01-01', nuevoUsuario.telefono, nuevoUsuario.email]
+          );
+        }
       }
     } catch (eDb) {
     }
