@@ -11,6 +11,7 @@ const {
 const { firmarReceta, verificarFirmaReceta } = require('../src/services/recetaCrypto');
 const {
   actualizarFichaConReautenticacion,
+  autorizarAccesoHistorial,
   emitirReceta,
   verificarRecetaPublica
 } = require('../src/controllers/especialista');
@@ -122,6 +123,60 @@ describe('Modulo de Especialista, Fichas Clinicas y Recetas', () => {
     actualizarFichaConReautenticacion(reqPassBuena, resMock);
     assert.strictEqual(statusCapturado, 200);
     assert.ok(jsonCapturado.registro.id);
+  });
+
+  test('Firma electronica obligatoria de especialista para consultar historial clinico', async () => {
+    let statusCapturado = null;
+    let jsonCapturado = null;
+
+    const resMock = {
+      status: (code) => {
+        statusCapturado = code;
+        return {
+          json: (data) => {
+            jsonCapturado = data;
+          }
+        };
+      }
+    };
+
+    const reqSinClave = {
+      body: {
+        rutPaciente: '18.234.901-1',
+        idMedico: 'DOC-1'
+      }
+    };
+
+    await autorizarAccesoHistorial(reqSinClave, resMock);
+    assert.strictEqual(statusCapturado, 401);
+    assert.ok(jsonCapturado.error.includes('Firma electronica obligatoria'));
+
+    const reqClaveErronea = {
+      body: {
+        rutPaciente: '18.234.901-1',
+        idMedico: 'DOC-1',
+        passwordConfirmacion: 'ClaveIncorrecta999'
+      }
+    };
+
+    await autorizarAccesoHistorial(reqClaveErronea, resMock);
+    assert.strictEqual(statusCapturado, 403);
+    assert.ok(jsonCapturado.error.includes('rechazada'));
+
+    const reqClaveCorrecta = {
+      usuario: { id: 'DOC-1', rol: 'Odontologo' },
+      body: {
+        rutPaciente: '18.234.901-1',
+        passwordConfirmacion: 'SotoCirugia2026!Clinica'
+      }
+    };
+
+    await autorizarAccesoHistorial(reqClaveCorrecta, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.strictEqual(jsonCapturado.ok, true);
+    assert.ok(jsonCapturado.firma);
+    assert.strictEqual(jsonCapturado.firma.especialista, 'Dr. Álvaro Soto M.');
+    assert.ok(jsonCapturado.ficha);
   });
 
   test('Emision y firma criptografica HMAC-SHA256 de receta medica', () => {

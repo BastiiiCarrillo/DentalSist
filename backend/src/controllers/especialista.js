@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt');
 const {
   buscarMedicoPorId,
+  buscarMedicoPorEmail,
+  buscarMedicoPorRut,
   obtenerCitasPorMedico,
   obtenerCitasPorPaciente,
   actualizarEstadoCita,
@@ -395,10 +397,161 @@ function ingresarTurno(req, res) {
   }
 }
 
+async function autorizarAccesoHistorial(req, res) {
+  const { rutPaciente, passwordConfirmacion } = req.body;
+  const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
+  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+
+  if (!rutPaciente || !validarRutChileno(rutPaciente)) {
+    return res.status(400).json({ error: 'RUT chileno de paciente invalido.' });
+  }
+
+  if (!idMedico) {
+    return res.status(400).json({ error: 'Identificador de medico especialista requerido.' });
+  }
+
+  let medico = buscarMedicoPorId(idMedico);
+  if (!medico && req.usuario) {
+    if (req.usuario.rut) medico = buscarMedicoPorRut(req.usuario.rut);
+    if (!medico && req.usuario.email) medico = buscarMedicoPorEmail(req.usuario.email);
+  }
+
+  if (!medico) {
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const rU = await db.query(
+          'SELECT id, nombre, email, rut, password_hash as "passwordHash" FROM usuarios WHERE id::text = $1 OR rut = $2 OR email = $3 LIMIT 1;',
+          [String(idMedico), req.usuario ? req.usuario.rut || '' : '', req.usuario ? req.usuario.email || '' : '']
+        );
+        if (rU.rows && rU.rows.length > 0) {
+          medico = {
+            id: rU.rows[0].id,
+            nombre: rU.rows[0].nombre,
+            email: rU.rows[0].email,
+            rut: rU.rows[0].rut,
+            passwordHash: rU.rows[0].passwordHash
+          };
+        }
+      }
+    } catch (eDb) {
+    }
+  }
+
+  if (!medico) {
+    return res.status(404).json({ error: 'Medico especialista no encontrado.' });
+  }
+
+  if (!passwordConfirmacion) {
+    registrarEvento('FIRMA_ACCESO_HISTORIAL_FALLIDA', `Intento de acceso a historial de paciente ${rutPaciente} sin clave`, ip, idMedico, 'ALERTA');
+    return res.status(401).json({
+      error: 'Firma electronica obligatoria: Ingrese su contrasena para firmar el acceso al historial clinico.'
+    });
+  }
+
+  const passwordValida = bcrypt.compareSync(passwordConfirmacion, medico.passwordHash);
+  if (!passwordValida) {
+    registrarEvento('FIRMA_ACCESO_HISTORIAL_DENEGADA', `Intento no autorizado de consulta de historial para paciente ${rutPaciente} con contrasena incorrecta`, ip, idMedico, 'PELIGRO');
+    return res.status(403).json({
+      error: 'Firma electronica rechazada: Contrasena de especialista incorrecta. Acceso registrado en auditoria.'
+    });
+  }
+
+  const rutLimpio = rutPaciente.replace(/[^0-9kK]/g, '').toUpperCase();
+  registrarEvento('FIRMA_ACCESO_HISTORIAL_EXITOSA', `Especialista ${medico.nombre} (ID ${medico.id}) firmo con clave y accedio al historial clinico del paciente ${rutLimpio}`, ip, idMedico, 'INFO');
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      await db.query(
+        'INSERT INTO eventos_seguridad (tipo_evento, descripcion, severidad, usuario_id, ip_origen) VALUES ($1, $2, $3, $4, $5);',
+        ['FIRMA_ACCESO_HISTORIAL_EXITOSA', `Especialista ${medico.nombre} firmo con clave y accedio al historial de paciente ${rutLimpio}`, 'INFO', String(medico.id), ip]
+      );
+    }
+  } catch (eDb) {
+  }
+
+  let ficha = obtenerFichaClinica(rutPaciente);
+  let nombrePaciente = 'Paciente';
+  let telefono = '+56 9 8765 4321';
+  let email = '';
+  let alergias = 'Sin alergias conocidas';
+  let antecedentes = 'Sin antecedentes sistemicos de riesgo';
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const rPac = await db.query(
+        'SELECT nombre, apellido, telefono, email, alergias_cifradas, antecedentes_cifrados FROM pacientes WHERE REPLACE(REPLACE(rut, $1, $2), $3, $4) = $5 LIMIT 1;',
+        ['.', '', '-', '', rutLimpio]
+      );
+      if (rPac.rows.length > 0) {
+        nombrePaciente = `${rPac.rows[0].nombre} ${rPac.rows[0].apellido}`.trim();
+        telefono = rPac.rows[0].telefono || telefono;
+        email = rPac.rows[0].email || '';
+      }
+    }
+  } catch (eDb) {
+  }
+
+  if (!ficha) {
+    ficha = {
+      id: `FICHA-${rutLimpio}`,
+      rutPaciente: rutLimpio,
+      rutFormateado: formatearRut(rutLimpio),
+      nombrePaciente,
+      telefono,
+      email,
+      alergias,
+      antecedentes,
+      historialConsultas: []
+    };
+  }
+
+  let citasPrevias = obtenerCitasPorPaciente(rutPaciente);
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const rCitas = await db.query(
+        'SELECT c.id, c.fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        ['.', '', '-', '', rutLimpio]
+      );
+      if (rCitas.rows && rCitas.rows.length > 0) {
+        citasPrevias = rCitas.rows.map(r => ({
+          id: r.id,
+          fecha: r.fecha instanceof Date ? r.fecha.toISOString().split('T')[0] : String(r.fecha).substring(0, 10),
+          hora: String(r.hora).substring(0, 5),
+          especialidad: r.especialidad,
+          estado: r.estado,
+          sillon: 'Sillon ' + r.sillon,
+          nombreMedico: r.nombreMedico || 'Especialista Dental'
+        }));
+      }
+    }
+  } catch (eDb) {
+  }
+
+  ficha.citasPrevias = citasPrevias;
+
+  return res.status(200).json({
+    ok: true,
+    mensaje: 'Firma electronica verificada con exito. Acceso al historial clinico registrado en auditoria.',
+    firma: {
+      especialista: medico.nombre,
+      idMedico: medico.id,
+      rutEspecialista: medico.rut,
+      rutPaciente: rutLimpio,
+      fechaHora: new Date().toISOString()
+    },
+    ficha
+  });
+}
+
 module.exports = {
   obtenerAgenda,
   cambiarEstado,
   obtenerFichaPaciente,
+  autorizarAccesoHistorial,
   actualizarFichaConReautenticacion,
   emitirReceta,
   verificarRecetaPublica,

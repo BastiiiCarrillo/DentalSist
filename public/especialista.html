@@ -79,6 +79,34 @@
       </div>
     </div>
 
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            Consultar Historial Clínico de Paciente
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Consulta el historial de cualquier paciente firmando con tu contraseña de especialista</p>
+        </div>
+        <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-500/20">
+          Acceso Firmado y Auditado
+        </span>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <div class="flex-1 relative">
+          <input type="text" id="inputRutBusquedaHistorial" placeholder="Ingresa RUT de paciente... ej: 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500" onkeydown="if(event.key==='Enter') buscarPacientePorRutConFirma()">
+        </div>
+        <button onclick="buscarPacientePorRutConFirma()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+          Firmar y Consultar Historial
+        </button>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <div class="space-y-6">
@@ -109,7 +137,7 @@
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 class="text-lg font-bold text-slate-900 dark:text-white">Ficha Clínica del Paciente</h2>
-              <p id="subtituloFichaPaciente" class="text-xs text-slate-500 dark:text-slate-400">Camilo Vega Ortiz · RUT: 18.234.901-1</p>
+              <p id="subtituloFichaPaciente" class="text-xs text-slate-500 dark:text-slate-400">Seleccione un paciente o ingrese un RUT para firmar y consultar su historial clínico.</p>
             </div>
 
             <div class="flex items-center gap-2">
@@ -129,26 +157,37 @@
             </div>
           </div>
 
+          <div id="bannerFirmaAccesoHistorial" class="hidden p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">✓</span>
+              <div>
+                <span class="font-bold block" id="txtBannerFirmaTitulo">Acceso al Historial Firmado Electrónicamente</span>
+                <span class="text-[11px] text-emerald-600 dark:text-emerald-400 block" id="txtBannerFirmaDetalle">Acceso autorizado y registrado en auditoría</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 font-bold">AUDITADO</span>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipo de Consulta</label>
-              <input id="campoConsulta" type="text" value="Extracción Quirúrgica (Pieza 38)" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
+              <input id="campoConsulta" type="text" placeholder="Tipo de atención odontológica..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Alergias del Paciente</label>
-              <input id="campoAlergia" type="text" value="Penicilina (Alergia Severa)" class="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl px-3.5 py-2.5 text-sm text-red-700 dark:text-red-300 font-semibold">
+              <input id="campoAlergia" type="text" placeholder="Alergias registradas..." class="w-full bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl px-3.5 py-2.5 text-sm text-red-700 dark:text-red-300 font-semibold">
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tratamiento Realizado</label>
-            <input id="campoTratamiento" type="text" value="Odontosección y osteotomía simple sin complicaciones. Sutura 3-0." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
+            <input id="campoTratamiento" type="text" placeholder="Tratamiento odontológico realizado..." value="" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200">
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Diagnóstico y Evolución Clínica</label>
-            <textarea id="campoDiagnostico" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 resize-none">Paciente ingresa con cuadro de pericoronaritis aguda en molar tercer molar inferior izquierdo (pieza 38). Se realiza anestesia troncular e infiltrativa con Mepivacaína al 3%. Odontosección y osteotomía simple sin complicaciones. Sutura reabsorbible 3-0. Se prescribe analgesia no betalactámica estricta.</textarea>
+            <textarea id="campoDiagnostico" rows="3" placeholder="Diagnóstico clínico y evolución del paciente..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 resize-none"></textarea>
           </div>
 
           <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
@@ -161,7 +200,7 @@
             </div>
             <div id="contenedorHistorialPaciente" class="space-y-2 max-h-48 overflow-y-auto pr-1">
               <div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-                Selecciona un paciente de la agenda para consultar su historial de reservas y atenciones clínicas.
+                Selecciona un paciente o busca su RUT arriba y firma con tu clave para ver su historial clínico.
               </div>
             </div>
           </div>
@@ -285,6 +324,57 @@
     </div>
 
   </main>
+
+  <div id="modalFirmaAccesoHistorial" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto border border-teal-500/20">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+
+      <div class="text-center space-y-1">
+        <div class="inline-block px-2.5 py-0.5 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[10px] font-bold border border-teal-500/20 uppercase tracking-wider mb-1">
+          Firma Electrónica de Acceso
+        </div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Confirmar Acceso a Historial Clínico</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Para consultar la ficha confidencial del paciente, firme electrónicamente ingresando su contraseña de especialista.
+        </p>
+      </div>
+
+      <div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
+        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+          <span>Paciente:</span>
+          <span id="txtPacienteFirmaModal" class="font-bold text-slate-900 dark:text-white">-</span>
+        </div>
+        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+          <span>RUT Paciente:</span>
+          <span id="txtRutFirmaModal" class="font-mono font-semibold text-teal-600 dark:text-teal-400">-</span>
+        </div>
+        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+          <span>Especialista Firmante:</span>
+          <span id="txtEspecialistaFirmaModal" class="font-medium text-slate-800 dark:text-slate-200">-</span>
+        </div>
+      </div>
+
+      <div id="errorClaveFirmaAcceso" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center"></div>
+
+      <div class="space-y-1.5">
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Contraseña de Especialista:</label>
+        <input type="password" id="inputClaveFirmaAcceso" onkeydown="if(event.key==='Enter') ejecutarFirmaAccesoHistorial()" placeholder="Ingresa tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="cerrarModalFirmaAccesoHistorial()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          Cancelar
+        </button>
+        <button onclick="ejecutarFirmaAccesoHistorial()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20 transition">
+          Firmar y Acceder
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div id="modalClave" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
@@ -542,7 +632,7 @@
 
         <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3">
           <div class="text-[10px] text-slate-400">
-            Ficha clínica resguardada conforme a la Ley N° 20.584 de Derechos y Deberes de los Pacientes.
+            Ficha clínica confidencial resguardada bajo los estándares de seguridad de DentalSis.
           </div>
           <div class="text-right text-xs">
             <span class="font-bold text-slate-900 dark:text-white block">DentalSis Centro Odontológico</span>
@@ -1141,7 +1231,7 @@
           const esSeleccionado = c.rutPaciente === rutPacienteActual;
           html += `
             <div class="p-3.5 rounded-2xl border ${esSeleccionado ? 'border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'} space-y-2.5 transition">
-              <div class="flex items-start justify-between cursor-pointer" onclick="seleccionarPacienteAgenda('${c.rutPaciente}', '${c.nombrePaciente}')">
+              <div class="flex items-start justify-between cursor-pointer" onclick="solicitarFirmaAccesoHistorial('${c.rutPaciente}', '${c.nombrePaciente}')">
                 <div>
                   <span class="text-xs font-bold text-teal-600 dark:text-teal-400">${c.hora} hrs · ${c.sillon}</span>
                   <h4 class="text-sm font-bold text-slate-900 dark:text-white">${c.nombrePaciente}</h4>
@@ -1185,11 +1275,189 @@
       }
     }
 
-    function seleccionarPacienteAgenda(rut, nombre) {
-      rutPacienteActual = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+    let rutObjetivoFirma = '';
+    let nombreObjetivoFirma = '';
+    let firmaAccesoActual = null;
+
+    function formatearRutClinico(rut) {
+      if (!rut) return '';
+      const limpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (limpio.length <= 1) return limpio;
+      const cuerpo = limpio.slice(0, -1);
+      const dv = limpio.slice(-1);
+      let cuerpoFormateado = '';
+      let cont = 0;
+      for (let i = cuerpo.length - 1; i >= 0; i--) {
+        cuerpoFormateado = cuerpo[i] + cuerpoFormateado;
+        cont++;
+        if (cont % 3 === 0 && i !== 0) cuerpoFormateado = '.' + cuerpoFormateado;
+      }
+      return `${cuerpoFormateado}-${dv}`;
+    }
+
+    function buscarPacientePorRutConFirma() {
+      const inp = document.getElementById('inputRutBusquedaHistorial');
+      if (!inp || !inp.value.trim()) {
+        mostrarAlertaClinica('Por favor ingresa un RUT de paciente válido.');
+        return;
+      }
+      const rutLimpio = inp.value.replace(/[^0-9kK]/g, '').toUpperCase();
+      if (rutLimpio.length < 8) {
+        mostrarAlertaClinica('El RUT ingresado no es válido. Debe tener al menos 8 dígitos.');
+        return;
+      }
+      solicitarFirmaAccesoHistorial(inp.value.trim(), 'Paciente Consultado');
+    }
+
+    function solicitarFirmaAccesoHistorial(rut, nombre) {
+      rutObjetivoFirma = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+      nombreObjetivoFirma = nombre || 'Paciente';
+
+      const txtPaciente = document.getElementById('txtPacienteFirmaModal');
+      const txtRut = document.getElementById('txtRutFirmaModal');
+      const txtEsp = document.getElementById('txtEspecialistaFirmaModal');
+      const inpClave = document.getElementById('inputClaveFirmaAcceso');
+      const err = document.getElementById('errorClaveFirmaAcceso');
+      const modal = document.getElementById('modalFirmaAccesoHistorial');
+
+      if (txtPaciente) txtPaciente.textContent = nombreObjetivoFirma;
+      if (txtRut) txtRut.textContent = formatearRutClinico(rutObjetivoFirma);
+      if (txtEsp) txtEsp.textContent = medicoActual ? medicoActual.nombre : 'Especialista';
+      if (inpClave) inpClave.value = '';
+      if (err) {
+        err.textContent = '';
+        err.classList.add('hidden');
+      }
+
+      if (modal) modal.classList.remove('hidden');
+      setTimeout(() => {
+        if (inpClave) inpClave.focus();
+      }, 100);
+    }
+
+    function cerrarModalFirmaAccesoHistorial() {
+      const modal = document.getElementById('modalFirmaAccesoHistorial');
+      if (modal) modal.classList.add('hidden');
+      const err = document.getElementById('errorClaveFirmaAcceso');
+      if (err) err.classList.add('hidden');
+    }
+
+    async function ejecutarFirmaAccesoHistorial() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const inpClave = document.getElementById('inputClaveFirmaAcceso');
+      const err = document.getElementById('errorClaveFirmaAcceso');
+      const clave = inpClave ? inpClave.value : '';
+
+      if (!clave) {
+        if (err) {
+          err.textContent = 'Debe ingresar su contraseña de especialista para firmar el acceso.';
+          err.classList.remove('hidden');
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/especialistas/acceso-historial', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            rutPaciente: rutObjetivoFirma,
+            passwordConfirmacion: clave
+          })
+        });
+
+        const datos = await res.json();
+        if (!res.ok) {
+          if (err) {
+            err.textContent = datos.error || 'Contraseña incorrecta. Intento denegado.';
+            err.classList.remove('hidden');
+          }
+          return;
+        }
+
+        cerrarModalFirmaAccesoHistorial();
+        rutPacienteActual = rutObjetivoFirma;
+        firmaAccesoActual = datos.firma;
+        renderizarFichaConFirma(datos.ficha, datos.firma);
+        cargarAgendaMedico();
+      } catch (e) {
+        if (err) {
+          err.textContent = 'Error de comunicación con el servidor.';
+          err.classList.remove('hidden');
+        }
+      }
+    }
+
+    function renderizarFichaConFirma(ficha, firma) {
+      if (!ficha) return;
       const subtitulo = document.getElementById('subtituloFichaPaciente');
-      if (subtitulo) subtitulo.textContent = `${nombre} · RUT: ${rut}`;
-      cargarFichaPaciente(rutPacienteActual);
+      if (subtitulo) {
+        subtitulo.textContent = `${ficha.nombrePaciente || 'Paciente'} · RUT: ${ficha.rutFormateado || formatearRutClinico(rutPacienteActual)}`;
+      }
+
+      const banner = document.getElementById('bannerFirmaAccesoHistorial');
+      const txtTitulo = document.getElementById('txtBannerFirmaTitulo');
+      const txtDetalle = document.getElementById('txtBannerFirmaDetalle');
+      if (banner && firma) {
+        const horaFirma = new Date(firma.fechaHora).toLocaleTimeString();
+        if (txtTitulo) txtTitulo.textContent = `Acceso al Historial Firmado Electrónicamente`;
+        if (txtDetalle) txtDetalle.textContent = `Dr./Dra. ${firma.especialista} · ${horaFirma} hrs · Registrado en auditoría`;
+        banner.classList.remove('hidden');
+      }
+
+      if (ficha.historialConsultas && ficha.historialConsultas.length > 0) {
+        const ult = ficha.historialConsultas[ficha.historialConsultas.length - 1];
+        document.getElementById('campoConsulta').value = ult.tipoAtencion || 'Consulta Odontológica';
+        document.getElementById('campoDiagnostico').value = ult.diagnostico || '';
+        document.getElementById('campoTratamiento').value = ult.tratamiento || '';
+        document.getElementById('campoAlergia').value = ult.observaciones || ficha.alergias || 'Sin alergias registradas';
+      } else {
+        document.getElementById('campoConsulta').value = 'Consulta Odontológica';
+        document.getElementById('campoDiagnostico').value = 'Evaluación clínica inicial sin antecedentes adversos.';
+        document.getElementById('campoTratamiento').value = 'Control preventivo.';
+        document.getElementById('campoAlergia').value = ficha.alergias || 'Sin alergias registradas';
+      }
+
+      const citas = ficha.citasPrevias || [];
+      const contadorHistorial = document.getElementById('contadorCitasPaciente');
+      if (contadorHistorial) {
+        contadorHistorial.textContent = `${citas.length} cita${citas.length === 1 ? '' : 's'}`;
+      }
+
+      const contenedorHistorial = document.getElementById('contenedorHistorialPaciente');
+      if (contenedorHistorial) {
+        if (citas.length === 0) {
+          contenedorHistorial.innerHTML = '<div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Este paciente no registra citas previas en el sistema.</div>';
+        } else {
+          let h = '';
+          citas.forEach(c => {
+            let bColor = 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700';
+            if (c.estado === 'CONFIRMADA') bColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+            else if (c.estado === 'EN_ATENCION') bColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
+            else if (c.estado === 'ATENDIDA') bColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+            else if (c.estado === 'CANCELADA') bColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+            else if (c.estado === 'PENDIENTE') bColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+
+            h += `
+              <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                <div>
+                  <span class="font-bold text-slate-900 dark:text-white block">${c.fecha} · ${c.hora} hrs</span>
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon}</span>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${bColor}">${c.estado}</span>
+              </div>
+            `;
+          });
+          contenedorHistorial.innerHTML = h;
+        }
+      }
+    }
+
+    function seleccionarPacienteAgenda(rut, nombre) {
+      solicitarFirmaAccesoHistorial(rut, nombre);
     }
 
     async function cargarFichaPaciente(rut) {
@@ -1483,6 +1751,10 @@
     }
 
     function mostrarModalFichaClinica() {
+      if (!firmaAccesoActual) {
+        mostrarAlertaClinica('Debe seleccionar un paciente de su agenda o ingresar su RUT arriba y firmar con su clave para consultar la ficha clínica.');
+        return;
+      }
       document.getElementById('modalFichaClinica').classList.remove('hidden');
     }
 
@@ -1491,6 +1763,10 @@
     }
 
     function solicitarClaveEdicion() {
+      if (!firmaAccesoActual) {
+        mostrarAlertaClinica('Primero debe seleccionar un paciente y firmar el acceso al historial clínico.');
+        return;
+      }
       document.getElementById('modalClave').classList.remove('hidden');
       document.getElementById('inputClaveMedico').value = '';
       document.getElementById('errorClaveMedico').classList.add('hidden');
