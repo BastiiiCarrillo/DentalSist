@@ -9,13 +9,15 @@ const {
   reiniciarEstadoParaPruebas
 } = require('../src/models/dataStore');
 const { firmarReceta, verificarFirmaReceta } = require('../src/services/recetaCrypto');
+const { obtenerLogs, limpiarLogsParaPruebas } = require('../src/services/logger');
 const {
   actualizarFichaConReautenticacion,
   autorizarAccesoHistorial,
   emitirReceta,
   verificarRecetaPublica,
   obtenerAgenda,
-  buscarPacientes
+  buscarPacientes,
+  cambiarEstado
 } = require('../src/controllers/especialista');
 
 describe('Modulo de Especialista, Fichas Clinicas y Recetas', () => {
@@ -367,6 +369,164 @@ describe('Modulo de Especialista, Fichas Clinicas y Recetas', () => {
     await buscarPacientes({ query: { q: '18.234' } }, resMock);
     assert.strictEqual(statusCapturado, 200);
     assert.ok(jsonCapturado.pacientes.some(p => p.nombrePaciente === 'Camilo Vega Ortiz' && p.atendido === true));
+  });
+
+  test('Bloquea iniciar atencion en dias distintos a hoy y estados de asistencia en fechas futuras', async () => {
+    const fechaIsoDesplazada = (dias) => new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Santiago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date(Date.now() + dias * 86400000));
+
+    const hoy = fechaIsoDesplazada(0);
+    const manana = fechaIsoDesplazada(1);
+
+    const citaFutura = crearCita({
+      rutPaciente: '19.876.543-0',
+      nombrePaciente: 'Francisca Morales',
+      emailPaciente: 'francisca@correo.cl',
+      telefonoPaciente: '+56911223344',
+      idMedico: 'DOC-1',
+      fecha: manana,
+      hora: '11:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+
+    const citaHoy = crearCita({
+      rutPaciente: '18.234.901-1',
+      nombrePaciente: 'Camilo Vega Ortiz',
+      emailPaciente: 'camilo@correo.cl',
+      telefonoPaciente: '+56987654321',
+      idMedico: 'DOC-1',
+      fecha: hoy,
+      hora: '12:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+
+    let statusCapturado = null;
+    let jsonCapturado = null;
+    const resMock = {
+      status: (code) => {
+        statusCapturado = code;
+        return {
+          json: (data) => {
+            jsonCapturado = data;
+          }
+        };
+      }
+    };
+
+    await cambiarEstado({
+      params: { idCita: citaFutura.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      body: { nuevoEstado: 'EN_ATENCION' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 400);
+
+    await cambiarEstado({
+      params: { idCita: citaFutura.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      body: { nuevoEstado: 'NO_ASISTIO' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 400);
+
+    await cambiarEstado({
+      params: { idCita: citaFutura.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      body: { nuevoEstado: 'ATENDIDA' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 400);
+
+    await cambiarEstado({
+      params: { idCita: citaHoy.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      body: { nuevoEstado: 'EN_ATENCION' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.strictEqual(jsonCapturado.cita.estado, 'EN_ATENCION');
+  });
+
+  test('Cancelacion de especialista exige motivo, clave valida y registra auditoria en logs', async () => {
+    limpiarLogsParaPruebas();
+    const hoy = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Santiago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+
+    const cita = crearCita({
+      rutPaciente: '19.876.543-0',
+      nombrePaciente: 'Francisca Morales',
+      emailPaciente: 'francisca@correo.cl',
+      telefonoPaciente: '+56911223344',
+      idMedico: 'DOC-1',
+      fecha: hoy,
+      hora: '15:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+
+    let statusCapturado = null;
+    let jsonCapturado = null;
+    const resMock = {
+      status: (code) => {
+        statusCapturado = code;
+        return {
+          json: (data) => {
+            jsonCapturado = data;
+          }
+        };
+      }
+    };
+
+    const reqSinMotivo = {
+      params: { idCita: cita.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      ip: '127.0.0.1',
+      body: { nuevoEstado: 'CANCELADA', motivoCancelacion: 'No', passwordConfirmacion: 'SotoCirugia2026!Clinica' }
+    };
+    await cambiarEstado(reqSinMotivo, resMock);
+    assert.strictEqual(statusCapturado, 400);
+
+    const reqSinClave = {
+      params: { idCita: cita.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      ip: '127.0.0.1',
+      body: { nuevoEstado: 'CANCELADA', motivoCancelacion: 'Emergencia médica del especialista' }
+    };
+    await cambiarEstado(reqSinClave, resMock);
+    assert.strictEqual(statusCapturado, 401);
+
+    const reqClaveMala = {
+      params: { idCita: cita.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      ip: '127.0.0.1',
+      body: { nuevoEstado: 'CANCELADA', motivoCancelacion: 'Emergencia médica del especialista', passwordConfirmacion: 'ClaveIncorrecta123!' }
+    };
+    await cambiarEstado(reqClaveMala, resMock);
+    assert.strictEqual(statusCapturado, 403);
+
+    const reqValida = {
+      params: { idCita: cita.id },
+      usuario: { id: 'DOC-1', rol: 'Odontologo', rut: '14.892.341-2' },
+      ip: '127.0.0.1',
+      body: { nuevoEstado: 'CANCELADA', motivoCancelacion: 'Reprogramación por urgencia quirúrgica', passwordConfirmacion: 'SotoCirugia2026!Clinica' }
+    };
+    await cambiarEstado(reqValida, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.strictEqual(jsonCapturado.cita.estado, 'CANCELADA');
+    assert.strictEqual(jsonCapturado.cita.motivoCancelacion, 'Reprogramación por urgencia quirúrgica');
+
+    const logs = obtenerLogs();
+    assert.ok(logs.some(l => l.tipo === 'CANCELACION_ESPECIALISTA_DENEGADA'));
+    const logCancelacion = logs.find(l => l.tipo === 'CITA_CANCELADA_POR_ESPECIALISTA');
+    assert.ok(logCancelacion);
+    assert.ok(String(logCancelacion.detalle).includes(cita.id));
+    assert.ok(String(logCancelacion.detalle).includes('Reprogramación por urgencia quirúrgica'));
   });
 
 });

@@ -293,9 +293,24 @@ async function obtenerAgenda(req, res) {
   });
 }
 
+function obtenerFechaHoyChile() {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
+  } catch (e) {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+}
+
+function formatearFechaDMYBackend(fechaISO) {
+  if (!fechaISO || !/^\d{4}-\d{2}-\d{2}/.test(fechaISO)) return fechaISO || '';
+  const p = fechaISO.substring(0, 10).split('-');
+  return `${p[2]}-${p[1]}-${p[0]}`;
+}
+
 async function cambiarEstado(req, res) {
   const { idCita } = req.params;
-  const { nuevoEstado, motivoCancelacion } = req.body;
+  const { nuevoEstado, motivoCancelacion, motivo, passwordConfirmacion, password } = req.body || {};
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
 
   const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'];
@@ -303,49 +318,141 @@ async function cambiarEstado(req, res) {
     return res.status(400).json({ error: 'Estado de cita invalido.' });
   }
 
-  let citaActualizada = null;
-  let errorMemoria = null;
-  const detallesCancelacion = nuevoEstado === 'CANCELADA'
-    ? { motivoCancelacion: (motivoCancelacion || '').trim() || 'Cancelada por especialista', canceladaPor: 'ESPECIALISTA' }
-    : {};
-
+  let citaMemoria = obtenerTodasLasCitas().find(c => c.id === idCita) || null;
+  let citaDb = null;
   try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const rActual = await db.query(
+        'SELECT id, estado, TO_CHAR(fecha, \'YYYY-MM-DD\') as fecha, especialista_id FROM citas WHERE id::text = $1 LIMIT 1;',
+        [idCita]
+      );
+      if (rActual.rows && rActual.rows.length > 0) {
+        citaDb = rActual.rows[0];
+      }
+    }
+  } catch (eDb) {}
+
+  const citaObjetivo = citaDb || citaMemoria;
+  if (!citaObjetivo) {
+    return res.status(404).json({ error: 'Cita no encontrada.' });
+  }
+
+  const fechaCita = String(citaObjetivo.fecha || '').substring(0, 10);
+  const hoyChile = obtenerFechaHoyChile();
+
+  if (nuevoEstado === 'EN_ATENCION' && fechaCita && fechaCita !== hoyChile) {
+    return res.status(400).json({
+      error: `Solo puedes iniciar atención para citas programadas para el día de hoy (${formatearFechaDMYBackend(hoyChile)}).`
+    });
+  }
+
+  if ((nuevoEstado === 'ATENDIDA' || nuevoEstado === 'NO_ASISTIO') && fechaCita && fechaCita > hoyChile) {
+    return res.status(400).json({
+      error: 'No puedes marcar asistencia o inasistencia en citas de fechas futuras.'
+    });
+  }
+
+  const estadoActual = citaObjetivo.estado;
+  const permitidos = TRANSICIONES_ESTADO[estadoActual] || [];
+  if (!permitidos.includes(nuevoEstado) && estadoActual !== nuevoEstado) {
+    return res.status(400).json({ error: `Transicion de estado no permitida desde ${estadoActual} a ${nuevoEstado}.` });
+  }
+
+  let detallesCancelacion = {};
+  if (nuevoEstado === 'CANCELADA') {
+    const motivoFinal = (motivoCancelacion || motivo || '').trim();
+    if (motivoFinal.length < 5 || motivoFinal.length > 500) {
+      return res.status(400).json({ error: 'Debe ingresar un motivo valido para cancelar la consulta (entre 5 y 500 caracteres).' });
+    }
+
+    const clave = passwordConfirmacion || password || '';
+    if (!clave) {
+      return res.status(401).json({ error: 'Autorizacion obligatoria: Ingrese su contrasena de especialista para cancelar la consulta.' });
+    }
+
+    const idMedReq = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
+    let medico = idMedReq ? buscarMedicoPorId(idMedReq) : null;
+    if (!medico && req.usuario) {
+      if (req.usuario.rut) medico = buscarMedicoPorRut(req.usuario.rut);
+      if (!medico && req.usuario.email) medico = buscarMedicoPorEmail(req.usuario.email);
+    }
+    if (!medico) {
+      try {
+        const db = require('../models/db');
+        if (db.obtenerPool()) {
+          const rEsp = await db.query(
+            'SELECT id, nombre, email, rut, password_hash as "passwordHash" FROM especialistas WHERE id::text = $1 OR LOWER(email) = LOWER($2) LIMIT 1;',
+            [String(idMedReq || ''), (req.usuario && req.usuario.email) || '']
+          );
+          if (rEsp.rows && rEsp.rows.length > 0) {
+            medico = rEsp.rows[0];
+          } else {
+            const rUsr = await db.query(
+              'SELECT id, nombre, email, rut, password_hash as "passwordHash" FROM usuarios WHERE id::text = $1 OR LOWER(email) = LOWER($2) LIMIT 1;',
+              [String(idMedReq || ''), (req.usuario && req.usuario.email) || '']
+            );
+            if (rUsr.rows && rUsr.rows.length > 0) medico = rUsr.rows[0];
+          }
+        }
+      } catch (eDb) {}
+    }
+
+    if (!medico || !medico.passwordHash) {
+      return res.status(404).json({ error: 'No fue posible verificar al especialista solicitante.' });
+    }
+
+    if (!bcrypt.compareSync(clave, medico.passwordHash)) {
+      registrarEvento('CANCELACION_ESPECIALISTA_DENEGADA', `Clave incorrecta al intentar cancelar cita ${idCita}`, ip, medico.id, 'PELIGRO');
+      return res.status(403).json({ error: 'Contrasena incorrecta. Cancelacion de consulta denegada.' });
+    }
+
+    detallesCancelacion = {
+      motivoCancelacion: motivoFinal,
+      canceladaPor: 'ESPECIALISTA'
+    };
+  }
+
+  let citaActualizada = null;
+  if (citaMemoria) {
     citaActualizada = actualizarEstadoCita(idCita, nuevoEstado, detallesCancelacion);
-  } catch (eMem) {
-    errorMemoria = eMem;
   }
 
   let actualizadaDb = null;
   try {
     const db = require('../models/db');
-    if (db.obtenerPool()) {
-      const rActual = await db.query('SELECT id, estado, especialista_id FROM citas WHERE id::text = $1 LIMIT 1;', [idCita]);
-      if (rActual.rows && rActual.rows.length > 0) {
-        const estadoActual = rActual.rows[0].estado;
-        const permitidos = TRANSICIONES_ESTADO[estadoActual] || [];
-        if (!permitidos.includes(nuevoEstado) && estadoActual !== nuevoEstado) {
-          return res.status(400).json({ error: `Transicion de estado no permitida desde ${estadoActual} a ${nuevoEstado}.` });
-        }
-        const rUpd = nuevoEstado === 'CANCELADA'
-          ? await db.query(
-            'UPDATE citas SET estado = $1, motivo_cancelacion = COALESCE($2, motivo_cancelacion), cancelada_por = $3, cancelada_en = CURRENT_TIMESTAMP WHERE id::text = $4 RETURNING id, estado, motivo_cancelacion as "motivoCancelacion";',
-            [nuevoEstado, detallesCancelacion.motivoCancelacion || null, 'ESPECIALISTA', idCita]
-          )
-          : await db.query('UPDATE citas SET estado = $1 WHERE id::text = $2 RETURNING id, estado;', [nuevoEstado, idCita]);
-        if (rUpd.rows && rUpd.rows.length > 0) {
-          actualizadaDb = rUpd.rows[0];
-        }
+    if (db.obtenerPool() && citaDb) {
+      const rUpd = nuevoEstado === 'CANCELADA'
+        ? await db.query(
+          'UPDATE citas SET estado = $1, motivo_cancelacion = $2, cancelada_por = $3, cancelada_en = CURRENT_TIMESTAMP WHERE id::text = $4 RETURNING id, estado, motivo_cancelacion as "motivoCancelacion", cancelada_por as "canceladaPor";',
+          [nuevoEstado, detallesCancelacion.motivoCancelacion, 'ESPECIALISTA', idCita]
+        )
+        : await db.query('UPDATE citas SET estado = $1 WHERE id::text = $2 RETURNING id, estado;', [nuevoEstado, idCita]);
+      if (rUpd.rows && rUpd.rows.length > 0) {
+        actualizadaDb = rUpd.rows[0];
       }
     }
-  } catch (eDb) {
+  } catch (eDb) {}
+
+  const respuestaCita = citaActualizada || { id: idCita, fecha: fechaCita, estado: nuevoEstado, ...detallesCancelacion };
+  if (nuevoEstado === 'CANCELADA') {
+    registrarEvento(
+      'CITA_CANCELADA_POR_ESPECIALISTA',
+      `Cita ${idCita} (${fechaCita}) cancelada por especialista. Motivo: ${detallesCancelacion.motivoCancelacion}`,
+      ip,
+      (req.usuario && req.usuario.id) || 'ESPECIALISTA',
+      'INFO'
+    );
+  } else {
+    registrarEvento(
+      'ESTADO_CITA_ACTUALIZADO',
+      `Cita ${idCita} (${fechaCita}) cambio a ${nuevoEstado}`,
+      ip,
+      (req.usuario && req.usuario.id) || 'ESPECIALISTA',
+      'INFO'
+    );
   }
 
-  if (!citaActualizada && !actualizadaDb) {
-    return res.status(400).json({ error: errorMemoria ? errorMemoria.message : 'Cita no encontrada.' });
-  }
-
-  const respuestaCita = citaActualizada || { id: idCita, estado: nuevoEstado, ...detallesCancelacion };
-  registrarEvento('ESTADO_CITA_ACTUALIZADO', `Cita ${idCita} cambio a ${nuevoEstado}`, ip, (req.usuario && req.usuario.id) || 'ESPECIALISTA', 'INFO');
   return res.status(200).json({
     mensaje: 'Estado de cita actualizado exitosamente.',
     cita: respuestaCita

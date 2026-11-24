@@ -176,7 +176,7 @@
             </div>
 
             <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
-              <span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span>
+              <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span><span>Do</span>
             </div>
 
             <div id="grillaCalendarioAgenda" class="grid grid-cols-7 gap-1 text-center"></div>
@@ -282,115 +282,60 @@
         </div>
 
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 class="text-lg font-bold text-slate-900 dark:text-white">Receta Médica Digital</h2>
               <p class="text-xs text-slate-500 dark:text-slate-400">Busca medicamentos, define cantidad, frecuencia y días</p>
             </div>
+            <span id="badgePacienteReceta" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+              Sin paciente seleccionado
+            </span>
           </div>
 
-          <div class="space-y-3">
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Buscar medicamentos</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-              </div>
-              <input type="text" id="buscadorMedicamento" oninput="buscarMedicamento(this.value)" autocomplete="off" placeholder="Introduzca nombre del medicamento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 transition">
-              <div id="dropdownMedicamentos" class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-30 hidden max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-              </div>
-            </div>
+          <div id="alertaBloqueoReceta" class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
+            <span class="text-base leading-none">🔒</span>
+            <span>Por seguridad clínica, para emitir una receta debes iniciar una atención de hoy o seleccionar al paciente y firmar el acceso a su historial médico.</span>
           </div>
 
-          <div class="space-y-2">
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Medicamentos Agregados a la Receta</label>
-            <div id="listaMedicamentosReceta" class="space-y-3 min-h-[2rem]">
-              <div class="p-4 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 transition">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="font-bold text-sm text-slate-900 dark:text-white">Ketorolaco</span>
-                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">10mg</span>
-                      <span class="text-xs text-slate-500">(Comprimidos sublinguales)</span>
-                    </div>
-                    <span class="text-[10px] uppercase font-bold text-slate-400 mt-0.5 block">Analgésico / AINE</span>
-                  </div>
-                  <button onclick="quitarMedicamento('KETO-10')" class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 flex items-center justify-center font-bold text-xs transition">×</button>
+          <div id="contenidoRecetaInteractivo" class="space-y-4 opacity-50 pointer-events-none select-none">
+            <div class="space-y-3">
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Buscar medicamentos</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
                 </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                  <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Comprimido o Cantidad</label>
-                    <select id="cant-sel-KETO-10" onchange="cambiarCantidadMed('KETO-10')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
-                      <option value="1" selected>1 comprimido</option>
-                      <option value="2">2 comprimidos</option>
-                      <option value="3">3 comprimidos</option>
-                      <option value="5">5 comprimidos (5ml)</option>
-                      <option value="10">10 comprimidos (10ml)</option>
-                      <option value="manual">✏️ Ingresar manual...</option>
-                    </select>
-                    <input type="text" id="cant-manual-KETO-10" placeholder="Ej: 1 comprimido, 15 gotas..." oninput="actualizarIndicacionItem('KETO-10')" class="w-full mt-1.5 hidden bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
-                  </div>
-
-                  <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Frecuencia (Horas o Días)</label>
-                    <select id="frec-sel-KETO-10" onchange="cambiarFrecuenciaMed('KETO-10')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
-                      <option value="cada 6 horas">Cada 6 horas</option>
-                      <option value="cada 8 horas" selected>Cada 8 horas</option>
-                      <option value="cada 12 horas">Cada 12 horas</option>
-                      <option value="cada 24 horas">Cada 24 horas (1 al día)</option>
-                      <option value="en caso de dolor">En caso de dolor</option>
-                      <option value="dosis única">Dosis única</option>
-                      <option value="manual">✏️ Ingresar manual...</option>
-                    </select>
-                    <input type="text" id="frec-manual-KETO-10" placeholder="Ej: cada 4 horas, cada noche..." oninput="actualizarIndicacionItem('KETO-10')" class="w-full mt-1.5 hidden bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
-                  </div>
-
-                  <div>
-                    <label class="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Cantidad de Días</label>
-                    <select id="dias-sel-KETO-10" onchange="cambiarDiasMed('KETO-10')" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
-                      <option value="por 1 día">Por 1 día</option>
-                      <option value="por 3 días">Por 3 días</option>
-                      <option value="por 5 días" selected>Por 5 días</option>
-                      <option value="por 7 días">Por 7 días</option>
-                      <option value="por 10 días">Por 10 días</option>
-                      <option value="por 14 días">Por 14 días</option>
-                      <option value="manual">✏️ Ingresar manual...</option>
-                    </select>
-                    <input type="text" id="dias-manual-KETO-10" placeholder="Ej: por 4 días, por 21 días..." oninput="actualizarIndicacionItem('KETO-10')" class="w-full mt-1.5 hidden bg-white dark:bg-slate-900 border border-teal-500 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none shadow-sm">
-                  </div>
-                </div>
-
-                <div class="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
-                    <span class="font-bold text-teal-600 dark:text-teal-400">Instrucción:</span>
-                    <span id="texto-ind-KETO-10">Tomar 1 comprimido cada 8 horas por 5 días</span>
-                  </div>
-                  <span id="total-ind-KETO-10" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40">Total sugerido: 15 comprimidos</span>
+                <input type="text" id="buscadorMedicamento" disabled oninput="buscarMedicamento(this.value)" autocomplete="off" placeholder="Introduzca nombre del medicamento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 dark:focus:border-teal-400 transition">
+                <div id="dropdownMedicamentos" class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-30 hidden max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                 </div>
               </div>
             </div>
-          </div>
 
-          <div id="emptyMedsMsg" class="hidden text-center py-4 text-xs text-slate-400 dark:text-slate-600 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
-            No hay medicamentos agregados. Busca un medicamento arriba para añadirlo a la receta.
-          </div>
+            <div class="space-y-2">
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Medicamentos Agregados a la Receta</label>
+              <div id="listaMedicamentosReceta" class="space-y-3"></div>
+            </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Indicaciones Generales para el Paciente</label>
-            <textarea id="indicacionesReceta" rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 resize-none">Tomar medicamentos con abundante agua tras las comidas. Completar el tratamiento prescrito. Consultar de inmediato ante cualquier reacción alérgica o molestia estomacal.</textarea>
-          </div>
+            <div id="emptyMedsMsg" class="text-center py-4 text-xs text-slate-400 dark:text-slate-600 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
+              No hay medicamentos agregados. Busca un medicamento arriba para añadirlo a la receta.
+            </div>
 
-          <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <span class="block text-xs font-bold text-slate-700 dark:text-slate-300">Firma Electrónica del Especialista</span>
-              <span class="text-xs text-slate-500">La receta oficial de DentalSis será sellada digitalmente al emitir.</span>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Indicaciones Generales para el Paciente</label>
+              <textarea id="indicacionesReceta" disabled rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 resize-none">Tomar medicamentos con abundante agua tras las comidas. Completar el tratamiento prescrito. Consultar de inmediato ante cualquier reacción alérgica o molestia estomacal.</textarea>
             </div>
-            <button onclick="solicitarClaveFirmaReceta()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition flex items-center gap-1.5">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-              Firmar y Emitir Receta DentalSis
-            </button>
+
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span class="block text-xs font-bold text-slate-700 dark:text-slate-300">Firma Electrónica del Especialista</span>
+                <span class="text-xs text-slate-500">La receta oficial de DentalSis será sellada digitalmente al emitir.</span>
+              </div>
+              <button id="btnEmitirReceta" disabled onclick="solicitarClaveFirmaReceta()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition flex items-center gap-1.5 disabled:opacity-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Firmar y Emitir Receta DentalSis
+              </button>
+            </div>
           </div>
         </div>
 
@@ -827,6 +772,11 @@
     }
 
     function agregarMedicamento(id) {
+      if (!rutPacienteActual || !firmaAccesoActual) {
+        cerrarDropdown();
+        mostrarAlertaClinica('Primero debes seleccionar o poner en atención a un paciente y autenticar el acceso a su historial.', 'Acceso Clínico Requerido');
+        return;
+      }
       if (datosRecetaMeds.has(id)) {
         cerrarDropdown();
         return;
@@ -1156,13 +1106,63 @@
 
     const NOMBRES_MESES_AGENDA = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const ahoraAgenda = new Date();
-    const hoyISODefault = `${ahoraAgenda.getFullYear()}-${String(ahoraAgenda.getMonth() + 1).padStart(2, '0')}-${String(ahoraAgenda.getDate()).padStart(2, '0')}`;
-    let mesAgendaVisualizado = ahoraAgenda.getMonth();
-    let anoAgendaVisualizado = ahoraAgenda.getFullYear();
+    const hoyISODefault = (() => {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(ahoraAgenda);
+      } catch (e) {
+        return `${ahoraAgenda.getFullYear()}-${String(ahoraAgenda.getMonth() + 1).padStart(2, '0')}-${String(ahoraAgenda.getDate()).padStart(2, '0')}`;
+      }
+    })();
+    const [anoHoyInit, mesHoyInit] = hoyISODefault.split('-').map(Number);
+    let mesAgendaVisualizado = (mesHoyInit || (ahoraAgenda.getMonth() + 1)) - 1;
+    let anoAgendaVisualizado = anoHoyInit || ahoraAgenda.getFullYear();
     let fechaAgendaSeleccionada = hoyISODefault;
     let modoVistaAgenda = 'dia';
     let citasMedicoCache = [];
     let pacientesDentalSisCache = [];
+
+    function formatearFechaDDMMAAAA(fechaStr) {
+      if (!fechaStr) return '';
+      const soloFecha = String(fechaStr).substring(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(soloFecha)) {
+        const [a, m, d] = soloFecha.split('-');
+        return `${d}-${m}-${a}`;
+      }
+      return soloFecha;
+    }
+
+    function actualizarEstadoRecetaUI() {
+      const habilitado = Boolean(rutPacienteActual && firmaAccesoActual);
+      const bloqueo = document.getElementById('alertaBloqueoReceta');
+      const contenido = document.getElementById('contenidoRecetaInteractivo');
+      const badge = document.getElementById('badgePacienteReceta');
+      const buscador = document.getElementById('buscadorMedicamento');
+      const ind = document.getElementById('indicacionesReceta');
+      const btnEmitir = document.getElementById('btnEmitirReceta');
+
+      if (bloqueo) bloqueo.classList.toggle('hidden', habilitado);
+      if (contenido) {
+        if (habilitado) {
+          contenido.classList.remove('opacity-50', 'pointer-events-none', 'select-none');
+        } else {
+          contenido.classList.add('opacity-50', 'pointer-events-none', 'select-none');
+        }
+      }
+      if (buscador) buscador.disabled = !habilitado;
+      if (ind) ind.disabled = !habilitado;
+      if (btnEmitir) btnEmitir.disabled = !habilitado;
+      if (badge) {
+        if (habilitado) {
+          const nom = pacienteSeleccionadoNombre || (fichaActualCargada && fichaActualCargada.nombrePaciente) || 'Paciente';
+          const enAtencionHoy = citasMedicoCache.some(c => String(c.rutPaciente || '').replace(/[^0-9kK]/g, '').toUpperCase() === rutPacienteActual && c.estado === 'EN_ATENCION');
+          badge.textContent = enAtencionHoy ? `En Atención: ${nom}` : `Paciente: ${nom}`;
+          badge.className = 'text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30';
+        } else {
+          badge.textContent = 'Sin paciente seleccionado';
+          badge.className = 'text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25';
+        }
+      }
+    }
 
     function actualizarCabeceraMedico(u) {
       if (!u) return;
@@ -1245,13 +1245,9 @@
     }
 
     function formatearFechaLegibleAgenda(fechaISO) {
-      if (!fechaISO) return 'Hoy';
-      const partes = fechaISO.split('-').map(Number);
-      if (partes.length !== 3) return fechaISO;
-      const d = partes[2];
-      const m = NOMBRES_MESES_AGENDA[(partes[1] || 1) - 1] || '';
-      const esHoy = fechaISO === hoyISODefault;
-      return esHoy ? `Hoy · ${d} ${m.slice(0, 3)}` : `${d} de ${m}`;
+      if (!fechaISO) return `Hoy · ${formatearFechaDDMMAAAA(hoyISODefault)}`;
+      const fmt = formatearFechaDDMMAAAA(fechaISO);
+      return fechaISO === hoyISODefault ? `Hoy · ${fmt}` : fmt;
     }
 
     function cambiarMesAgenda(delta) {
@@ -1336,7 +1332,7 @@
       const totalCitas = citasMedicoCache.length;
       if (resumenTotal) resumenTotal.textContent = `${totalCitas} cita${totalCitas === 1 ? '' : 's'} en agenda`;
 
-      const primerDiaSemana = new Date(anoAgendaVisualizado, mesAgendaVisualizado, 1).getDay();
+      const primerDiaSemana = (new Date(anoAgendaVisualizado, mesAgendaVisualizado, 1).getDay() + 6) % 7;
       const totalDiasMes = new Date(anoAgendaVisualizado, mesAgendaVisualizado + 1, 0).getDate();
 
       let html = '';
@@ -1438,23 +1434,36 @@
       let html = '';
       listaFiltrada.forEach(c => {
         const infoEstado = obtenerInfoEstadoCita(c);
+        const esHoyCita = c.fecha === hoyISODefault;
+        const esFuturaCita = Boolean(c.fecha && c.fecha > hoyISODefault);
+        const rutClean = String(c.rutPaciente || '').replace(/[^0-9kK]/g, '').toUpperCase();
+        const nombreSafe = String(c.nombrePaciente || 'Paciente').replace(/'/g, '');
 
         let botonesAccion = '';
         if (c.estado === 'PENDIENTE') {
+          const btnNoAsistio = !esFuturaCita
+            ? `<button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>`
+            : '';
           botonesAccion = `
             <div class="flex flex-wrap gap-1 pt-1">
               <button onclick="cambiarEstadoCita('${c.id}', 'CONFIRMADA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white shadow">Confirmar</button>
-              <button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>
-              <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
+              ${btnNoAsistio}
+              <button onclick="iniciarCancelacionConsultaEsp('${c.id}')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
             </div>
           `;
         } else if (c.estado === 'CONFIRMADA') {
+          const btnIniciar = esHoyCita
+            ? `<button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION', '${rutClean}', '${nombreSafe}')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar Atención</button>`
+            : '';
+          const btnsAsistencia = !esFuturaCita
+            ? `<button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Asistió</button>
+               <button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>`
+            : `<span class="text-[10px] font-semibold text-slate-400 self-center pr-1">Programada para hoy no aplica</span>`;
           botonesAccion = `
             <div class="flex flex-wrap gap-1 pt-1">
-              <button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar</button>
-              <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Asistió</button>
-              <button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>
-              <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
+              ${btnIniciar}
+              ${esFuturaCita ? '' : btnsAsistencia}
+              <button onclick="iniciarCancelacionConsultaEsp('${c.id}')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
             </div>
           `;
         } else if (c.estado === 'EN_ATENCION') {
@@ -1466,13 +1475,13 @@
           `;
         }
 
-        const rutClean = String(c.rutPaciente || '').replace(/[^0-9kK]/g, '').toUpperCase();
         const esSeleccionado = rutClean && rutClean === rutPacienteActual;
-        const nombreSafe = String(c.nombrePaciente || 'Paciente').replace(/'/g, '');
-        const etiquetaFecha = modoVistaAgenda === 'todas' ? `${c.fecha} · ` : '';
+        const etiquetaFecha = modoVistaAgenda === 'todas' ? `${formatearFechaDDMMAAAA(c.fecha)} · ` : '';
         const avisoAsistencia = infoEstado.pendienteAsistencia
           ? '<span class="block text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">Asistencia sin registrar</span>'
-          : '';
+          : (esFuturaCita && c.estado !== 'CANCELADA'
+            ? `<span class="block text-[10px] text-slate-400 font-medium mt-0.5">Solo iniciable el ${formatearFechaDDMMAAAA(c.fecha)}</span>`
+            : '');
         const bloqueMotivo = (c.estado === 'CANCELADA' && c.motivoCancelacion)
           ? `<div class="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/70 dark:border-red-900/40 text-red-700 dark:text-red-300"><span class="font-bold">Motivo:</span> ${c.motivoCancelacion}</div>`
           : '';
@@ -1600,7 +1609,7 @@
           <div onmousedown="seleccionarPacienteDesdeDirectorio('${p.rutPaciente}', '${nombreSafe}')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/80 cursor-pointer flex items-center justify-between gap-3 transition">
             <div class="min-w-0">
               <span class="block text-xs font-bold text-slate-900 dark:text-white truncate">${p.nombrePaciente}</span>
-              <span class="block text-[11px] text-slate-500 font-mono">${p.rutFormateado}${p.ultimaFecha ? ' · Última cita: ' + p.ultimaFecha : ''}</span>
+              <span class="block text-[11px] text-slate-500 font-mono">${p.rutFormateado}${p.ultimaFecha ? ' · Última cita: ' + formatearFechaDDMMAAAA(p.ultimaFecha) : ''}</span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               ${estadoBadge}
@@ -1648,7 +1657,7 @@
       cargarPacientesDentalSis(qRaw);
     }
 
-    async function cambiarEstadoCita(idCita, nuevoEstado) {
+    async function cambiarEstadoCita(idCita, nuevoEstado, rutPacienteOpc, nombrePacienteOpc) {
       const token = sessionStorage.getItem('dentalsis_token');
       try {
         const res = await fetch(`/api/especialistas/citas/${idCita}/estado`, {
@@ -1664,8 +1673,14 @@
           mostrarAlertaClinica(datos.error || 'Error al actualizar estado.');
           return;
         }
-        cargarAgendaMedico();
+        await cargarAgendaMedico();
         cargarPacientesDentalSis();
+        if (typeof actualizarEstadoRecetaUI === 'function') {
+          actualizarEstadoRecetaUI();
+        }
+        if (nuevoEstado === 'EN_ATENCION' && rutPacienteOpc && (rutPacienteActual !== rutPacienteOpc || !firmaAccesoActual)) {
+          solicitarFirmaAccesoHistorial(rutPacienteOpc, nombrePacienteOpc || 'Paciente');
+        }
       } catch (e) {
         mostrarAlertaClinica('Error de conexión con el servidor.');
       }
@@ -1800,6 +1815,9 @@
         }
         firmaAccesoActual = datos.firma;
         renderizarFichaConFirma(datos.ficha, datos.firma);
+        if (typeof actualizarEstadoRecetaUI === 'function') {
+          actualizarEstadoRecetaUI();
+        }
         cargarAgendaMedico();
       } catch (e) {
         if (err) {
@@ -1880,7 +1898,7 @@
         h += `
           <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
             <div class="min-w-0">
-              <span class="font-bold text-slate-900 dark:text-white block">${c.fecha} · ${c.hora} hrs</span>
+              <span class="font-bold text-slate-900 dark:text-white block">${formatearFechaDDMMAAAA(c.fecha)} · ${c.hora} hrs</span>
               <span class="text-[11px] text-slate-500 dark:text-slate-400 block">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon || 'Box 1'}</span>
               ${motivoHtml}
             </div>
@@ -2046,8 +2064,10 @@
       const rutPac = (receta && receta.rutPaciente) || rutPacienteActual;
       setVal('recRut', formatearRutClinico(rutPac));
 
-      const fechaObj = (receta && receta.fechaEmision) ? new Date(receta.fechaEmision) : new Date();
-      setVal('recFecha', fechaObj.toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }));
+      const fechaObjRaw = (receta && receta.fechaEmision) ? new Date(receta.fechaEmision) : new Date();
+      const fechaObj = isNaN(fechaObjRaw.getTime()) ? new Date() : fechaObjRaw;
+      const fechaIsoChile = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(fechaObj);
+      setVal('recFecha', formatearFechaDDMMAAAA(fechaIsoChile));
 
       const nomMed = (receta && receta.nombreMedico) || (medicoActual && medicoActual.nombre) || 'Dr. Especialista';
       setVal('recMedico', nomMed);
@@ -2188,7 +2208,7 @@
             html += `
               <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
                 <div class="flex items-center justify-between">
-                  <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">${c.fecha || ''} · ${c.hora || ''} hrs</span>
+                  <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">${c.fecha ? formatearFechaDDMMAAAA(c.fecha) : ''} · ${c.hora || ''} hrs</span>
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${c.especialidad || c.tipoAtencion || 'Atención Odontológica'}</span>
                 </div>
                 <p class="text-xs text-slate-700 dark:text-slate-300">
@@ -2301,7 +2321,118 @@
       }
     });
 
-    agregarMedicamento('KETO-10');
+    let citaCancelacionPendienteId = null;
+
+    function iniciarCancelacionConsultaEsp(idCita) {
+      if (!idCita) return;
+      citaCancelacionPendienteId = idCita;
+      document.getElementById('modalConfirmarCancelacionEsp').classList.remove('hidden');
+    }
+
+    function cerrarConfirmacionCancelacionEsp() {
+      citaCancelacionPendienteId = null;
+      document.getElementById('modalConfirmarCancelacionEsp').classList.add('hidden');
+    }
+
+    function continuarCancelacionConsultaEsp() {
+      if (!citaCancelacionPendienteId) return;
+      document.getElementById('modalConfirmarCancelacionEsp').classList.add('hidden');
+      const motivoInp = document.getElementById('inputMotivoCancelacionEsp');
+      const claveInp = document.getElementById('inputClaveCancelacionEsp');
+      const err = document.getElementById('errorCancelacionEsp');
+      if (motivoInp) motivoInp.value = '';
+      if (claveInp) claveInp.value = '';
+      if (err) {
+        err.textContent = '';
+        err.classList.add('hidden');
+      }
+      document.getElementById('modalMotivoClaveCancelacionEsp').classList.remove('hidden');
+      setTimeout(() => {
+        if (motivoInp) motivoInp.focus();
+      }, 80);
+    }
+
+    function cerrarModalMotivoClaveCancelacionEsp() {
+      citaCancelacionPendienteId = null;
+      document.getElementById('modalMotivoClaveCancelacionEsp').classList.add('hidden');
+    }
+
+    function seleccionarMotivoRapidoEsp(texto) {
+      const motivoInp = document.getElementById('inputMotivoCancelacionEsp');
+      if (motivoInp) {
+        motivoInp.value = texto;
+        motivoInp.focus();
+      }
+    }
+
+    async function ejecutarCancelacionConsultaEsp() {
+      const idCita = citaCancelacionPendienteId;
+      const motivoInp = document.getElementById('inputMotivoCancelacionEsp');
+      const claveInp = document.getElementById('inputClaveCancelacionEsp');
+      const err = document.getElementById('errorCancelacionEsp');
+      const btn = document.getElementById('btnConfirmarCancelacionEsp');
+      const motivoCancelacion = (motivoInp ? motivoInp.value : '').trim();
+      const passwordConfirmacion = (claveInp ? claveInp.value : '');
+
+      if (!idCita) return;
+      if (motivoCancelacion.length < 5) {
+        if (err) {
+          err.textContent = 'Debes indicar un motivo de cancelación de al menos 5 caracteres.';
+          err.classList.remove('hidden');
+        }
+        return;
+      }
+      if (!passwordConfirmacion) {
+        if (err) {
+          err.textContent = 'Debes ingresar tu contraseña de especialista para autorizar la cancelación.';
+          err.classList.remove('hidden');
+        }
+        return;
+      }
+      if (err) err.classList.add('hidden');
+      if (btn) btn.disabled = true;
+
+      const token = sessionStorage.getItem('dentalsis_token');
+      try {
+        const res = await fetch(`/api/especialistas/citas/${idCita}/estado`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            nuevoEstado: 'CANCELADA',
+            motivoCancelacion,
+            passwordConfirmacion
+          })
+        });
+        const datos = await res.json();
+        if (!res.ok) {
+          if (err) {
+            err.textContent = datos.error || 'No fue posible cancelar la consulta.';
+            err.classList.remove('hidden');
+          }
+          if (btn) btn.disabled = false;
+          return;
+        }
+        if (btn) btn.disabled = false;
+        cerrarModalMotivoClaveCancelacionEsp();
+        await cargarAgendaMedico();
+        cargarPacientesDentalSis();
+        mostrarAlertaClinica('La consulta fue cancelada y registrada en el historial de auditoría.', 'Consulta Cancelada');
+      } catch (e) {
+        if (btn) btn.disabled = false;
+        if (err) {
+          err.textContent = 'Error de conexión con el servidor.';
+          err.classList.remove('hidden');
+        }
+      }
+    }
+
+    renderizarListaMedicamentos();
+    if (typeof actualizarEstadoRecetaUI === 'function') {
+      actualizarEstadoRecetaUI();
+    }
     verificarSesionEspecialista();
     renderizarCalendarioAgenda();
     cargarAgendaMedico();
@@ -2327,6 +2458,50 @@
       <button onclick="cerrarAlertaClinica()" class="w-full py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-600/20 transition">
         Entendido
       </button>
+    </div>
+  </div>
+  <div id="modalConfirmarCancelacionEsp" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Confirmar Cancelación</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">¿Estás seguro de cancelar esta consulta?</p>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="cerrarConfirmacionCancelacionEsp()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">No</button>
+        <button type="button" onclick="continuarCancelacionConsultaEsp()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 transition">Sí</button>
+      </div>
+    </div>
+  </div>
+  <div id="modalMotivoClaveCancelacionEsp" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Autorizar Cancelación de Consulta</h3>
+        <button type="button" onclick="cerrarModalMotivoClaveCancelacionEsp()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none">&times;</button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400">Indica el motivo clínico o administrativo y valida con tu clave para dejar respaldo en la auditoría.</p>
+      <div class="flex flex-wrap gap-1.5">
+        <button type="button" onclick="seleccionarMotivoRapidoEsp('Imprevisto clínico del especialista')" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-700 dark:hover:text-cyan-300 border border-slate-200 dark:border-slate-700 transition">Imprevisto clínico</button>
+        <button type="button" onclick="seleccionarMotivoRapidoEsp('Reprogramación acordada con el paciente')" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-700 dark:hover:text-cyan-300 border border-slate-200 dark:border-slate-700 transition">Reprogramación</button>
+        <button type="button" onclick="seleccionarMotivoRapidoEsp('Solicitud directa del paciente')" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:text-cyan-700 dark:hover:text-cyan-300 border border-slate-200 dark:border-slate-700 transition">Solicitud del paciente</button>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Motivo de cancelación</label>
+        <textarea id="inputMotivoCancelacionEsp" rows="3" placeholder="Describe brevemente el motivo..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-red-500"></textarea>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Contraseña del especialista</label>
+        <input id="inputClaveCancelacionEsp" type="password" placeholder="Ingresa tu clave..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-red-500">
+      </div>
+      <p id="errorCancelacionEsp" class="hidden text-xs font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2"></p>
+      <div class="flex gap-2 pt-1">
+        <button type="button" onclick="cerrarModalMotivoClaveCancelacionEsp()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Volver</button>
+        <button id="btnConfirmarCancelacionEsp" type="button" onclick="ejecutarCancelacionConsultaEsp()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 transition">Cancelar Consulta</button>
+      </div>
     </div>
   </div>
 </body>

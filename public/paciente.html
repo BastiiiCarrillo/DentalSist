@@ -185,7 +185,7 @@
           </div>
 
           <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-bold text-slate-400 mb-1">
-            <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
           </div>
           <div id="grillaDiasCalendario" class="grid grid-cols-7 gap-1.5 text-center text-xs">
           </div>
@@ -511,11 +511,36 @@
       anoSeleccionado = manana.getFullYear();
     }
 
+    function formatearFechaDMY(dia, mesZeroBased, ano) {
+      return `${String(dia).padStart(2, '0')}-${String(mesZeroBased + 1).padStart(2, '0')}-${ano}`;
+    }
+
+    function formatearFechaDDMMAAAA(fechaStr) {
+      if (!fechaStr) return '';
+      const solo = String(fechaStr).substring(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(solo)) {
+        const [a, m, d] = solo.split('-');
+        return `${d}-${m}-${a}`;
+      }
+      return solo;
+    }
+
+    function formatearEstadoLegible(estado) {
+      const est = String(estado || 'PENDIENTE').toUpperCase();
+      if (est === 'EN_ATENCION') return 'En Atención';
+      if (est === 'NO_ASISTIO') return 'No Asistió';
+      if (est === 'ATENDIDA') return '✓ Asistió · Atendida';
+      if (est === 'CONFIRMADA') return 'Confirmada';
+      if (est === 'CANCELADA') return 'Cancelada';
+      if (est === 'PENDIENTE') return 'Pendiente';
+      return est.replace(/_/g, ' ');
+    }
+
     let mesVisualizado = mesSeleccionado;
     let anoVisualizado = anoSeleccionado;
 
     const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    let fechaSeleccionada = `${diaSeleccionado} de ${nombresMeses[mesSeleccionado]} de ${anoSeleccionado}`;
+    let fechaSeleccionada = formatearFechaDMY(diaSeleccionado, mesSeleccionado, anoSeleccionado);
     let horaSeleccionada = '';
     let idMedicoSeleccionado = 'DOC-1';
     let medicoSeleccionado = 'Dr. Álvaro Soto M.';
@@ -652,7 +677,7 @@
       diaSeleccionado = dia;
       mesSeleccionado = mes;
       anoSeleccionado = ano;
-      fechaSeleccionada = `${dia} de ${nombresMeses[mes]} de ${ano}`;
+      fechaSeleccionada = formatearFechaDMY(dia, mes + 1, ano);
       horaSeleccionada = '';
       horasOcupadasEnVivo = [];
       renderizarMesCompleto();
@@ -735,10 +760,11 @@
 
       const resSidebar = document.getElementById('resumenFechaHoraSidebar');
       if (resSidebar) {
+        const fechaFormateadaDMY = formatearFechaDMY(diaSeleccionado, mesSeleccionado + 1, anoSeleccionado);
         if (horaSeleccionada) {
-          resSidebar.textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · ${horaSeleccionada} hrs`;
+          resSidebar.textContent = `${fechaFormateadaDMY} · ${horaSeleccionada} hrs`;
         } else {
-          resSidebar.textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · Sin horario disponible`;
+          resSidebar.textContent = `${fechaFormateadaDMY} · Sin horario disponible`;
         }
       }
 
@@ -765,7 +791,7 @@
       if (!grilla) return;
       grilla.innerHTML = '';
 
-      const primerDiaSemana = new Date(anoVisualizado, mesVisualizado, 1).getDay();
+      const primerDiaSemana = (new Date(anoVisualizado, mesVisualizado, 1).getDay() + 6) % 7;
       const totalDiasMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
 
       for (let i = 0; i < primerDiaSemana; i++) {
@@ -809,7 +835,7 @@
         }
       });
       btn.className = 'btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold shadow-sm';
-      document.getElementById('resumenFechaHoraSidebar').textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · ${horaSeleccionada} hrs`;
+      document.getElementById('resumenFechaHoraSidebar').textContent = `${formatearFechaDMY(diaSeleccionado, mesSeleccionado + 1, anoSeleccionado)} · ${horaSeleccionada} hrs`;
     }
 
     function renderizarMedicosDisponibles() {
@@ -1139,7 +1165,7 @@
       document.getElementById('comprobantePaciente').textContent = citaRecienAgendada.nombre;
       document.getElementById('comprobanteRut').textContent = citaRecienAgendada.rut;
       document.getElementById('comprobanteFolio').textContent = '#' + citaRecienAgendada.id;
-      document.getElementById('comprobanteEstado').textContent = citaRecienAgendada.estado || 'CONFIRMADA';
+      document.getElementById('comprobanteEstado').textContent = formatearEstadoLegible(citaRecienAgendada.estado || 'CONFIRMADA');
       document.getElementById('comprobanteEspecialidad').textContent = citaRecienAgendada.especialidad || 'Consulta Odontológica';
       document.getElementById('comprobanteFechaHora').textContent = citaRecienAgendada.fechaHora;
       document.getElementById('comprobanteMedico').textContent = `${citaRecienAgendada.medico} · ${citaRecienAgendada.sillon}`;
@@ -1182,9 +1208,9 @@
       document.getElementById('comprobantePaciente').textContent = u.nombre || c.nombrePaciente || 'Paciente Registrado';
       document.getElementById('comprobanteRut').textContent = u.rut || c.rutPaciente || 'RUT Registrado';
       document.getElementById('comprobanteFolio').textContent = '#' + c.id;
-      document.getElementById('comprobanteEstado').textContent = c.estado || 'CONFIRMADA';
+      document.getElementById('comprobanteEstado').textContent = formatearEstadoLegible(c.estado || 'CONFIRMADA');
       document.getElementById('comprobanteEspecialidad').textContent = c.especialidad || 'Consulta Odontológica';
-      document.getElementById('comprobanteFechaHora').textContent = `${c.fecha} · ${c.hora} hrs`;
+      document.getElementById('comprobanteFechaHora').textContent = `${formatearFechaDDMMAAAA(c.fecha)} · ${c.hora} hrs`;
       const sill = c.sillon ? String(c.sillon).replace('Sillón', 'Box').replace('Sillon', 'Box') : 'Box 1';
       document.getElementById('comprobanteMedico').textContent = `${c.nombreMedico || 'Dr. Asignado'} · ${sill}`;
       const hashStr = 'DS-' + String(c.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
@@ -1398,7 +1424,7 @@
 
           const puedeCancelar = c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA';
           const btnCancelarHtml = puedeCancelar
-            ? `<button onclick="abrirModalCancelarCita('${c.id}')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 transition flex items-center gap-1">Cancelar Cita</button>`
+            ? `<button onclick="confirmarInicioCancelacionPaciente('${c.id}')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 transition flex items-center gap-1">Cancelar Cita</button>`
             : '';
 
           html += `
@@ -1413,7 +1439,7 @@
               <div class="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-200/60 dark:border-slate-800/80 text-slate-600 dark:text-slate-300">
                 <div>
                   <span class="text-slate-400 block text-[10px]">Fecha y Hora:</span>
-                  <span class="font-semibold text-slate-900 dark:text-white">${c.fecha} · ${c.hora} hrs</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">${formatearFechaDDMMAAAA(c.fecha)} · ${c.hora} hrs</span>
                 </div>
                 <div>
                   <span class="text-slate-400 block text-[10px]">Especialista / Box:</span>
@@ -1441,6 +1467,28 @@
 
     let citaCancelacionId = null;
 
+    let citaPendienteConfirmarPacId = null;
+
+    function confirmarInicioCancelacionPaciente(citaId) {
+      const cita = listaCitasCargadas.find(item => String(item.id) === String(citaId));
+      if (!cita) return;
+      citaPendienteConfirmarPacId = cita.id;
+      const modal = document.getElementById('modalConfirmarCancelarPaciente');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function cerrarConfirmacionCancelarPaciente() {
+      citaPendienteConfirmarPacId = null;
+      const modal = document.getElementById('modalConfirmarCancelarPaciente');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function confirmarPasoMotivoCancelarPaciente() {
+      const id = citaPendienteConfirmarPacId;
+      cerrarConfirmacionCancelarPaciente();
+      if (id) abrirModalCancelarCita(id);
+    }
+
     function abrirModalCancelarCita(citaId) {
       const cita = listaCitasCargadas.find(item => String(item.id) === String(citaId));
       if (!cita) return;
@@ -1450,7 +1498,7 @@
       const claveInp = document.getElementById('inputClaveCancelacionPaciente');
       const err = document.getElementById('errorCancelarCitaPaciente');
       if (detalle) {
-        detalle.textContent = `${cita.especialidad || 'Consulta'} · ${cita.fecha} ${cita.hora} hrs · ${cita.nombreMedico || 'Especialista'}`;
+        detalle.textContent = `${cita.especialidad || 'Consulta'} · ${formatearFechaDDMMAAAA(cita.fecha)} ${cita.hora} hrs · ${cita.nombreMedico || 'Especialista'}`;
       }
       if (motivoInp) motivoInp.value = '';
       if (claveInp) claveInp.value = '';
@@ -1664,7 +1712,7 @@
 
       <div class="flex gap-2 pt-1">
         <button type="button" onclick="cerrarModalCancelarCita()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Volver</button>
-        <button type="button" onclick="ejecutarCancelacionCitaPaciente()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 transition">Confirmar Cancelación</button>
+        <button type="button" onclick="ejecutarCancelacionCitaPaciente()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 transition">Cancelar Consulta</button>
       </div>
     </div>
   </div>
@@ -1683,6 +1731,23 @@
       <button onclick="cerrarAlertaClinica()" class="w-full py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-600/20 transition">
         Entendido
       </button>
+    </div>
+  </div>
+  <div id="modalConfirmarCancelarPaciente" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Confirmar Cancelación</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">¿Estás seguro de cancelar esta consulta?</p>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="cerrarConfirmacionCancelarPaciente()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">No</button>
+        <button type="button" onclick="confirmarPasoMotivoCancelarPaciente()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 transition">Sí</button>
+      </div>
     </div>
   </div>
 </body>
