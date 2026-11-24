@@ -287,8 +287,8 @@ function crearUsuario(datos) {
     throw new Error('RUT chileno invalido.');
   }
 
-  if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 3) {
-    throw new Error('El nombre ingresado es invalido.');
+  if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 3 || /\d/.test(nombre) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(nombre.trim())) {
+    throw new Error('El nombre ingresado es invalido. Solo debe contener letras y espacios.');
   }
 
   if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {

@@ -25,13 +25,15 @@ describe('Modulo de Pacientes y Agendamiento', () => {
   });
 
   test('Validacion de payload de reserva de cita', () => {
+    const dFutura = new Date(Date.now() + 86400000 * 2);
+    const fechaFuturaStr = dFutura.getFullYear() + '-' + String(dFutura.getMonth() + 1).padStart(2, '0') + '-' + String(dFutura.getDate()).padStart(2, '0');
     const cuerpoValido = {
       rut: '18.234.901-1',
       nombre: 'Camilo Vega',
       email: 'camilo@correo.cl',
       telefono: '+56912345678',
       idMedico: 'DOC-1',
-      fecha: '2026-11-24',
+      fecha: fechaFuturaStr,
       hora: '10:00'
     };
     assert.strictEqual(validarDatosReserva(cuerpoValido), null);

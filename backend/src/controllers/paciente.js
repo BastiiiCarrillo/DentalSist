@@ -17,8 +17,8 @@ function validarDatosReserva(body) {
     return 'RUT chileno invalido conforme a verificacion Modulo 11.';
   }
 
-  if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 3) {
-    return 'El nombre completo del paciente es obligatorio y debe tener al menos 3 caracteres.';
+  if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 3 || /\d/.test(nombre) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(nombre.trim())) {
+    return 'El nombre completo del paciente es obligatorio y solo debe contener letras (minimo 3 caracteres).';
   }
 
   if (!email || !REGEX_EMAIL.test(email)) {
@@ -152,19 +152,57 @@ function reservarCita(req, res) {
   }
 }
 
-function consultarDisponibilidad(req, res) {
-  const { especialidad, fecha, hora } = req.query;
+async function consultarDisponibilidad(req, res) {
+  const { especialidad, fecha, hora, idMedico } = req.query;
 
-  if (!fecha || !hora) {
-    return res.status(400).json({ error: 'Se requiere especificar fecha y hora.' });
+  if (!fecha) {
+    return res.status(400).json({ error: 'Se requiere especificar la fecha.' });
   }
 
-  const medicosDisponibles = obtenerMedicosDisponibles(especialidad, fecha, hora);
+  let horasOcupadas = [];
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      let q = 'SELECT TO_CHAR(hora_inicio, \'HH24:MI\') as hora FROM citas WHERE fecha = $1::date AND estado != $2';
+      const params = [fecha, 'CANCELADA'];
+      if (idMedico) {
+        q += ' AND especialista_id::text = $3';
+        params.push(idMedico);
+      }
+      const r = await db.query(q, params);
+      if (r && r.rows) {
+        horasOcupadas = r.rows.map(row => (row.hora || '').slice(0, 5));
+      }
+    }
+  } catch (eDb) {}
+
+  const { citas } = require('../models/dataStore');
+  citas.forEach(c => {
+    if (c.fecha === fecha && c.estado !== 'CANCELADA') {
+      if (!idMedico || c.idMedico === idMedico) {
+        const h = (c.hora || '').slice(0, 5);
+        if (h && !horasOcupadas.includes(h)) {
+          horasOcupadas.push(h);
+        }
+      }
+    }
+  });
+
+  if (hora) {
+    const medicosDisponibles = obtenerMedicosDisponibles(especialidad, fecha, hora);
+    return res.status(200).json({
+      fecha,
+      hora,
+      especialidad: especialidad || 'Todas',
+      disponibles: medicosDisponibles,
+      horasOcupadas
+    });
+  }
+
   return res.status(200).json({
     fecha,
-    hora,
     especialidad: especialidad || 'Todas',
-    disponibles: medicosDisponibles
+    horasOcupadas
   });
 }
 

@@ -144,7 +144,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nombre Completo</label>
-          <input type="text" id="regNombre" oninput="limpiarErrorCampo('regNombre', 'feedbackNombre')" placeholder="ej: Francisca Morales Gómez" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <input type="text" id="regNombre" oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, ''); limpiarErrorCampo('regNombre', 'feedbackNombre')" placeholder="ej: Francisca Morales Gómez" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
           <span id="feedbackNombre" class="text-[11px] text-red-500 mt-0.5 hidden"></span>
         </div>
 
@@ -426,13 +426,6 @@
       return dvNum === 11 ? '0' : dvNum === 10 ? 'K' : dvNum.toString();
     }
 
-    function corregirRutReg(rutSugerido) {
-      const input = document.getElementById('regRut');
-      if (!input) return;
-      input.value = rutSugerido;
-      formatearYValidarRutReg(input);
-    }
-
     function formatearYValidarRutReg(input) {
       limpiarErrorCampo('regRut', 'feedbackRut');
       let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -452,12 +445,9 @@
           feedback.textContent = '✓ RUT válido';
           feedback.className = 'text-[11px] text-teal-600 dark:text-teal-400 mt-0.5 block font-semibold';
         } else {
-          const cuerpo = valor.slice(0, -1);
-          const dvCorrecto = obtenerDvOficial(cuerpo);
-          const rutSugerido = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dvCorrecto;
           input.classList.remove('border-teal-500');
           input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
-          feedback.innerHTML = '✗ Dígito verificador incorrecto (oficial: <strong>-' + dvCorrecto + '</strong>). <button type="button" onclick="corregirRutReg(\'' + rutSugerido + '\')" class="underline font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 ml-1 cursor-pointer">Corregir a ' + rutSugerido + '</button>';
+          feedback.innerHTML = '✗ Dígito verificador o RUT incorrecto';
           feedback.className = 'text-[11px] text-red-500 mt-0.5 block font-semibold';
         }
       } else {
@@ -509,8 +499,8 @@
         hayError = true;
       }
 
-      if (!nombre || nombre.length < 3) {
-        marcarErrorCampo('regNombre', 'feedbackNombre', 'El nombre completo es obligatorio (mínimo 3 letras).');
+      if (!nombre || nombre.trim().length < 3 || /\d/.test(nombre) || !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/.test(nombre.trim())) {
+        marcarErrorCampo('regNombre', 'feedbackNombre', 'El nombre solo debe contener letras y espacios (mínimo 3 caracteres).');
         hayError = true;
       }
 
