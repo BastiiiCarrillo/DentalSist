@@ -2,8 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 
-const NEON_DEFAULT = 'postgresql://neondb_owner:npg_VBtJld0QS7yK@ep-flat-cloud-bdwny94q.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require';
-
 let pool = null;
 
 function cargarEnv() {
@@ -32,16 +30,13 @@ function cargarEnv() {
       } catch (err) {}
     }
   }
-  if (!process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = NEON_DEFAULT;
-  }
 }
 
 cargarEnv();
 
 function obtenerPool() {
   cargarEnv();
-  const connStr = (process.env.DATABASE_URL || NEON_DEFAULT).replace(/['"]/g, '').trim();
+  const connStr = (process.env.DATABASE_URL || '').replace(/['"]/g, '').trim();
   if (!pool && connStr) {
     pool = new Pool({
       connectionString: connStr,
