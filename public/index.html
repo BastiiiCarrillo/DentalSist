@@ -187,6 +187,10 @@
               <span id="icoEsp" class="font-bold text-xs">○</span>
               <span>Al menos un caracter especial (!@#$...)</span>
             </div>
+            <div id="checkEspacios" class="flex items-center gap-1.5 text-slate-400">
+              <span id="icoEspacios" class="font-bold text-xs">○</span>
+              <span>Sin espacios en blanco</span>
+            </div>
           </div>
         </div>
 
@@ -313,18 +317,20 @@
       if (!input) return false;
       const val = input.value;
       const cLargo = val.length >= 8;
+      const cSinEspacios = !/\s/.test(val) && val.length > 0;
       const cMayus = /[A-Z]/.test(val);
       const cMinus = /[a-z]/.test(val);
       const cNum = /[0-9]/.test(val);
       const cEsp = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val);
 
       evaluarItemCheck('checkLargo', 'icoLargo', cLargo);
+      evaluarItemCheck('checkEspacios', 'icoEspacios', cSinEspacios);
       evaluarItemCheck('checkMayus', 'icoMayus', cMayus);
       evaluarItemCheck('checkMinus', 'icoMinus', cMinus);
       evaluarItemCheck('checkNum', 'icoNum', cNum);
       evaluarItemCheck('checkEsp', 'icoEsp', cEsp);
 
-      const todoOk = cLargo && cMayus && cMinus && cNum && cEsp;
+      const todoOk = cLargo && cSinEspacios && cMayus && cMinus && cNum && cEsp;
       if (val.length === 0) {
         input.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-teal-500', 'ring-teal-500');
         input.classList.add('border-slate-300');
@@ -407,6 +413,9 @@
     function validarComplejidadClave(clave) {
       if (!clave || clave.length < 8) {
         return 'La contraseña debe tener al menos 8 caracteres.';
+      }
+      if (/\s/.test(clave)) {
+        return 'La contraseña no debe contener espacios en blanco.';
       }
       if (!/[A-Z]/.test(clave)) {
         return 'Debe incluir al menos una letra mayúscula (A-Z).';
@@ -531,13 +540,20 @@
 
     async function ejecutarLogin() {
       const identificador = document.getElementById('loginUsuario').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
+      const password = document.getElementById('loginPassword').value;
       const recordarme = document.getElementById('checkRecordarme') ? document.getElementById('checkRecordarme').checked : false;
       const err = document.getElementById('errorLogin');
 
       if (!identificador || !password) {
         err.textContent = 'Por favor ingresa usuario y contraseña.';
         err.classList.remove('hidden');
+        return;
+      }
+
+      if (/\s/.test(password)) {
+        err.textContent = 'La contraseña no debe contener espacios en blanco.';
+        err.classList.remove('hidden');
+        marcarErrorCampo('loginPassword', '', 'Sin espacios');
         return;
       }
 

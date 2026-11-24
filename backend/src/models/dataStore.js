@@ -185,6 +185,9 @@ function validarPasswordSegura(password) {
   if (!password || typeof password !== 'string' || password.length < 8) {
     return 'La contrasena debe tener al menos 8 caracteres.';
   }
+  if (/\s/.test(password)) {
+    return 'La contrasena no debe contener espacios en blanco.';
+  }
   if (!/[A-Z]/.test(password)) {
     return 'La contrasena debe incluir al menos una letra mayuscula.';
   }

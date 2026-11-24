@@ -130,17 +130,38 @@ function registro(req, res) {
       const db = require('../models/db');
       if (db.obtenerPool()) {
         const hash = bcrypt.hashSync(password, 10);
-        db.query(
-          'INSERT INTO usuarios (rut, nombre, email, password_hash, rol, estado) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, nombre = EXCLUDED.nombre, rut = EXCLUDED.rut;',
-          [nuevoUsuario.rutFormateado, nuevoUsuario.nombre, nuevoUsuario.email, hash, 'PACIENTE', 'ACTIVO']
-        ).catch(() => {});
+        db.query('SELECT id FROM usuarios WHERE email = $1 OR rut = $2;', [nuevoUsuario.email, nuevoUsuario.rutFormateado])
+          .then(async (rCheck) => {
+            if (rCheck.rows && rCheck.rows.length > 0) {
+              await db.query(
+                'UPDATE usuarios SET password_hash = $1, nombre = $2, rut = $3, email = $4 WHERE id = $5;',
+                [hash, nuevoUsuario.nombre, nuevoUsuario.rutFormateado, nuevoUsuario.email, rCheck.rows[0].id]
+              );
+            } else {
+              await db.query(
+                'INSERT INTO usuarios (rut, nombre, email, password_hash, rol, estado) VALUES ($1, $2, $3, $4, $5, $6);',
+                [nuevoUsuario.rutFormateado, nuevoUsuario.nombre, nuevoUsuario.email, hash, 'PACIENTE', 'ACTIVO']
+              );
+            }
+          }).catch(() => {});
+
         const partes = nuevoUsuario.nombre.trim().split(' ');
         const nomP = partes[0] || 'Paciente';
         const apeP = partes.slice(1).join(' ') || 'Registrado';
-        db.query(
-          'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = EXCLUDED.telefono, email = EXCLUDED.email;',
-          [nuevoUsuario.rutFormateado, nomP, apeP, '2000-01-01', nuevoUsuario.telefono, nuevoUsuario.email]
-        ).catch(() => {});
+        db.query('SELECT id FROM pacientes WHERE rut = $1 OR email = $2;', [nuevoUsuario.rutFormateado, nuevoUsuario.email])
+          .then(async (rPacCheck) => {
+            if (rPacCheck.rows && rPacCheck.rows.length > 0) {
+              await db.query(
+                'UPDATE pacientes SET nombre = $1, apellido = $2, telefono = $3, email = $4, rut = $5 WHERE id = $6;',
+                [nomP, apeP, nuevoUsuario.telefono, nuevoUsuario.email, nuevoUsuario.rutFormateado, rPacCheck.rows[0].id]
+              );
+            } else {
+              await db.query(
+                'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6);',
+                [nuevoUsuario.rutFormateado, nomP, apeP, '2000-01-01', nuevoUsuario.telefono, nuevoUsuario.email]
+              );
+            }
+          }).catch(() => {});
       }
     } catch (eDb) {
     }
