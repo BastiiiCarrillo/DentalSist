@@ -1542,6 +1542,9 @@
         citasMedicoCache = datos.citas || [];
         renderizarCalendarioAgenda();
         renderizarListaAgendaCitas();
+        if (silencioso && rutPacienteActual && firmaAccesoActual && typeof refrescarHistorialCitasActivo === 'function') {
+          refrescarHistorialCitasActivo();
+        }
       } catch (e) {
         if (!silencioso) {
           contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error de conexión al cargar agenda.</div>';
@@ -1681,7 +1684,11 @@
           mostrarAlertaClinica(datos.error || 'Error al actualizar estado.');
           return;
         }
-        await cargarAgendaMedico();
+        actualizarEstadoEnHistorialLocal(idCita, nuevoEstado);
+        await Promise.all([
+          cargarAgendaMedico(),
+          refrescarHistorialCitasActivo()
+        ]);
         cargarPacientesDentalSis();
         if (typeof actualizarEstadoRecetaUI === 'function') {
           actualizarEstadoRecetaUI();
@@ -1952,6 +1959,38 @@
         }
 
         renderizarHistorialCitasPaciente(ficha.citasPrevias || []);
+      } catch (e) {}
+    }
+
+    function actualizarEstadoEnHistorialLocal(idCita, nuevoEstado, motivoCancelacion = null) {
+      if (!fichaActualCargada || !Array.isArray(fichaActualCargada.citasPrevias)) return;
+      const idx = fichaActualCargada.citasPrevias.findIndex(c => String(c.id) === String(idCita));
+      if (idx !== -1) {
+        fichaActualCargada.citasPrevias[idx] = {
+          ...fichaActualCargada.citasPrevias[idx],
+          estado: nuevoEstado,
+          motivoCancelacion: nuevoEstado === 'CANCELADA' ? (motivoCancelacion || fichaActualCargada.citasPrevias[idx].motivoCancelacion) : fichaActualCargada.citasPrevias[idx].motivoCancelacion
+        };
+        renderizarHistorialCitasPaciente(fichaActualCargada.citasPrevias);
+      }
+    }
+
+    async function refrescarHistorialCitasActivo() {
+      if (!rutPacienteActual || !firmaAccesoActual) return;
+      const token = sessionStorage.getItem('dentalsis_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rutPacienteActual), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const datos = await res.json();
+        if (!datos || !datos.ficha) return;
+        fichaActualCargada = {
+          ...(fichaActualCargada || {}),
+          ...datos.ficha
+        };
+        renderizarHistorialCitasPaciente(fichaActualCargada.citasPrevias || []);
       } catch (e) {}
     }
 
@@ -2425,7 +2464,11 @@
         }
         if (btn) btn.disabled = false;
         cerrarModalMotivoClaveCancelacionEsp();
-        await cargarAgendaMedico();
+        actualizarEstadoEnHistorialLocal(idCita, 'CANCELADA', motivoCancelacion);
+        await Promise.all([
+          cargarAgendaMedico(),
+          refrescarHistorialCitasActivo()
+        ]);
         cargarPacientesDentalSis();
         mostrarAlertaClinica('La consulta fue cancelada y registrada en el historial de auditoría.', 'Consulta Cancelada');
       } catch (e) {
