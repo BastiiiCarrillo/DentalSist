@@ -518,7 +518,7 @@
         id: 'DOC-1',
         nombre: 'Dr. Álvaro Soto M.',
         especialidad: 'Cirugía Bucal',
-        sillon: 'Sillón 1',
+        sillon: 'Box 1',
         iniciales: 'AS',
         color: 'from-cyan-600 to-teal-500'
       },
@@ -526,7 +526,7 @@
         id: 'DOC-5',
         nombre: 'Dr. Ignacio Valenzuela R.',
         especialidad: 'Cirugía Bucal',
-        sillon: 'Sillón 2',
+        sillon: 'Box 2',
         iniciales: 'IV',
         color: 'from-blue-600 to-cyan-600'
       },
@@ -534,7 +534,7 @@
         id: 'DOC-2',
         nombre: 'Dra. Fernanda Ríos',
         especialidad: 'Odontología General',
-        sillon: 'Sillón 1',
+        sillon: 'Box 1',
         iniciales: 'FR',
         color: 'from-teal-600 to-emerald-500'
       },
@@ -542,7 +542,7 @@
         id: 'DOC-6',
         nombre: 'Dr. Camilo Morales P.',
         especialidad: 'Odontología General',
-        sillon: 'Sillón 2',
+        sillon: 'Box 2',
         iniciales: 'CM',
         color: 'from-emerald-600 to-teal-500'
       },
@@ -550,7 +550,7 @@
         id: 'DOC-7',
         nombre: 'Dra. Valentina Castro T.',
         especialidad: 'Odontología General',
-        sillon: 'Sillón 3',
+        sillon: 'Box 3',
         iniciales: 'VC',
         color: 'from-indigo-600 to-cyan-600'
       },
@@ -558,7 +558,7 @@
         id: 'DOC-4',
         nombre: 'Dra. Marcela Lagos',
         especialidad: 'Ortodoncia',
-        sillon: 'Sillón 4',
+        sillon: 'Box 4',
         iniciales: 'ML',
         color: 'from-purple-600 to-indigo-500'
       },
@@ -566,7 +566,7 @@
         id: 'DOC-8',
         nombre: 'Dr. Felipe Bravo M.',
         especialidad: 'Ortodoncia',
-        sillon: 'Sillón 1',
+        sillon: 'Box 1',
         iniciales: 'FB',
         color: 'from-cyan-700 to-blue-600'
       },
@@ -574,7 +574,7 @@
         id: 'DOC-3',
         nombre: 'Dr. Matías Silva',
         especialidad: 'Endodoncia',
-        sillon: 'Sillón 3',
+        sillon: 'Box 3',
         iniciales: 'MS',
         color: 'from-teal-700 to-cyan-600'
       },
@@ -582,7 +582,7 @@
         id: 'DOC-9',
         nombre: 'Dra. Constanza Herrera S.',
         especialidad: 'Endodoncia',
-        sillon: 'Sillón 2',
+        sillon: 'Box 2',
         iniciales: 'CH',
         color: 'from-sky-600 to-teal-500'
       },
@@ -590,7 +590,7 @@
         id: 'DOC-10',
         nombre: 'Dr. Rodrigo Fuentes L.',
         especialidad: 'Periodoncia',
-        sillon: 'Sillón 3',
+        sillon: 'Box 3',
         iniciales: 'RF',
         color: 'from-blue-600 to-indigo-600'
       },
@@ -598,7 +598,7 @@
         id: 'DOC-11',
         nombre: 'Dra. Camila Paz Aedo',
         especialidad: 'Odontopediatría',
-        sillon: 'Sillón 4',
+        sillon: 'Box 4',
         iniciales: 'CA',
         color: 'from-amber-500 to-teal-500'
       }
@@ -1035,7 +1035,7 @@
           rut,
           especialidad: especialidadSeleccionada,
           medico: medicoSeleccionado,
-          sillon: 'Sillón 1',
+          sillon: 'Box 1',
           fechaHora: `${fechaSeleccionada} · ${horaSeleccionada} hrs`,
           estado: 'CONFIRMADA'
         };
@@ -1101,7 +1101,7 @@
       document.getElementById('comprobanteEstado').textContent = c.estado || 'CONFIRMADA';
       document.getElementById('comprobanteEspecialidad').textContent = c.especialidad || 'Consulta Odontológica';
       document.getElementById('comprobanteFechaHora').textContent = `${c.fecha} · ${c.hora} hrs`;
-      const sill = c.sillon ? (String(c.sillon).includes('Sillón') ? c.sillon : 'Sillón ' + c.sillon) : 'Sillón 1';
+      const sill = c.sillon ? String(c.sillon).replace('Sillón', 'Box').replace('Sillon', 'Box') : 'Box 1';
       document.getElementById('comprobanteMedico').textContent = `${c.nombreMedico || 'Dr. Asignado'} · ${sill}`;
       const hashStr = 'DS-' + String(c.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
       document.getElementById('comprobanteHash').textContent = `HMAC-SHA256 · DentalSis #${hashStr || 'DS-2026'}`;
@@ -1309,7 +1309,7 @@
                 </div>
                 <div>
                   <span class="text-slate-400 block text-[10px]">Especialista / Box:</span>
-                  <span class="font-semibold text-slate-900 dark:text-white">${c.nombreMedico || 'Dr. Asignado'} · ${c.sillon || 'Sillón 1'}</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">${c.nombreMedico || 'Dr. Asignado'} · ${c.sillon ? String(c.sillon).replace('Sillón', 'Box').replace('Sillon', 'Box') : 'Box 1'}</span>
                 </div>
               </div>
               ${indicacionesCardHtml}

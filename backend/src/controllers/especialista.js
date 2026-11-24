@@ -64,7 +64,7 @@ async function obtenerAgenda(req, res) {
           hora: String(r.hora).substring(0, 5),
           especialidad: r.especialidad,
           estado: r.estado,
-          sillon: 'Sillón ' + r.sillon,
+          sillon: 'Box ' + r.sillon,
           nombrePaciente: r.nombrePaciente,
           rutPaciente: r.rutPaciente,
           rutFormateado: r.rutPaciente,
@@ -170,7 +170,7 @@ async function obtenerFichaPaciente(req, res) {
           hora: String(r.hora).substring(0, 5),
           especialidad: r.especialidad,
           estado: r.estado,
-          sillon: 'Sillón ' + r.sillon,
+          sillon: 'Box ' + r.sillon,
           nombreMedico: r.nombreMedico || 'Especialista Dental'
         }));
       }
@@ -523,7 +523,7 @@ async function autorizarAccesoHistorial(req, res) {
           hora: String(r.hora).substring(0, 5),
           especialidad: r.especialidad,
           estado: r.estado,
-          sillon: 'Sillon ' + r.sillon,
+          sillon: 'Box ' + r.sillon,
           nombreMedico: r.nombreMedico || 'Especialista Dental'
         }));
       }

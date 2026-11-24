@@ -256,7 +256,7 @@ async function consultarMisCitas(req, res) {
             hora: String(r.hora).substring(0, 5),
             especialidad: r.especialidad,
             estado: r.estado,
-            sillon: 'Sillón ' + r.sillon,
+            sillon: 'Box ' + r.sillon,
             nombreMedico: r.nombreMedico || 'Especialista Dental',
             diagnostico: diagLimpio,
             tratamiento: fMatch ? fMatch.tratamiento_realizado : null,
