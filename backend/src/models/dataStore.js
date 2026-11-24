@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const medicosSemilla = [
   {
     id: 'DOC-1',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
     rut: '14.892.341-2',
     nombre: 'Dr. Álvaro Soto M.',
     especialidad: 'Cirugía Bucal',
@@ -14,6 +15,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-5',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5',
     rut: '15.612.394-1',
     nombre: 'Dr. Ignacio Valenzuela R.',
     especialidad: 'Cirugía Bucal',
@@ -25,6 +27,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-2',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
     rut: '16.781.423-5',
     nombre: 'Dra. Fernanda Ríos',
     especialidad: 'Odontología General',
@@ -36,6 +39,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-6',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6',
     rut: '17.204.819-3',
     nombre: 'Dr. Camilo Morales P.',
     especialidad: 'Odontología General',
@@ -47,6 +51,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-7',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7',
     rut: '18.012.443-8',
     nombre: 'Dra. Valentina Castro T.',
     especialidad: 'Odontología General',
@@ -58,6 +63,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-4',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4',
     rut: '16.204.912-3',
     nombre: 'Dra. Marcela Lagos',
     especialidad: 'Ortodoncia',
@@ -69,6 +75,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-8',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8',
     rut: '16.483.210-9',
     nombre: 'Dr. Felipe Bravo M.',
     especialidad: 'Ortodoncia',
@@ -80,6 +87,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-3',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
     rut: '15.932.114-8',
     nombre: 'Dr. Matías Silva',
     especialidad: 'Endodoncia',
@@ -91,6 +99,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-9',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9',
     rut: '17.519.203-K',
     nombre: 'Dra. Constanza Herrera S.',
     especialidad: 'Endodoncia',
@@ -102,6 +111,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-10',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10',
     rut: '15.340.892-4',
     nombre: 'Dr. Rodrigo Fuentes L.',
     especialidad: 'Periodoncia',
@@ -113,6 +123,7 @@ const medicosSemilla = [
   },
   {
     id: 'DOC-11',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11',
     rut: '18.391.029-7',
     nombre: 'Dra. Camila Paz Aedo',
     especialidad: 'Odontopediatría',
@@ -232,7 +243,22 @@ function obtenerMedicos() {
 }
 
 function buscarMedicoPorId(idMedico) {
-  return medicos.find(m => m.id === idMedico) || null;
+  if (!idMedico) return null;
+  const MAPA_UUID = {
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1': 'DOC-1',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2': 'DOC-2',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3': 'DOC-3',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4': 'DOC-4',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5': 'DOC-5',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6': 'DOC-6',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7': 'DOC-7',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8': 'DOC-8',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9': 'DOC-9',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10': 'DOC-10',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11'
+  };
+  const targetId = MAPA_UUID[idMedico] || idMedico;
+  return medicos.find(m => m.id === targetId || m.uuid === idMedico) || null;
 }
 
 function buscarMedicoPorEmail(email) {
@@ -244,7 +270,12 @@ function buscarMedicoPorEmail(email) {
 function buscarMedicoPorRut(rut) {
   if (!rut) return null;
   const rutLimpio = limpiarRut(rut);
-  return medicos.find(m => m.rut && limpiarRut(m.rut) === rutLimpio) || null;
+  const cuerpo = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
+  return medicos.find(m => {
+    if (!m.rut) return false;
+    const mRut = limpiarRut(m.rut);
+    return mRut === rutLimpio || (cuerpo.length >= 7 && mRut.slice(0, -1) === cuerpo);
+  }) || null;
 }
 
 function buscarUsuarioPorRut(rut) {
@@ -451,8 +482,22 @@ function crearCita(datos) {
 }
 
 function obtenerCitasPorMedico(idMedico, fecha = null) {
+  const MAPA_UUID = {
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1': 'DOC-1',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2': 'DOC-2',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3': 'DOC-3',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4': 'DOC-4',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5': 'DOC-5',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6': 'DOC-6',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7': 'DOC-7',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8': 'DOC-8',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9': 'DOC-9',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10': 'DOC-10',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11'
+  };
+  const targetId = MAPA_UUID[idMedico] || idMedico;
   return citas.filter(c => {
-    if (c.idMedico !== idMedico) return false;
+    if (c.idMedico !== targetId && c.idMedico !== idMedico) return false;
     if (fecha && c.fecha !== fecha) return false;
     return true;
   });
@@ -613,7 +658,15 @@ function reiniciarEstadoParaPruebas() {
   recetas = [];
 }
 
+function obtenerTodasLasCitas() {
+  return citas;
+}
+
 module.exports = {
+  get citas() {
+    return citas;
+  },
+  obtenerTodasLasCitas,
   limpiarRut,
   formatearRut,
   validarRutChileno,

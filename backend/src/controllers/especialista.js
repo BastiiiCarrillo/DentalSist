@@ -21,7 +21,18 @@ async function obtenerAgenda(req, res) {
   const { idMedico } = req.params;
   const { fecha } = req.query;
 
-  const medico = buscarMedicoPorId(idMedico);
+  let medico = buscarMedicoPorId(idMedico);
+  if (!medico) {
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const rEsp = await db.query('SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE e.id::text = $1 LIMIT 1;', [idMedico]);
+        if (rEsp.rows && rEsp.rows.length > 0) {
+          medico = rEsp.rows[0];
+        }
+      }
+    } catch (e) {}
+  }
   if (!medico) {
     return res.status(404).json({ error: 'Medico especialista no encontrado.' });
   }
@@ -31,14 +42,20 @@ async function obtenerAgenda(req, res) {
   try {
     const db = require('../models/db');
     if (db.obtenerPool()) {
-      let espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1';
-      if (idMedico === 'DOC-2' || (medico.especialidad && medico.especialidad.includes('General'))) {
-        espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
-      } else if (idMedico === 'DOC-3' || (medico.especialidad && medico.especialidad.includes('Endodoncia'))) {
-        espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
-      } else if (idMedico === 'DOC-4' || (medico.especialidad && medico.especialidad.includes('Ortodoncia'))) {
-        espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
-      }
+      const MAPA_UUIDS = {
+        'DOC-1': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
+        'DOC-2': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
+        'DOC-3': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
+        'DOC-4': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4',
+        'DOC-5': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5',
+        'DOC-6': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6',
+        'DOC-7': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7',
+        'DOC-8': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8',
+        'DOC-9': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9',
+        'DOC-10': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10',
+        'DOC-11': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11'
+      };
+      let espUuid = MAPA_UUIDS[idMedico] || (medico && medico.uuid) || idMedico;
 
       let sql = `
         SELECT c.id, c.fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon,

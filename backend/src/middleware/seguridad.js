@@ -111,9 +111,13 @@ const limiteOperacionesSensibles = rateLimit({
 
 const limiteGlobal = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 3000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    const u = req.originalUrl || req.url || '';
+    return u.includes('/disponibilidad') || u.includes('/salud');
+  },
   message: {
     error: 'Limite global de peticiones excedido.'
   }

@@ -669,6 +669,7 @@
     }
 
     async function actualizarDisponibilidadEnVivo() {
+      if (document.hidden) return;
       const fechaISO = obtenerFechaISOActual();
       const esp = encodeURIComponent(especialidadSeleccionada || '');
       const med = encodeURIComponent(idMedicoSeleccionado || '');
@@ -1097,7 +1098,8 @@
         const folioEl = document.getElementById('folioReservaModal');
         if (folioEl) folioEl.textContent = '#' + citaId;
         document.getElementById('resumenPaciente').textContent = nombre;
-        document.getElementById('resumenMedico').textContent = medicoSeleccionado;
+        const nombreMedicoFinal = (datos.cita && datos.cita.nombreMedico) ? datos.cita.nombreMedico : medicoSeleccionado;
+        document.getElementById('resumenMedico').textContent = nombreMedicoFinal;
         document.getElementById('resumenFechaHora').textContent = `${fechaSeleccionada} · ${horaSeleccionada} hrs`;
 
         citaRecienAgendada = {
@@ -1105,8 +1107,8 @@
           nombre,
           rut,
           especialidad: especialidadSeleccionada,
-          medico: medicoSeleccionado,
-          sillon: 'Box 1',
+          medico: nombreMedicoFinal,
+          sillon: (datos.cita && datos.cita.sillon) ? datos.cita.sillon : 'Box 1',
           fechaHora: `${fechaSeleccionada} · ${horaSeleccionada} hrs`,
           estado: 'CONFIRMADA'
         };
@@ -1405,8 +1407,11 @@
     renderizarMedicosDisponibles();
     inicializarEstadoPaciente();
     actualizarDisponibilidadEnVivo();
-    setInterval(actualizarDisponibilidadEnVivo, 3000);
+    setInterval(actualizarDisponibilidadEnVivo, 8000);
     window.addEventListener('focus', actualizarDisponibilidadEnVivo);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) actualizarDisponibilidadEnVivo();
+    });
   </script>
 
   <div id="modalMisReservas" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

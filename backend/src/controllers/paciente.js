@@ -68,15 +68,24 @@ function validarDatosReserva(body) {
 async function mapearEspecialista(idMedico, especialidad, nombre) {
   const MAPA = {
     'DOC-1': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', sillon: 1 },
-    'DOC-2': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', sillon: 2 },
+    'DOC-2': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', sillon: 1 },
     'DOC-3': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', sillon: 3 },
     'DOC-4': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4', sillon: 4 },
-    'DOC-5': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', sillon: 2 },
-    'DOC-6': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', sillon: 2 },
-    'DOC-7': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', sillon: 3 }
+    'DOC-5': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5', sillon: 2 },
+    'DOC-6': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6', sillon: 2 },
+    'DOC-7': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7', sillon: 3 },
+    'DOC-8': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8', sillon: 1 },
+    'DOC-9': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9', sillon: 2 },
+    'DOC-10': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10', sillon: 3 },
+    'DOC-11': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', sillon: 4 }
   };
   if (idMedico && MAPA[idMedico]) {
     return MAPA[idMedico];
+  }
+  for (const k of Object.keys(MAPA)) {
+    if (MAPA[k].espUuid === idMedico) {
+      return MAPA[k];
+    }
   }
   const db = require('../models/db');
   if (db.obtenerPool() && (idMedico || nombre)) {
@@ -264,8 +273,9 @@ async function consultarDisponibilidad(req, res) {
     }
   } catch (eDb) {}
 
-  const { citas } = require('../models/dataStore');
-  citas.forEach(c => {
+  const { citas, obtenerTodasLasCitas } = require('../models/dataStore');
+  const listadoCitas = typeof obtenerTodasLasCitas === 'function' ? obtenerTodasLasCitas() : (citas || []);
+  listadoCitas.forEach(c => {
     if (c.fecha === fecha && c.estado !== 'CANCELADA') {
       if (!idMedico || c.idMedico === idMedico || c.sillon === `Box ${sillon}`) {
         const h = (c.hora || '').slice(0, 5);
@@ -278,7 +288,7 @@ async function consultarDisponibilidad(req, res) {
 
   if (rut && rut.trim().length >= 7) {
     const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
-    citas.forEach(c => {
+    listadoCitas.forEach(c => {
       if (c.fecha === fecha && c.estado !== 'CANCELADA' && c.rutPaciente === rutLimpio) {
         const h = (c.hora || '').slice(0, 5);
         if (h && !horasOcupadas.includes(h)) {

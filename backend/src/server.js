@@ -21,6 +21,7 @@ const medicamentosRutas = require('./routes/medicamentos.routes');
 const { verificarToken, verificarRol } = require('./controllers/auth.controller');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: false
