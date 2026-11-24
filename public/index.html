@@ -165,7 +165,15 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Contraseña Segura</label>
-          <input type="password" id="regPassword" oninput="evaluarPasswordEnVivo()" placeholder="Mínimo 8 car., mayúscula, número y especial" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <div class="relative">
+            <input type="password" id="regPassword" oninput="evaluarPasswordEnVivo()" placeholder="Mínimo 8 car., mayúscula, número y especial" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 pr-10 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+            <button type="button" onclick="alternarVisibilidadPassword('regPassword', 'icoVerRegPassIndex')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer focus:outline-none" title="Ver / ocultar contraseña" tabindex="-1">
+              <svg id="icoVerRegPassIndex" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
           <div id="checklistPassword" class="mt-2 p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1 text-[11px]">
             <div id="checkLargo" class="flex items-center gap-1.5 text-slate-400">
               <span id="icoLargo" class="font-bold text-xs">○</span>
@@ -196,7 +204,15 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Confirmar Contraseña</label>
-          <input type="password" id="regPasswordConfirm" oninput="evaluarConfirmacionEnVivo()" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+          <div class="relative">
+            <input type="password" id="regPasswordConfirm" oninput="evaluarConfirmacionEnVivo()" placeholder="Repite tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 pr-10 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500 transition">
+            <button type="button" onclick="alternarVisibilidadPassword('regPasswordConfirm', 'icoVerRegConfirmPassIndex')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer focus:outline-none" title="Ver / ocultar contraseña" tabindex="-1">
+              <svg id="icoVerRegConfirmPassIndex" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
           <span id="feedbackPasswordConfirm" class="text-[11px] mt-0.5 block font-semibold hidden"></span>
         </div>
 
@@ -377,6 +393,41 @@
       }
     }
 
+    function alternarVisibilidadPassword(idInput, idIco) {
+      const inp = document.getElementById(idInput);
+      const ico = document.getElementById(idIco);
+      if (!inp) return;
+      const esPassword = inp.type === 'password';
+      inp.type = esPassword ? 'text' : 'password';
+      if (ico) {
+        if (esPassword) {
+          ico.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+        } else {
+          ico.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        }
+      }
+    }
+
+    function obtenerDvOficial(cuerpo) {
+      if (!cuerpo || !/^\d+$/.test(cuerpo)) return '';
+      let suma = 0;
+      let multiplicador = 2;
+      for (let i = cuerpo.length - 1; i >= 0; i--) {
+        suma += parseInt(cuerpo.charAt(i), 10) * multiplicador;
+        multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+      }
+      const resto = suma % 11;
+      const dvNum = 11 - resto;
+      return dvNum === 11 ? '0' : dvNum === 10 ? 'K' : dvNum.toString();
+    }
+
+    function corregirRutReg(rutSugerido) {
+      const input = document.getElementById('regRut');
+      if (!input) return;
+      input.value = rutSugerido;
+      formatearYValidarRutReg(input);
+    }
+
     function formatearYValidarRutReg(input) {
       limpiarErrorCampo('regRut', 'feedbackRut');
       let valor = input.value.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -389,16 +440,19 @@
         input.value = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv;
       }
       const feedback = document.getElementById('feedbackRut');
-      if (input.value.length >= 7) {
+      if (valor.length >= 7) {
         if (validarRutModulo11(input.value)) {
           input.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
           input.classList.add('border-teal-500');
           feedback.textContent = '✓ RUT válido';
           feedback.className = 'text-[11px] text-teal-600 dark:text-teal-400 mt-0.5 block font-semibold';
         } else {
+          const cuerpo = valor.slice(0, -1);
+          const dvCorrecto = obtenerDvOficial(cuerpo);
+          const rutSugerido = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dvCorrecto;
           input.classList.remove('border-teal-500');
           input.classList.add('border-red-500', 'ring-1', 'ring-red-500');
-          feedback.textContent = '✗ Dígito verificador o RUT incorrecto';
+          feedback.innerHTML = '✗ Dígito verificador incorrecto (oficial: <strong>-' + dvCorrecto + '</strong>). <button type="button" onclick="corregirRutReg(\'' + rutSugerido + '\')" class="underline font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 ml-1 cursor-pointer">Corregir a ' + rutSugerido + '</button>';
           feedback.className = 'text-[11px] text-red-500 mt-0.5 block font-semibold';
         }
       } else {

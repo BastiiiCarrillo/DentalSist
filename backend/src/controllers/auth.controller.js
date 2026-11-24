@@ -53,11 +53,19 @@ async function login(req, res) {
             usuarioEncontrado = { ...rEsp.rows[0], rol: 'Odontologo' };
           } else {
             const rDb = await db.query(
-              'SELECT id, nombre, email, rut, telefono, password_hash as "passwordHash", rol, estado FROM usuarios WHERE (LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6) AND (UPPER(rol) = $7 OR UPPER(rol) = $8) LIMIT 1;',
+              'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE (LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6) AND (UPPER(u.rol) = $7 OR UPPER(u.rol) = $8) LIMIT 1;',
               [idLimpio, '.', '', '-', '', rutLimpio, 'ODONTOLOGO', 'SUPERADMIN']
             );
             if (rDb.rows && rDb.rows.length > 0) {
               usuarioEncontrado = rDb.rows[0];
+            } else {
+              const rGen = await db.query(
+                'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+                [idLimpio, '.', '', '-', '', rutLimpio]
+              );
+              if (rGen.rows && rGen.rows.length > 0) {
+                usuarioEncontrado = rGen.rows[0];
+              }
             }
           }
         }
@@ -66,7 +74,7 @@ async function login(req, res) {
     }
     if (!usuarioEncontrado) {
       registrarFalloLogin(ip, identificador);
-      return res.status(401).json({ error: 'No se encontro una cuenta de especialista con estas credenciales.' });
+      return res.status(401).json({ error: 'No se encontro una cuenta con estas credenciales.' });
     }
   } else {
     if (identificador.includes('@')) {
@@ -87,7 +95,7 @@ async function login(req, res) {
           const idLimpio = identificador.trim().toLowerCase();
           const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
           const rDb = await db.query(
-            'SELECT id, nombre, email, rut, telefono, password_hash as "passwordHash", rol, estado FROM usuarios WHERE LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+            'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
             [idLimpio, '.', '', '-', '', rutLimpio]
           );
           if (rDb.rows && rDb.rows.length > 0) {

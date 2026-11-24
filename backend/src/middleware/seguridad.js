@@ -80,6 +80,9 @@ function sanitizarCadena(str) {
 function sanitizarObjeto(obj) {
   if (!obj || typeof obj !== 'object') return obj;
   for (const clave of Object.keys(obj)) {
+    if (clave === 'password' || clave === 'passwordActual' || clave === 'nuevaPassword' || clave === 'confirmPass') {
+      continue;
+    }
     if (typeof obj[clave] === 'string') {
       obj[clave] = sanitizarCadena(obj[clave]);
     } else if (typeof obj[clave] === 'object' && obj[clave] !== null) {
