@@ -278,6 +278,7 @@ function emitirReceta(req, res) {
   const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
   const {
     rutPaciente,
+    nombrePaciente: nombreEnviado,
     medicamentos,
     indicaciones,
     passwordConfirmacion
@@ -285,7 +286,7 @@ function emitirReceta(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
 
   if (!rutPaciente || !validarRutChileno(rutPaciente)) {
-    return res.status(400).json({ error: 'RUT del paciente invalido.' });
+    return res.status(400).json({ error: 'RUT del paciente invalido o no especificado.' });
   }
 
   const medico = buscarMedicoPorId(idMedico);
@@ -307,28 +308,45 @@ function emitirReceta(req, res) {
     return res.status(400).json({ error: 'Debe prescribir al menos un medicamento con su posologia.' });
   }
 
+  let nombreFinal = nombreEnviado || '';
+  if (!nombreFinal) {
+    const ficha = obtenerFichaClinica(rutPaciente);
+    if (ficha && ficha.nombrePaciente) {
+      nombreFinal = ficha.nombrePaciente;
+    }
+  }
+
   const idReceta = `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const fechaEmision = new Date().toISOString();
 
   const recetaBase = {
     id: idReceta,
     rutPaciente,
+    nombrePaciente: nombreFinal || 'Paciente Registrado',
     idMedico: medico.id,
     nombreMedico: medico.nombre,
+    especialidad: medico.especialidad || 'Cirugía Bucal',
+    registroSis: medico.registroSis || 'MED-SIS-2026-081',
+    registroColegio: medico.registroColegio || 'COL-ODONT-4491',
     medicamentos,
     indicaciones: indicaciones || 'Seguir indicaciones medicas al pie de la letra.',
     fechaEmision
   };
 
   const recetaFirmada = firmarReceta(recetaBase);
+  recetaFirmada.nombrePaciente = nombreFinal || 'Paciente Registrado';
+  recetaFirmada.especialidad = medico.especialidad || 'Cirugía Bucal';
+  recetaFirmada.registroSis = medico.registroSis || 'MED-SIS-2026-081';
+  recetaFirmada.registroColegio = medico.registroColegio || 'COL-ODONT-4491';
+
   guardarReceta(recetaFirmada);
 
   try {
     const db = require('../models/db');
     if (db.obtenerPool()) {
       db.query(
-        'INSERT INTO recetas (folio, paciente_id, especialista_id, indicaciones_generales, firma_hmac) VALUES ($1, (SELECT id FROM pacientes WHERE rut = $2 LIMIT 1), (SELECT id FROM especialistas WHERE nombre ILIKE $3 LIMIT 1), $4, $5) RETURNING id;',
-        [recetaFirmada.id, rutPaciente, `%${medico.nombre}%`, recetaFirmada.indicaciones, recetaFirmada.firmaHMAC]
+        'INSERT INTO recetas (folio, paciente_id, especialista_id, indicaciones_generales, firma_hmac) VALUES ($1, (SELECT id FROM pacientes WHERE REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $2 LIMIT 1), (SELECT id FROM especialistas WHERE id::text = $3 OR nombre ILIKE $4 LIMIT 1), $5, $6) RETURNING id;',
+        [recetaFirmada.id, rutPaciente.replace(/[^0-9kK]/g, '').toUpperCase(), medico.id, `%${medico.nombre}%`, recetaFirmada.indicaciones, recetaFirmada.firmaHMAC || recetaFirmada.firmaCriptografica]
       ).then(rIns => {
         if (rIns && rIns.rows && rIns.rows[0]) {
           const recId = rIns.rows[0].id;

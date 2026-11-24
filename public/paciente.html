@@ -1049,6 +1049,11 @@
       const telefono = '+56 ' + telRaw;
 
       if (!horaSeleccionada || esHoraPasada(horaSeleccionada, diaSeleccionado, mesSeleccionado, anoSeleccionado) || horasOcupadasEnVivo.includes(horaSeleccionada)) {
+        if (horaSeleccionada && !horasOcupadasEnVivo.includes(horaSeleccionada)) {
+          horasOcupadasEnVivo.push(horaSeleccionada);
+        }
+        horaSeleccionada = '';
+        renderizarHorarios();
         actualizarDisponibilidadEnVivo();
         mostrarAlertaClinica('El horario seleccionado ya no se encuentra disponible. Por favor elige otro horario.', 'Horario No Disponible');
         return;
@@ -1092,6 +1097,10 @@
           return;
         }
 
+        if (horaSeleccionada && !horasOcupadasEnVivo.includes(horaSeleccionada)) {
+          horasOcupadasEnVivo.push(horaSeleccionada);
+        }
+        renderizarHorarios();
         actualizarDisponibilidadEnVivo();
 
         const citaId = datos.cita ? datos.cita.id : 'CIT-OK';
@@ -1121,6 +1130,8 @@
 
     function cerrarModalConfirmacion() {
       document.getElementById('modalConfirmacionCita').classList.add('hidden');
+      renderizarHorarios();
+      actualizarDisponibilidadEnVivo();
     }
 
     function verComprobanteRecienAgendado() {

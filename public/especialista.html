@@ -496,7 +496,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold">Receta Médica Oficial DentalSis</h3>
-            <p class="text-xs text-white/80">Clínica Odontológica Especializada · Folio #DS-REC-2026-9901</p>
+            <p class="text-xs text-white/80">Clínica Odontológica Especializada · Folio <span id="recFolio">#DS-REC-2026-9901</span></p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -512,19 +512,19 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
-            <span class="font-bold text-slate-900 dark:text-white text-xs">Camilo Vega Ortiz</span>
+            <span id="recPaciente" class="font-bold text-slate-900 dark:text-white text-xs">Camilo Vega Ortiz</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">RUT</span>
-            <span class="font-bold text-slate-900 dark:text-white text-xs">18.234.901-1</span>
+            <span id="recRut" class="font-bold text-slate-900 dark:text-white text-xs">18.234.901-1</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Fecha Emisión</span>
-            <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs">24 Noviembre 2026</span>
+            <span id="recFecha" class="font-semibold text-slate-700 dark:text-slate-300 text-xs">24 Noviembre 2026</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Médico Tratante</span>
-            <span class="font-bold text-teal-600 dark:text-teal-400 text-xs">Dr. Álvaro Soto M.</span>
+            <span id="recMedico" class="font-bold text-teal-600 dark:text-teal-400 text-xs">Dr. Álvaro Soto M.</span>
           </div>
         </div>
 
@@ -546,19 +546,19 @@
 
         <div class="pt-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
           <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+            <div id="recBadgeIcon" class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
               ✓
             </div>
             <div>
-              <span class="block text-xs font-bold text-emerald-700 dark:text-emerald-300">Firma Digital Verificada</span>
-              <span class="block text-[10px] text-slate-500 font-mono">HMAC-SHA256 · DentalSis #DS-9901</span>
+              <span id="recEstadoFirma" class="block text-xs font-bold text-emerald-700 dark:text-emerald-300">Firma Digital Verificada</span>
+              <span id="recFirma" class="block text-[10px] text-slate-500 font-mono">HMAC-SHA256 · DentalSis #DS-9901</span>
             </div>
           </div>
 
           <div class="text-right sm:text-right text-xs">
-            <div class="font-serif italic font-bold text-slate-900 dark:text-white text-sm">Dr. Álvaro Soto Muñoz</div>
-            <div class="text-[11px] text-slate-500">Cirujano Dentista · Especialista en Cirugía Bucal</div>
-            <div class="text-[10px] text-slate-400">Reg. SIS N° 589.211 · Col. Dentistas N° 14.892</div>
+            <div id="recMedicoFirma" class="font-serif italic font-bold text-slate-900 dark:text-white text-sm">Dr. Álvaro Soto Muñoz</div>
+            <div id="recMedicoEsp" class="text-[11px] text-slate-500">Cirujano Dentista · Especialista en Cirugía Bucal</div>
+            <div id="recMedicoReg" class="text-[10px] text-slate-400">Reg. SIS N° 589.211 · Col. Dentistas N° 14.892</div>
           </div>
         </div>
       </div>
@@ -1137,7 +1137,8 @@
     }
 
     let medicoActual = null;
-    let rutPacienteActual = '182349011';
+    let rutPacienteActual = null;
+    let pacienteSeleccionadoNombre = null;
     let recetaAutenticada = false;
 
     function verificarSesionEspecialista() {
@@ -1382,6 +1383,10 @@
 
         cerrarModalFirmaAccesoHistorial();
         rutPacienteActual = rutObjetivoFirma;
+        pacienteSeleccionadoNombre = nombreObjetivoFirma;
+        if (datos.ficha && datos.ficha.nombrePaciente) {
+          pacienteSeleccionadoNombre = datos.ficha.nombrePaciente;
+        }
         firmaAccesoActual = datos.firma;
         renderizarFichaConFirma(datos.ficha, datos.firma);
         cargarAgendaMedico();
@@ -1584,6 +1589,10 @@
     }
 
     function solicitarClaveFirmaReceta() {
+      if (!rutPacienteActual || !firmaAccesoActual) {
+        mostrarAlertaClinica('Primero debes seleccionar un paciente de tu agenda o búsqueda y autenticar el acceso clínico a su historial.', 'Paciente No Seleccionado');
+        return;
+      }
       if (datosRecetaMeds.size === 0) {
         mostrarAlertaClinica('Debes tener al menos un medicamento agregado para emitir la receta médica.');
         return;
@@ -1635,6 +1644,7 @@
           },
           body: JSON.stringify({
             rutPaciente: rutPacienteActual,
+            nombrePaciente: pacienteSeleccionadoNombre || (fichaActualCargada ? fichaActualCargada.nombrePaciente : ''),
             medicamentos: listaMeds,
             indicaciones: document.getElementById('indicacionesReceta').value || 'Sin indicaciones adicionales.',
             passwordConfirmacion: clave
@@ -1670,6 +1680,43 @@
       if (datosRecetaMeds.size === 0) {
         mostrarAlertaClinica('Debes agregar al menos un medicamento para emitir la receta médica.');
         return;
+      }
+
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val || '—';
+      };
+
+      const folio = (receta && (receta.folio || receta.id)) ? (receta.folio || receta.id) : ('REC-' + Date.now());
+      setVal('recFolio', folio.startsWith('#') ? folio : '#' + folio);
+
+      const nomPac = (receta && receta.nombrePaciente) || pacienteSeleccionadoNombre || (fichaActualCargada && fichaActualCargada.nombrePaciente) || 'Paciente Registrado';
+      setVal('recPaciente', nomPac);
+
+      const rutPac = (receta && receta.rutPaciente) || rutPacienteActual;
+      setVal('recRut', formatearRutClinico(rutPac));
+
+      const fechaObj = (receta && receta.fechaEmision) ? new Date(receta.fechaEmision) : new Date();
+      setVal('recFecha', fechaObj.toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }));
+
+      const nomMed = (receta && receta.nombreMedico) || (medicoActual && medicoActual.nombre) || 'Dr. Especialista';
+      setVal('recMedico', nomMed);
+      setVal('recMedicoFirma', nomMed);
+
+      const espMed = (receta && receta.especialidad) || (medicoActual && medicoActual.especialidad) || 'Cirugía Bucal';
+      setVal('recMedicoEsp', `Cirujano Dentista · Especialista en ${espMed}`);
+
+      const regSis = (receta && receta.registroSis) || (medicoActual && medicoActual.registroSis) || 'MED-SIS-2026-081';
+      const regCol = (receta && receta.registroColegio) || (medicoActual && medicoActual.registroColegio) || 'COL-ODONT-4491';
+      setVal('recMedicoReg', `Reg. SIS N° ${regSis} · Col. Dentistas N° ${regCol}`);
+
+      const firma = (receta && (receta.firmaHMAC || receta.firmaCriptografica)) ? (receta.firmaHMAC || receta.firmaCriptografica) : '';
+      if (firma) {
+        setVal('recEstadoFirma', 'Firma Digital Verificada');
+        setVal('recFirma', `HMAC-SHA256 · ${firma.slice(0, 20)}...`);
+      } else {
+        setVal('recEstadoFirma', 'Documento Clínico Oficial');
+        setVal('recFirma', `Folio DentalSis #${folio}`);
       }
 
       const contenedor = document.getElementById('cuerpoRecetaImpresa');
@@ -1812,7 +1859,7 @@
     }
 
     function solicitarClaveEdicion() {
-      if (!firmaAccesoActual) {
+      if (!firmaAccesoActual || !rutPacienteActual) {
         mostrarAlertaClinica('Primero debe seleccionar un paciente y firmar el acceso al historial clínico.');
         return;
       }

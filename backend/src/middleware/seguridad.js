@@ -116,6 +116,7 @@ const limiteGlobal = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     const u = req.originalUrl || req.url || '';
+    if (!u.startsWith('/api')) return true;
     return u.includes('/disponibilidad') || u.includes('/salud');
   },
   message: {
