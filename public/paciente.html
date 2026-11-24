@@ -454,7 +454,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Descargar Comprobante
           </button>
-          <button onclick="cerrarModalComprobante()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">
+          <button onclick="cerrarModalComprobante()" id="btnCerrarComprobanteModal" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">
             Cerrar
           </button>
         </div>
@@ -466,6 +466,7 @@
     const BLOQUES_HORARIOS = ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00'];
     let citaRecienAgendada = null;
     let listaCitasCargadas = [];
+    let origenComprobanteMisReservas = false;
 
     const hoyReal = new Date();
     hoyReal.setHours(0, 0, 0, 0);
@@ -1078,6 +1079,9 @@
       }
       if (bloqueDiag) bloqueDiag.classList.add('hidden');
 
+      origenComprobanteMisReservas = false;
+      const btnCerrar = document.getElementById('btnCerrarComprobanteModal');
+      if (btnCerrar) btnCerrar.textContent = 'Cerrar';
       cerrarModalConfirmacion();
       document.getElementById('modalComprobanteOficial').classList.remove('hidden');
     }
@@ -1158,12 +1162,22 @@
         }
       }
 
+      origenComprobanteMisReservas = true;
+      const modalReservas = document.getElementById('modalMisReservas');
+      if (modalReservas) modalReservas.classList.add('hidden');
+      const btnCerrar = document.getElementById('btnCerrarComprobanteModal');
+      if (btnCerrar) btnCerrar.textContent = 'Volver a Mis Reservas';
       document.getElementById('modalComprobanteOficial').classList.remove('hidden');
     }
 
     function cerrarModalComprobante() {
       const m = document.getElementById('modalComprobanteOficial');
       if (m) m.classList.add('hidden');
+      if (origenComprobanteMisReservas) {
+        origenComprobanteMisReservas = false;
+        const mRes = document.getElementById('modalMisReservas');
+        if (mRes) mRes.classList.remove('hidden');
+      }
     }
 
     function descargarComprobanteImpreso() {
