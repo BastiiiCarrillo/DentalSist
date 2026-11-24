@@ -672,8 +672,20 @@
       const fechaISO = obtenerFechaISOActual();
       const esp = encodeURIComponent(especialidadSeleccionada || '');
       const med = encodeURIComponent(idMedicoSeleccionado || '');
+      const inputRut = document.getElementById('inputRutPaciente');
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
+      let rutVal = '';
+      if (inputRut && inputRut.value.trim().length >= 7) {
+        rutVal = inputRut.value.trim();
+      } else if (usuarioRaw) {
+        try {
+          const u = JSON.parse(usuarioRaw);
+          if (u.rut) rutVal = u.rut;
+        } catch (e) {}
+      }
+      const rutParam = encodeURIComponent(rutVal);
       try {
-        const respuesta = await fetch(`/api/pacientes/disponibilidad?fecha=${fechaISO}&especialidad=${esp}&idMedico=${med}`);
+        const respuesta = await fetch(`/api/pacientes/disponibilidad?fecha=${fechaISO}&especialidad=${esp}&idMedico=${med}&rut=${rutParam}`);
         if (respuesta.ok) {
           const datos = await respuesta.json();
           const nuevasOcupadas = datos.horasOcupadas || [];
@@ -987,6 +999,7 @@
         msg.classList.add('hidden');
         input.classList.remove('border-red-500', 'border-slate-300');
         input.classList.add('border-cyan-500');
+        actualizarDisponibilidadEnVivo();
       } else {
         msg.classList.add('hidden');
         input.classList.remove('border-red-500', 'border-cyan-500');

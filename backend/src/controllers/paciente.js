@@ -125,6 +125,17 @@ async function reservarCita(req, res) {
     const db = require('../models/db');
     if (db.obtenerPool()) {
       const horaInicio = req.body.hora.length === 5 ? req.body.hora + ':00' : req.body.hora;
+      const rutLimpio = req.body.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+
+      const rCheckPaciente = await db.query(
+        'SELECT c.id FROM citas c JOIN pacientes p ON c.paciente_id = p.id WHERE c.fecha = $1::date AND c.hora_inicio = $2::time AND c.estado != \'CANCELADA\' AND REPLACE(REPLACE(p.rut, \'.\', \'\'), \'-\', \'\') = $3 LIMIT 1;',
+        [req.body.fecha, horaInicio, rutLimpio]
+      );
+      if (rCheckPaciente.rows && rCheckPaciente.rows.length > 0) {
+        registrarEvento('CONFLICTO_RESERVA_PACIENTE', 'Paciente ya tiene cita en este horario', ip, req.body.rut, 'ALERTA');
+        return res.status(409).json({ error: 'Ya cuentas con una cita médica agendada en este mismo horario. No es posible agendar dos citas simultáneas.' });
+      }
+
       const rCheck = await db.query(
         'SELECT id FROM citas WHERE fecha = $1::date AND hora_inicio = $2::time AND (especialista_id = $3 OR sillon_numero = $4) AND estado != \'CANCELADA\' LIMIT 1;',
         [req.body.fecha, horaInicio, espUuid, sillon]
@@ -172,6 +183,14 @@ async function reservarCita(req, res) {
           const finMin = m + 45;
           const horaFin = (finMin >= 60 ? `${String(h + 1).padStart(2, '0')}:${String(finMin - 60).padStart(2, '0')}:00` : `${String(h).padStart(2, '0')}:${String(finMin).padStart(2, '0')}:00`);
 
+          const rCheckPacPostgres = await db.query(
+            'SELECT id FROM citas WHERE paciente_id = $1 AND fecha = $2::date AND hora_inicio = $3::time AND estado != \'CANCELADA\' LIMIT 1;',
+            [pacId, cita.fecha, horaInicio]
+          );
+          if (rCheckPacPostgres.rows && rCheckPacPostgres.rows.length > 0) {
+            return res.status(409).json({ error: 'Ya cuentas con una cita médica agendada en este mismo horario. No es posible agendar dos citas simultáneas.' });
+          }
+
           const rIns = await db.query(
             'INSERT INTO citas (paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;',
             [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA']
@@ -199,7 +218,7 @@ async function reservarCita(req, res) {
 }
 
 async function consultarDisponibilidad(req, res) {
-  const { especialidad, fecha, hora, idMedico } = req.query;
+  const { especialidad, fecha, hora, idMedico, rut } = req.query;
 
   if (!fecha) {
     return res.status(400).json({ error: 'Se requiere especificar la fecha.' });
@@ -226,6 +245,22 @@ async function consultarDisponibilidad(req, res) {
           }
         });
       }
+
+      if (rut && rut.trim().length >= 7) {
+        const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+        const rPac = await db.query(
+          'SELECT c.hora_inicio::text as hora FROM citas c JOIN pacientes p ON c.paciente_id = p.id WHERE c.fecha = $1::date AND c.estado != \'CANCELADA\' AND REPLACE(REPLACE(p.rut, \'.\', \'\'), \'-\', \'\') = $2;',
+          [fecha, rutLimpio]
+        );
+        if (rPac && rPac.rows) {
+          rPac.rows.forEach(row => {
+            const h = (String(row.hora || '')).slice(0, 5);
+            if (h && !horasOcupadas.includes(h)) {
+              horasOcupadas.push(h);
+            }
+          });
+        }
+      }
     }
   } catch (eDb) {}
 
@@ -240,6 +275,18 @@ async function consultarDisponibilidad(req, res) {
       }
     }
   });
+
+  if (rut && rut.trim().length >= 7) {
+    const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+    citas.forEach(c => {
+      if (c.fecha === fecha && c.estado !== 'CANCELADA' && c.rutPaciente === rutLimpio) {
+        const h = (c.hora || '').slice(0, 5);
+        if (h && !horasOcupadas.includes(h)) {
+          horasOcupadas.push(h);
+        }
+      }
+    });
+  }
 
   if (hora) {
     const medicosDisponibles = obtenerMedicosDisponibles(especialidad, fecha, hora);

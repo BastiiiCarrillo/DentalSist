@@ -367,10 +367,12 @@ function cambiarPassword(identificador, passwordActual, nuevaPassword) {
   return true;
 }
 
-function verificarColisionCita(idMedico, sillon, fecha, hora) {
+function verificarColisionCita(idMedico, sillon, fecha, hora, rutPaciente) {
+  const rutLimpio = rutPaciente ? limpiarRut(rutPaciente) : null;
   return citas.some(c => {
     if (c.estado === 'CANCELADA') return false;
     if (c.fecha !== fecha || c.hora !== hora) return false;
+    if (rutLimpio && c.rutPaciente === rutLimpio) return true;
     return c.idMedico === idMedico || c.sillon === sillon;
   });
 }
@@ -409,12 +411,21 @@ function crearCita(datos) {
     throw new Error('El medico especialista seleccionado no existe.');
   }
 
-  const colision = verificarColisionCita(idMedico, medico.sillon, fecha, hora);
+  const rutLimpio = limpiarRut(rutPaciente);
+  const colisionMismoPaciente = citas.some(c => {
+    if (c.estado === 'CANCELADA') return false;
+    if (c.fecha !== fecha || c.hora !== hora) return false;
+    return c.rutPaciente === rutLimpio;
+  });
+  if (colisionMismoPaciente) {
+    throw new Error('Ya cuentas con una cita médica agendada en este mismo horario. No es posible agendar dos citas simultáneas.');
+  }
+
+  const colision = verificarColisionCita(idMedico, medico.sillon, fecha, hora, rutPaciente);
   if (colision) {
     throw new Error('El horario y box seleccionados ya no estan disponibles.');
   }
 
-  const rutLimpio = limpiarRut(rutPaciente);
   const idCita = `CITA-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   const nuevaCita = {

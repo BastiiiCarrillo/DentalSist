@@ -106,4 +106,32 @@ describe('Modulo de Pacientes y Agendamiento', () => {
     }, /ya no estan disponibles/);
   });
 
+  test('Prevencion de colision simultanea para el mismo paciente en distintas especialidades', () => {
+    crearCita({
+      rutPaciente: '18.234.901-1',
+      nombrePaciente: 'Camilo Vega',
+      emailPaciente: 'camilo@correo.cl',
+      telefonoPaciente: '+56987654321',
+      idMedico: 'DOC-1',
+      fecha: '2026-11-25',
+      hora: '15:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: true
+    });
+
+    assert.throws(() => {
+      crearCita({
+        rutPaciente: '18.234.901-1',
+        nombrePaciente: 'Camilo Vega',
+        emailPaciente: 'camilo@correo.cl',
+        telefonoPaciente: '+56987654321',
+        idMedico: 'DOC-2',
+        fecha: '2026-11-25',
+        hora: '15:00',
+        especialidad: 'Odontología General',
+        esInvitado: true
+      });
+    }, /Ya cuentas con una cita médica agendada en este mismo horario/);
+  });
+
 });
