@@ -65,7 +65,52 @@ function validarDatosReserva(body) {
   return null;
 }
 
-function reservarCita(req, res) {
+async function mapearEspecialista(idMedico, especialidad, nombre) {
+  const MAPA = {
+    'DOC-1': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', sillon: 1 },
+    'DOC-2': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', sillon: 2 },
+    'DOC-3': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', sillon: 3 },
+    'DOC-4': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4', sillon: 4 },
+    'DOC-5': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', sillon: 2 },
+    'DOC-6': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', sillon: 2 },
+    'DOC-7': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3', sillon: 3 }
+  };
+  if (idMedico && MAPA[idMedico]) {
+    return MAPA[idMedico];
+  }
+  const db = require('../models/db');
+  if (db.obtenerPool() && (idMedico || nombre)) {
+    try {
+      const condiciones = [];
+      const params = [];
+      if (idMedico && idMedico.length > 20) {
+        params.push(idMedico);
+        condiciones.push(`id::text = $${params.length}`);
+      }
+      if (nombre && nombre.trim().length > 2) {
+        params.push(`%${nombre.trim()}%`);
+        condiciones.push(`nombre ILIKE $${params.length}`);
+      }
+      if (condiciones.length > 0) {
+        const rEsp = await db.query(
+          `SELECT id, sillon_habitual FROM especialistas WHERE ${condiciones.join(' OR ')} LIMIT 1;`,
+          params
+        );
+        if (rEsp.rows && rEsp.rows.length > 0) {
+          return { espUuid: rEsp.rows[0].id, sillon: rEsp.rows[0].sillon_habitual || 1 };
+        }
+      }
+    } catch (e) {}
+  }
+  if (especialidad) {
+    if (especialidad.toLowerCase().includes('general')) return MAPA['DOC-2'];
+    if (especialidad.toLowerCase().includes('endodoncia')) return MAPA['DOC-3'];
+    if (especialidad.toLowerCase().includes('ortodoncia')) return MAPA['DOC-4'];
+  }
+  return MAPA['DOC-1'];
+}
+
+async function reservarCita(req, res) {
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
   const errorValidacion = validarDatosReserva(req.body);
 
@@ -73,6 +118,23 @@ function reservarCita(req, res) {
     registrarEvento('RESERVA_RECHAZADA', errorValidacion, ip, req.body.rut, 'ALERTA');
     return res.status(400).json({ error: errorValidacion });
   }
+
+  const { espUuid, sillon } = await mapearEspecialista(req.body.idMedico, req.body.especialidad, '');
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const horaInicio = req.body.hora.length === 5 ? req.body.hora + ':00' : req.body.hora;
+      const rCheck = await db.query(
+        'SELECT id FROM citas WHERE fecha = $1::date AND hora_inicio = $2::time AND (especialista_id = $3 OR sillon_numero = $4) AND estado != \'CANCELADA\' LIMIT 1;',
+        [req.body.fecha, horaInicio, espUuid, sillon]
+      );
+      if (rCheck.rows && rCheck.rows.length > 0) {
+        registrarEvento('CONFLICTO_RESERVA', 'Horario ya ocupado en Neon DB', ip, req.body.rut, 'ALERTA');
+        return res.status(409).json({ error: 'El horario seleccionado ya no se encuentra disponible. Por favor elige otro horario.' });
+      }
+    }
+  } catch (eCheck) {}
 
   try {
     const cita = crearCita({
@@ -93,52 +155,36 @@ function reservarCita(req, res) {
         const partes = req.body.nombre.trim().split(' ');
         const nom = partes[0] || 'Paciente';
         const ape = partes.slice(1).join(' ') || 'Registrado';
-        db.query(
+        const resPac = await db.query(
           'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = EXCLUDED.telefono, email = EXCLUDED.email RETURNING id;',
           [cita.rutFormateado, nom, ape, '2000-01-01', req.body.telefono.trim(), req.body.email.trim().toLowerCase()]
-        ).then(async (resPac) => {
-          let pacId = (resPac && resPac.rows && resPac.rows[0]) ? resPac.rows[0].id : null;
-          if (!pacId) {
-            const rBusq = await db.query('SELECT id FROM pacientes WHERE rut = $1;', [cita.rutFormateado]);
-            if (rBusq.rows.length > 0) pacId = rBusq.rows[0].id;
-          }
-          if (pacId) {
-            let espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1';
-            let sillon = 1;
-            try {
-              const rEsp = await db.query(
-                'SELECT id, sillon_habitual FROM especialistas WHERE id::text = $1 OR nombre ILIKE $2 OR email ILIKE $3 LIMIT 1;',
-                [cita.idMedico, `%${cita.nombreMedico}%`, `%${cita.idMedico}%`]
-              );
-              if (rEsp.rows && rEsp.rows.length > 0) {
-                espUuid = rEsp.rows[0].id;
-                sillon = rEsp.rows[0].sillon_habitual || 1;
-              } else if (cita.idMedico === 'DOC-2' || (cita.especialidad && cita.especialidad.includes('General'))) {
-                espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
-                sillon = 2;
-              } else if (cita.idMedico === 'DOC-3' || (cita.especialidad && cita.especialidad.includes('Endodoncia'))) {
-                espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
-                sillon = 3;
-              } else if (cita.idMedico === 'DOC-4' || (cita.especialidad && cita.especialidad.includes('Ortodoncia'))) {
-                espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
-                sillon = 4;
-              }
-            } catch (eEsp) {}
-            const horaInicio = cita.hora.length === 5 ? cita.hora + ':00' : cita.hora;
-            const partesHora = cita.hora.split(':');
-            const h = parseInt(partesHora[0], 10);
-            const m = parseInt(partesHora[1] || '0', 10);
-            const finMin = m + 45;
-            const horaFin = (finMin >= 60 ? `${String(h + 1).padStart(2, '0')}:${String(finMin - 60).padStart(2, '0')}:00` : `${String(h).padStart(2, '0')}:${String(finMin).padStart(2, '0')}:00`);
+        );
+        let pacId = (resPac && resPac.rows && resPac.rows[0]) ? resPac.rows[0].id : null;
+        if (!pacId) {
+          const rBusq = await db.query('SELECT id FROM pacientes WHERE rut = $1;', [cita.rutFormateado]);
+          if (rBusq.rows.length > 0) pacId = rBusq.rows[0].id;
+        }
+        if (pacId) {
+          const horaInicio = cita.hora.length === 5 ? cita.hora + ':00' : cita.hora;
+          const partesHora = cita.hora.split(':');
+          const h = parseInt(partesHora[0], 10);
+          const m = parseInt(partesHora[1] || '0', 10);
+          const finMin = m + 45;
+          const horaFin = (finMin >= 60 ? `${String(h + 1).padStart(2, '0')}:${String(finMin - 60).padStart(2, '0')}:00` : `${String(h).padStart(2, '0')}:${String(finMin).padStart(2, '0')}:00`);
 
-            await db.query(
-              'INSERT INTO citas (paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING;',
-              [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA']
-            );
+          const rIns = await db.query(
+            'INSERT INTO citas (paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;',
+            [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA']
+          );
+          if (!rIns || !rIns.rows || rIns.rows.length === 0) {
+            return res.status(409).json({ error: 'El horario seleccionado ya no se encuentra disponible.' });
           }
-        }).catch(() => {});
+        }
       }
     } catch (eDb) {
+      if (eDb && (eDb.code === '23505' || (eDb.message && eDb.message.includes('unique')))) {
+        return res.status(409).json({ error: 'El horario seleccionado ya se encuentra reservado en la clínica.' });
+      }
     }
 
     registrarEvento('RESERVA_CONFIRMADA', `Cita ${cita.id} agendada para ${cita.rutFormateado}`, ip, cita.rutPaciente, 'INFO');
@@ -159,19 +205,26 @@ async function consultarDisponibilidad(req, res) {
     return res.status(400).json({ error: 'Se requiere especificar la fecha.' });
   }
 
+  const { espUuid, sillon } = await mapearEspecialista(idMedico, especialidad, '');
+
   let horasOcupadas = [];
   try {
     const db = require('../models/db');
     if (db.obtenerPool()) {
-      let q = 'SELECT TO_CHAR(hora_inicio, \'HH24:MI\') as hora FROM citas WHERE fecha = $1::date AND estado != $2';
-      const params = [fecha, 'CANCELADA'];
-      if (idMedico) {
-        q += ' AND especialista_id::text = $3';
-        params.push(idMedico);
+      let q = 'SELECT TO_CHAR(hora_inicio, \'HH24:MI\') as hora FROM citas WHERE fecha = $1::date AND estado != \'CANCELADA\'';
+      const params = [fecha];
+      if (espUuid || sillon) {
+        q += ' AND (especialista_id = $2 OR sillon_numero = $3)';
+        params.push(espUuid, sillon);
       }
       const r = await db.query(q, params);
       if (r && r.rows) {
-        horasOcupadas = r.rows.map(row => (row.hora || '').slice(0, 5));
+        r.rows.forEach(row => {
+          const h = (row.hora || '').slice(0, 5);
+          if (h && !horasOcupadas.includes(h)) {
+            horasOcupadas.push(h);
+          }
+        });
       }
     }
   } catch (eDb) {}
@@ -179,7 +232,7 @@ async function consultarDisponibilidad(req, res) {
   const { citas } = require('../models/dataStore');
   citas.forEach(c => {
     if (c.fecha === fecha && c.estado !== 'CANCELADA') {
-      if (!idMedico || c.idMedico === idMedico) {
+      if (!idMedico || c.idMedico === idMedico || c.sillon === `Box ${sillon}`) {
         const h = (c.hora || '').slice(0, 5);
         if (h && !horasOcupadas.includes(h)) {
           horasOcupadas.push(h);
