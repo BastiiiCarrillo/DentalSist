@@ -150,6 +150,21 @@
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Diagnóstico y Evolución Clínica</label>
             <textarea id="campoDiagnostico" rows="3" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 resize-none">Paciente ingresa con cuadro de pericoronaritis aguda en molar tercer molar inferior izquierdo (pieza 38). Se realiza anestesia troncular e infiltrativa con Mepivacaína al 3%. Odontosección y osteotomía simple sin complicaciones. Sutura reabsorbible 3-0. Se prescribe analgesia no betalactámica estricta.</textarea>
           </div>
+
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Historial de Citas y Atenciones del Paciente
+              </h3>
+              <span id="contadorCitasPaciente" class="text-[11px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-500/20">0 registros</span>
+            </div>
+            <div id="contenedorHistorialPaciente" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+                Selecciona un paciente de la agenda para consultar su historial de reservas y atenciones clínicas.
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm">
@@ -1179,6 +1194,8 @@
 
     async function cargarFichaPaciente(rut) {
       const token = sessionStorage.getItem('dentalsis_token');
+      const contenedorHistorial = document.getElementById('contenedorHistorialPaciente');
+      const contadorHistorial = document.getElementById('contadorCitasPaciente');
       try {
         const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rut), {
           headers: { 'Authorization': 'Bearer ' + token }
@@ -1186,12 +1203,56 @@
         if (!res.ok) return;
         const datos = await res.json();
         const ficha = datos.ficha;
-        if (ficha && ficha.historialConsultas && ficha.historialConsultas.length > 0) {
+        if (!ficha) return;
+
+        const subtitulo = document.getElementById('subtituloFichaPaciente');
+        if (subtitulo) {
+          subtitulo.textContent = `${ficha.nombrePaciente || 'Paciente'} · RUT: ${ficha.rutFormateado || rut}`;
+        }
+
+        if (ficha.historialConsultas && ficha.historialConsultas.length > 0) {
           const ult = ficha.historialConsultas[ficha.historialConsultas.length - 1];
           document.getElementById('campoConsulta').value = ult.tipoAtencion || 'Consulta Odontológica';
           document.getElementById('campoDiagnostico').value = ult.diagnostico || '';
           document.getElementById('campoTratamiento').value = ult.tratamiento || '';
-          document.getElementById('campoAlergia').value = ult.observaciones || 'Sin alergias registradas';
+          document.getElementById('campoAlergia').value = ult.observaciones || ficha.alergias || 'Sin alergias registradas';
+        } else {
+          document.getElementById('campoConsulta').value = 'Consulta Odontológica / Control';
+          document.getElementById('campoDiagnostico').value = 'Evaluación clínica inicial sin antecedentes adversos.';
+          document.getElementById('campoTratamiento').value = 'Profilaxis dental y control preventivo.';
+          document.getElementById('campoAlergia').value = ficha.alergias || 'Sin alergias registradas';
+        }
+
+        const citas = ficha.citasPrevias || [];
+        if (contadorHistorial) {
+          contadorHistorial.textContent = `${citas.length} cita${citas.length === 1 ? '' : 's'}`;
+        }
+
+        if (contenedorHistorial) {
+          if (citas.length === 0) {
+            contenedorHistorial.innerHTML = '<div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Este paciente no registra citas previas en el sistema.</div>';
+          } else {
+            let h = '';
+            citas.forEach(c => {
+              let bColor = 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700';
+              if (c.estado === 'CONFIRMADA') bColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+              else if (c.estado === 'EN_ATENCION') bColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
+              else if (c.estado === 'ATENDIDA') bColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+              else if (c.estado === 'CANCELADA') bColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+              else if (c.estado === 'PENDIENTE') bColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+
+              h += `
+                <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="font-bold text-slate-900 dark:text-white block">${c.fecha} · ${c.hora} hrs</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon}</span>
+                  </div>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${bColor}">${c.estado}</span>
+                </div>
+              `;
+            });
+            contenedorHistorial.innerHTML = h;
+          }
         }
       } catch (e) {}
     }

@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const {
   buscarMedicoPorEmail,
+  buscarMedicoPorRut,
   buscarUsuarioPorRut,
   buscarUsuarioPorEmail,
   crearUsuario,
@@ -28,7 +29,16 @@ function login(req, res) {
   const tipoUsuario = (rol || '').toLowerCase();
 
   if (tipoUsuario === 'especialista' || tipoUsuario === 'medico' || tipoUsuario === 'odontologo') {
-    usuarioEncontrado = buscarMedicoPorEmail(identificador);
+    if (identificador.includes('@')) {
+      usuarioEncontrado = buscarMedicoPorEmail(identificador);
+    } else {
+      usuarioEncontrado = buscarMedicoPorRut(identificador);
+    }
+    if (!usuarioEncontrado && identificador.includes('@')) {
+      usuarioEncontrado = buscarUsuarioPorEmail(identificador);
+    } else if (!usuarioEncontrado) {
+      usuarioEncontrado = buscarUsuarioPorRut(identificador);
+    }
     if (!usuarioEncontrado) {
       registrarFalloLogin(ip, identificador);
       return res.status(401).json({ error: 'No se encontro una cuenta de especialista con estas credenciales.' });
@@ -36,8 +46,14 @@ function login(req, res) {
   } else {
     if (identificador.includes('@')) {
       usuarioEncontrado = buscarUsuarioPorEmail(identificador);
+      if (!usuarioEncontrado) {
+        usuarioEncontrado = buscarMedicoPorEmail(identificador);
+      }
     } else {
       usuarioEncontrado = buscarUsuarioPorRut(identificador);
+      if (!usuarioEncontrado) {
+        usuarioEncontrado = buscarMedicoPorRut(identificador);
+      }
     }
     if (!usuarioEncontrado) {
       registrarFalloLogin(ip, identificador);
@@ -78,6 +94,7 @@ function login(req, res) {
   registrarEvento('LOGIN_EXITOSO', `Autenticacion correcta para ${identificador}`, ip, usuarioEncontrado.id, 'INFO');
 
   const { passwordHash, ...perfilSeguro } = usuarioEncontrado;
+  perfilSeguro.rol = rolAsignado;
 
   return res.status(200).json({
     mensaje: 'Autenticacion exitosa.',

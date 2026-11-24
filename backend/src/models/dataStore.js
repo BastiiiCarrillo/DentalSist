@@ -3,37 +3,45 @@ const bcrypt = require('bcrypt');
 const medicosSemilla = [
   {
     id: 'DOC-1',
+    rut: '14.892.341-2',
     nombre: 'Dr. Álvaro Soto M.',
     especialidad: 'Cirugía Bucal',
     sillon: 'Sillón 1',
     email: 'alvaro.soto@dentalsis.cl',
+    rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('SotoCirugia2026!Clinica', 10),
     horariosBase: ['09:00', '10:00', '11:00', '14:30', '16:00', '17:30']
   },
   {
     id: 'DOC-2',
+    rut: '16.781.423-5',
     nombre: 'Dra. Fernanda Ríos',
     especialidad: 'Odontología General',
     sillon: 'Sillón 2',
     email: 'fernanda.rios@dentalsis.cl',
+    rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('RiosOdonto2026!Clinica', 10),
     horariosBase: ['09:00', '10:00', '11:00', '14:30', '16:00', '17:30']
   },
   {
     id: 'DOC-3',
+    rut: '15.932.114-8',
     nombre: 'Dr. Matías Silva',
     especialidad: 'Endodoncia',
     sillon: 'Sillón 3',
     email: 'matias.silva@dentalsis.cl',
+    rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('SilvaEndo2026!Clinica', 10),
     horariosBase: ['09:00', '10:00', '11:00', '14:30', '16:00']
   },
   {
     id: 'DOC-4',
+    rut: '16.204.912-3',
     nombre: 'Dra. Marcela Lagos',
     especialidad: 'Ortodoncia',
     sillon: 'Sillón 4',
     email: 'marcela.lagos@dentalsis.cl',
+    rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('LagosOdonto2026!Dental', 10),
     horariosBase: ['09:00', '10:00', '11:30', '15:00', '16:30']
   }
@@ -154,6 +162,12 @@ function buscarMedicoPorEmail(email) {
   if (!email) return null;
   const clean = email.toLowerCase().trim();
   return medicos.find(m => m.email.toLowerCase() === clean) || null;
+}
+
+function buscarMedicoPorRut(rut) {
+  if (!rut) return null;
+  const rutLimpio = limpiarRut(rut);
+  return medicos.find(m => m.rut && limpiarRut(m.rut) === rutLimpio) || null;
 }
 
 function buscarUsuarioPorRut(rut) {
@@ -515,6 +529,7 @@ module.exports = {
   obtenerMedicos,
   buscarMedicoPorId,
   buscarMedicoPorEmail,
+  buscarMedicoPorRut,
   buscarUsuarioPorRut,
   buscarUsuarioPorEmail,
   crearUsuario,

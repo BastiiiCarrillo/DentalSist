@@ -139,7 +139,7 @@ function consultarDisponibilidad(req, res) {
   });
 }
 
-function consultarMisCitas(req, res) {
+async function consultarMisCitas(req, res) {
   const { rut } = req.params;
 
   if (!rut || !validarRutChileno(rut)) {
@@ -158,7 +158,31 @@ function consultarMisCitas(req, res) {
     }
   }
 
-  const citas = obtenerCitasPorPaciente(rut);
+  const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+  let citas = obtenerCitasPorPaciente(rut);
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const rDb = await db.query(
+        'SELECT c.id, c.fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        ['.', '', '-', '', rutLimpio]
+      );
+      if (rDb.rows && rDb.rows.length > 0) {
+        citas = rDb.rows.map(r => ({
+          id: r.id,
+          fecha: r.fecha instanceof Date ? r.fecha.toISOString().split('T')[0] : String(r.fecha).substring(0, 10),
+          hora: String(r.hora).substring(0, 5),
+          especialidad: r.especialidad,
+          estado: r.estado,
+          sillon: 'Sillón ' + r.sillon,
+          nombreMedico: r.nombreMedico || 'Especialista Dental'
+        }));
+      }
+    }
+  } catch (eDb) {
+  }
+
   return res.status(200).json({
     rut,
     total: citas.length,
