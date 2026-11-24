@@ -11,7 +11,7 @@ const {
   guardarReceta,
   reiniciarEstadoParaPruebas
 } = require('../src/models/dataStore');
-const { limpiarLogsParaPruebas, registrarEvento } = require('../src/services/logger');
+const { limpiarLogsParaPruebas, registrarEvento, obtenerLogsAuditoria } = require('../src/services/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
 
@@ -210,5 +210,16 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
     assert.ok(logMedico);
     assert.strictEqual(logMedico.usuarioNombre, 'Dr. Álvaro Soto M.');
     assert.strictEqual(logMedico.ip, '200.55.12.9');
+  });
+
+  test('Evita duplicados cuando registrarEvento guarda hashInmutable en memoria y DB', async () => {
+    const entrada = registrarEvento('LOGIN_EXITOSO', 'Autenticacion correcta para admin@dentalsis.cl', '190.5.49.8', 'USR-ADMIN-1', 'INFO');
+    assert.ok(entrada.hashInmutable);
+    assert.strictEqual(entrada.hashInmutable.length, 64);
+
+    const logsAudit = await obtenerLogsAuditoria();
+    const ocurrencias = logsAudit.filter(l => l.tipo === 'LOGIN_EXITOSO' && l.detalle === 'Autenticacion correcta para admin@dentalsis.cl');
+    assert.strictEqual(ocurrencias.length, 1);
+    assert.strictEqual(ocurrencias[0].hashInmutable, entrada.hashInmutable);
   });
 });

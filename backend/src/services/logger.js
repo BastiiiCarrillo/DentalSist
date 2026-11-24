@@ -62,6 +62,16 @@ function registrarEvento(tipo, detalle, ip, usuarioId = null, nivel = 'INFO', ex
   const { fechaChile, horaChile } = formatearFechaHoraChile(timestamp);
   const ipLimpia = normalizarIp(ip) || '127.0.0.1';
   const actor = resolverActorSistema(usuarioId, extra);
+  const detalleJson = JSON.stringify({
+    mensaje: String(detalle || ''),
+    usuarioRef: usuarioId || null,
+    usuarioNombre: actor.usuarioNombre,
+    usuarioRol: actor.usuarioRol
+  });
+  const hashInmutable = crypto
+    .createHash('sha256')
+    .update(`${tipo}|${timestamp}|${ipLimpia}|${detalleJson}`)
+    .digest('hex');
 
   const entrada = {
     id: logs.length + 1,
@@ -74,7 +84,8 @@ function registrarEvento(tipo, detalle, ip, usuarioId = null, nivel = 'INFO', ex
     usuarioId,
     usuarioNombre: actor.usuarioNombre,
     usuarioRol: actor.usuarioRol,
-    nivel
+    nivel,
+    hashInmutable
   };
   logs.push(Object.freeze(entrada));
 
@@ -82,17 +93,6 @@ function registrarEvento(tipo, detalle, ip, usuarioId = null, nivel = 'INFO', ex
     const db = require('../models/db');
     if (db && typeof db.obtenerPool === 'function' && db.obtenerPool()) {
       const uidUuid = (usuarioId && REGEX_UUID.test(String(usuarioId))) ? String(usuarioId) : null;
-      const detalleJson = JSON.stringify({
-        mensaje: String(detalle || ''),
-        usuarioRef: usuarioId || null,
-        usuarioNombre: actor.usuarioNombre,
-        usuarioRol: actor.usuarioRol
-      });
-      const hashInmutable = crypto
-        .createHash('sha256')
-        .update(`${tipo}|${timestamp}|${ipLimpia}|${detalleJson}`)
-        .digest('hex');
-
       db.query(
         'INSERT INTO auditoria_seguridad (evento, usuario_id, ip_origen, severidad, detalle, hash_inmutable) VALUES ($1, $2, $3, $4, $5::jsonb, $6);',
         [String(tipo).slice(0, 80), uidUuid, String(ipLimpia).slice(0, 45), String(nivel).slice(0, 20), detalleJson, hashInmutable]
@@ -125,7 +125,7 @@ function formatearDetalleDb(detalleRaw) {
 
 async function obtenerLogsAuditoria() {
   const resultado = [];
-  const clavesVistas = new Set();
+  const hashesVistos = new Set();
 
   try {
     const db = require('../models/db');
@@ -165,8 +165,7 @@ async function obtenerLogsAuditoria() {
             nivel: row.severidad || 'INFO',
             hashInmutable: row.hashInmutable || ''
           };
-          const clave = row.hashInmutable || `${row.evento}|${iso.slice(0, 19)}|${item.detalle}`;
-          clavesVistas.add(clave);
+          if (item.hashInmutable) hashesVistos.add(item.hashInmutable);
           resultado.push(item);
         });
       }
@@ -174,16 +173,21 @@ async function obtenerLogsAuditoria() {
   } catch (eDb) {}
 
   obtenerLogs().forEach(l => {
-    const clave = `${l.tipo}|${String(l.timestamp || '').slice(0, 19)}|${l.detalle}`;
-    if (!clavesVistas.has(clave)) {
-      clavesVistas.add(clave);
-      const { fechaChile, horaChile } = formatearFechaHoraChile(l.timestamp);
-      resultado.push({
-        ...l,
-        fechaChile: l.fechaChile || fechaChile,
-        horaChile: l.horaChile || horaChile
-      });
-    }
+    if (l.hashInmutable && hashesVistos.has(l.hashInmutable)) return;
+    const memMs = new Date(l.timestamp).getTime();
+    const duplicadoPorVentana = resultado.some(dbItem =>
+      dbItem.tipo === l.tipo
+      && dbItem.detalle === l.detalle
+      && Math.abs(new Date(dbItem.timestamp).getTime() - memMs) <= 3000
+    );
+    if (duplicadoPorVentana) return;
+    if (l.hashInmutable) hashesVistos.add(l.hashInmutable);
+    const { fechaChile, horaChile } = formatearFechaHoraChile(l.timestamp);
+    resultado.push({
+      ...l,
+      fechaChile: l.fechaChile || fechaChile,
+      horaChile: l.horaChile || horaChile
+    });
   });
 
   resultado.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
