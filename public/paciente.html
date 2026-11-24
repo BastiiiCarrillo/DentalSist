@@ -1594,6 +1594,26 @@
       }
     }
 
+    function inicializarBloqueoScrollModales() {
+      const sincronizar = () => {
+        const overlays = Array.from(document.querySelectorAll('div.fixed.inset-0'));
+        const algunoAbierto = overlays.some(el => !el.classList.contains('hidden'));
+        document.body.classList.toggle('overflow-hidden', algunoAbierto);
+        document.documentElement.classList.toggle('overflow-hidden', algunoAbierto);
+      };
+      const obs = new MutationObserver(sincronizar);
+      document.querySelectorAll('div.fixed.inset-0').forEach(el => {
+        obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+      });
+      sincronizar();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inicializarBloqueoScrollModales);
+    } else {
+      inicializarBloqueoScrollModales();
+    }
+
     renderizarMesCompleto();
     renderizarHorarios();
     renderizarMedicosDisponibles();

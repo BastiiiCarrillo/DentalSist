@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DentalSis - Panel de Administración del Sistema</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script>
+    (function() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
+      if (!token || !usuarioRaw) {
+        window.location.replace('/login');
+        return;
+      }
+      try {
+        const u = JSON.parse(usuarioRaw);
+        const rol = (u.rol || '').toLowerCase();
+        if (rol !== 'superadmin' && rol !== 'admin') {
+          if (rol === 'odontologo' || rol === 'odontólogo' || rol === 'medico' || rol === 'especialista') {
+            window.location.replace('/especialista');
+          } else {
+            window.location.replace('/paciente');
+          }
+        }
+      } catch (e) {
+        window.location.replace('/login');
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+  <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-800 via-cyan-700 to-teal-500 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0 text-white font-bold text-sm">
+        DS
+      </div>
+      <div class="min-w-0">
+        <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300 bg-clip-text text-transparent">DentalSis</span>
+        <span class="text-xs block text-slate-500 dark:text-slate-400 truncate">Consola de Administración y Auditoría</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <div id="avatarAdminNav" class="w-6 h-6 rounded-lg bg-gradient-to-tr from-slate-700 to-cyan-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">AD</div>
+        <div class="leading-tight min-w-0">
+          <span id="nombreAdminNav" class="block text-xs font-bold text-slate-900 dark:text-white truncate max-w-[140px] sm:max-w-[200px]">Ing. Admin DentalSis</span>
+          <span class="hidden sm:block text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold">Administrador del Sistema</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="recargarTodoAdmin()" class="px-3 py-2 rounded-xl text-xs font-bold bg-teal-500/10 hover:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/25 transition flex items-center gap-1.5" title="Actualizar información en vivo">
+        <span>↻</span>
+        <span class="hidden md:inline">Actualizar</span>
+      </button>
+
+      <button type="button" onclick="alternarModoColor()" class="w-9 h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cambiar modo claro/oscuro">
+        <svg class="w-4 h-4 hidden dark:block text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <svg class="w-4 h-4 block dark:hidden text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+
+      <button type="button" onclick="cerrarSesionAdmin()" class="px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5" title="Cerrar Sesión">
+        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        <span class="hidden sm:inline">Cerrar Sesión</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+
+    <section class="bg-gradient-to-r from-slate-900 via-cyan-950 to-teal-900 text-white rounded-3xl p-6 md:p-7 shadow-lg border border-cyan-500/20 flex flex-wrap items-center justify-between gap-4">
+      <div class="space-y-1.5">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold uppercase tracking-wider text-cyan-200">
+          Supervisión Global del Sistema
+        </div>
+        <h1 id="tituloAdminHero" class="text-2xl md:text-3xl font-bold tracking-tight">Panel Administrador DentalSis</h1>
+        <p class="text-xs md:text-sm text-cyan-100/80 max-w-2xl">
+          Supervisa especialistas y asignación de citas, estado en atención e historial de pacientes, recetas emitidas (solo lectura) y logs de auditoría en hora chilena.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span id="badgeFechaAdminHoy" class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 font-semibold text-white">Hoy: --</span>
+        <span class="px-3 py-1.5 rounded-xl bg-amber-400/15 border border-amber-300/30 font-semibold text-amber-200">Modo Supervisión · Sin emisión de recetas</span>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">Especialistas</span>
+        <span id="kpiMedicos" class="text-2xl font-bold text-slate-900 dark:text-white mt-1 block">0</span>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-cyan-500/30 rounded-2xl p-4 shadow-sm">
+        <span class="text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 block">En Atención Ahora</span>
+        <span id="kpiEnAtencion" class="text-2xl font-bold text-cyan-600 dark:text-cyan-400 mt-1 block">0</span>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">Citas Hoy / Total</span>
+        <span id="kpiCitas" class="text-2xl font-bold text-slate-900 dark:text-white mt-1 block">0 / 0</span>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-red-500/20 rounded-2xl p-4 shadow-sm">
+        <span class="text-[11px] font-semibold text-red-600 dark:text-red-400 block">Canceladas</span>
+        <span id="kpiCanceladas" class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1 block">0</span>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+        <span class="text-[11px] font-semibold text-teal-600 dark:text-teal-400 block">Pacientes</span>
+        <span id="kpiPacientes" class="text-2xl font-bold text-teal-600 dark:text-teal-400 mt-1 block">0</span>
+      </div>
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+        <span class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 block">Recetas / Logs</span>
+        <span id="kpiRecetasLogs" class="text-2xl font-bold text-slate-900 dark:text-white mt-1 block">0 / 0</span>
+      </div>
+    </section>
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 flex flex-wrap gap-2 shadow-sm">
+      <button type="button" id="tabBtnMedicos" onclick="cambiarPestanaAdmin('medicos')" class="flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-600 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center gap-2">
+        <span>Médicos y Citas</span>
+        <span id="countTabMedicos" class="px-2 py-0.5 rounded-full text-[10px] bg-white/20">0</span>
+      </button>
+      <button type="button" id="tabBtnPacientes" onclick="cambiarPestanaAdmin('pacientes')" class="flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">
+        <span>Pacientes</span>
+        <span id="countTabPacientes" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
+      </button>
+      <button type="button" id="tabBtnRecetas" onclick="cambiarPestanaAdmin('recetas')" class="flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">
+        <span>Recetas Emitidas</span>
+        <span id="countTabRecetas" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
+      </button>
+      <button type="button" id="tabBtnLogs" onclick="cambiarPestanaAdmin('logs')" class="flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">
+        <span>Logs de Auditoría</span>
+        <span id="countTabLogs" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
+      </button>
+    </div>
+
+    <section id="panelMedicos" class="space-y-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between shadow-sm">
+        <div class="flex-1 relative">
+          <input type="text" id="filtroBusquedaMedicos" oninput="renderizarMedicosAdmin()" placeholder="Buscar médico, especialidad, paciente o RUT..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <select id="filtroEstadoCitasAdmin" onchange="renderizarMedicosAdmin()" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
+            <option value="TODAS">Todos los estados</option>
+            <option value="EN_ATENCION">Solo En Atención</option>
+            <option value="CANCELADA">Solo Canceladas (con motivo)</option>
+            <option value="CONFIRMADA">Confirmadas</option>
+            <option value="PENDIENTE">Pendientes</option>
+            <option value="ATENDIDA">Asistió / Atendidas</option>
+            <option value="NO_ASISTIO">No Asistió</option>
+          </select>
+          <select id="filtroFechaCitasAdmin" onchange="renderizarMedicosAdmin()" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
+            <option value="TODAS">Todas las fechas</option>
+            <option value="HOY">Solo citas de Hoy</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="bannerEnAtencionGlobal" class="hidden bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-4 space-y-2">
+      </div>
+
+      <div id="contenedorMedicosAdmin" class="space-y-4">
+        <div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">Cargando especialistas y citas asignadas...</div>
+      </div>
+    </section>
+
+    <section id="panelPacientes" class="hidden space-y-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between shadow-sm">
+        <input type="text" id="filtroBusquedaPacientes" oninput="renderizarPacientesAdmin()" placeholder="Buscar paciente por nombre, RUT, correo o teléfono..." class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        <select id="filtroEstadoPacientesAdmin" onchange="renderizarPacientesAdmin()" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
+          <option value="TODOS">Todos los pacientes</option>
+          <option value="EN_ATENCION">En atención ahora</option>
+          <option value="CON_CANCELADAS">Con citas canceladas</option>
+          <option value="CON_INASISTENCIAS">Con inasistencias</option>
+          <option value="CON_RECETAS">Con recetas emitidas</option>
+        </select>
+      </div>
+
+      <div id="contenedorPacientesAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="col-span-full p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">Cargando pacientes...</div>
+      </div>
+    </section>
+
+    <section id="panelRecetas" class="hidden space-y-4">
+      <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-800 dark:text-amber-300 flex flex-wrap items-center justify-between gap-2">
+        <span>Modo Supervisión (Solo Lectura): como Administrador puedes auditar todas las recetas emitidas, fecha/hora de emisión, paciente y médico tratante, sin generar nuevas prescripciones.</span>
+        <span class="font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[11px]">SOLO LECTURA</span>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+        <input type="text" id="filtroBusquedaRecetas" oninput="renderizarRecetasAdmin()" placeholder="Buscar receta por folio, paciente, RUT, médico o medicamento..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+      </div>
+
+      <div id="contenedorRecetasAdmin" class="space-y-3">
+        <div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">Cargando recetas médicas emitidas...</div>
+      </div>
+    </section>
+
+    <section id="panelLogs" class="hidden space-y-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between shadow-sm">
+        <input type="text" id="filtroBusquedaLogs" oninput="renderizarLogsAdmin()" placeholder="Buscar por nombre de usuario, evento, IP o detalle..." class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        <div class="flex flex-wrap gap-2">
+          <select id="filtroSeveridadLogs" onchange="renderizarLogsAdmin()" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
+            <option value="TODAS">Todas las severidades</option>
+            <option value="INFO">INFO</option>
+            <option value="ALERTA">ALERTA</option>
+            <option value="PELIGRO">PELIGRO</option>
+          </select>
+          <select id="filtroCategoriaLogs" onchange="renderizarLogsAdmin()" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
+            <option value="TODAS">Todas las categorías</option>
+            <option value="LOGIN">Accesos / Login</option>
+            <option value="CITAS">Citas y Cancelaciones</option>
+            <option value="CLINICO">Fichas, Recetas e Historial</option>
+            <option value="SEGURIDAD">Alertas de Seguridad</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="contenedorLogsAdmin" class="space-y-2.5">
+        <div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">Cargando registros de auditoría...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="modalDetallePacienteAdmin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full my-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-300 block">Auditoría de Paciente · Solo Lectura</span>
+          <h3 id="tituloModalPacienteAdmin" class="text-base font-bold">Historial Clínico y Citas del Paciente</h3>
+          <p id="subtituloModalPacienteAdmin" class="text-xs text-cyan-200/80">-</p>
+        </div>
+        <button type="button" onclick="cerrarModalPacienteAdmin()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold">×</button>
+      </div>
+      <div id="cuerpoModalPacienteAdmin" class="p-5 space-y-4 overflow-y-auto text-xs text-slate-700 dark:text-slate-200">
+        Cargando detalle...
+      </div>
+      <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-end shrink-0">
+        <button type="button" onclick="cerrarModalPacienteAdmin()" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalVerRecetaAdmin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full my-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 bg-gradient-to-r from-teal-600 to-cyan-600 text-white flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="text-base font-bold">Receta Médica Emitida DentalSis</h3>
+          <p class="text-xs text-white/85">Folio <span id="admRecFolio">-</span> · Solo Lectura</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-teal-700 hover:bg-white/90 shadow transition">Imprimir</button>
+          <button type="button" onclick="cerrarModalRecetaAdmin()" class="w-8 h-8 rounded-lg bg-black/20 hover:bg-black/30 text-white flex items-center justify-center font-bold">×</button>
+        </div>
+      </div>
+      <div id="cuerpoModalRecetaAdmin" class="p-5 space-y-4 overflow-y-auto text-xs text-slate-700 dark:text-slate-200"></div>
+      <div class="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-end shrink-0">
+        <button type="button" onclick="cerrarModalRecetaAdmin()" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (window.location.pathname.endsWith('.html')) {
+      const rutaLimpia = window.location.pathname.replace(/\.html$/, '') || '/';
+      window.history.replaceState(null, '', rutaLimpia + window.location.search);
+    }
+
+    let adminActual = null;
+    let pestanaActiva = 'medicos';
+    let cacheMedicos = [];
+    let cacheCitas = [];
+    let cachePacientes = [];
+    let cacheRecetas = [];
+    let cacheLogs = [];
+    let fechaHoyChile = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
+
+    function actualizarBloqueoScrollFondo() {
+      const idsModales = ['modalDetallePacienteAdmin', 'modalVerRecetaAdmin'];
+      const hayAbierto = idsModales.some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+      document.body.classList.toggle('overflow-hidden', hayAbierto);
+      document.documentElement.classList.toggle('overflow-hidden', hayAbierto);
+    }
+
+    function escHtml(valor) {
+      return String(valor == null ? '' : valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatearFechaDDMMAAAA(fechaISO) {
+      if (!fechaISO) return '';
+      const limpio = String(fechaISO).trim();
+      if (/^\d{2}-\d{2}-\d{4}$/.test(limpio)) return limpio;
+      const m = limpio.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return limpio;
+    }
+
+    function alternarModoColor() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    function cerrarSesionAdmin() {
+      sessionStorage.clear();
+      localStorage.removeItem('dentalsis_token');
+      localStorage.removeItem('dentalsis_usuario');
+      window.location.href = '/login';
+    }
+
+    function obtenerBadgeEstadoCita(estado) {
+      if (estado === 'EN_ATENCION') {
+        return { label: 'En Atención', clase: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30' };
+      }
+      if (estado === 'ATENDIDA') {
+        return { label: '✓ Asistió · Atendida', clase: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' };
+      }
+      if (estado === 'NO_ASISTIO') {
+        return { label: '✕ No Asistió', clase: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30' };
+      }
+      if (estado === 'CANCELADA') {
+        return { label: 'Cancelada', clase: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30' };
+      }
+      if (estado === 'CONFIRMADA') {
+        return { label: 'Confirmada', clase: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30' };
+      }
+      return { label: 'Pendiente', clase: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' };
+    }
+
+    function traducirEventoLog(tipo) {
+      const mapa = {
+        LOGIN_EXITOSO: 'Inicio de Sesión',
+        LOGIN_FALLIDO: 'Fallo de Inicio de Sesión',
+        REGISTRO_USUARIO_EXITOSO: 'Registro de Paciente',
+        REGISTRO_USUARIO_RECHAZADO: 'Registro Rechazado',
+        RESERVA_CONFIRMADA: 'Reserva Confirmada',
+        RESERVA_RECHAZADA: 'Reserva Rechazada',
+        CONFLICTO_RESERVA: 'Conflicto de Horario',
+        CONFLICTO_RESERVA_PACIENTE: 'Choque de Horario Paciente',
+        ESTADO_CITA_ACTUALIZADO: 'Cambio de Estado de Cita',
+        CITA_CANCELADA_POR_ESPECIALISTA: 'Cancelación por Especialista',
+        CANCELACION_ESPECIALISTA_DENEGADA: 'Cancelación Denegada (Especialista)',
+        CITA_CANCELADA_POR_PACIENTE: 'Cancelación por Paciente',
+        CANCELACION_CITA_DENEGADA: 'Cancelación Denegada (Paciente)',
+        CANCELACION_NO_AUTORIZADA: 'Cancelación No Autorizada',
+        FIRMA_ACCESO_HISTORIAL_EXITOSA: 'Acceso a Ficha Firmado',
+        FIRMA_ACCESO_HISTORIAL_FALLIDA: 'Acceso a Ficha Sin Clave',
+        FIRMA_ACCESO_HISTORIAL_DENEGADA: 'Acceso a Ficha Denegado',
+        FICHA_MODIFICADA_CON_EXITO: 'Ficha Clínica Modificada',
+        REAUTENTICACION_FALLIDA: 'Edición Sin Clave',
+        REAUTENTICACION_DENEGADA: 'Edición Denegada',
+        RECETA_FIRMADA_EMITIDA: 'Receta Médica Emitida',
+        FIRMA_RECETA_DENEGADA: 'Firma de Receta Denegada',
+        RECETA_VERIFICADA_CORRECTA: 'Verificación de Receta',
+        RECETA_ADULTERADA_DETECTADA: 'Receta Adulterada Detectada',
+        ADMIN_CONSULTA_PACIENTE: 'Supervisión Admin de Paciente',
+        BLOQUEO_TEMPORAL: 'Bloqueo Temporal (Fuerza Bruta)',
+        BLOQUEO_CRITICO: 'Bloqueo Crítico (1h)',
+        ACCESO_BLOQUEADO: 'Intento Bajo Bloqueo',
+        ATAQUE_XML_DETECTADO: 'Payload XML Bloqueado'
+      };
+      return mapa[tipo] || String(tipo || 'EVENTO').replace(/_/g, ' ');
+    }
+
+    function cambiarPestanaAdmin(pestana) {
+      pestanaActiva = pestana;
+      const paneles = {
+        medicos: { panel: 'panelMedicos', btn: 'tabBtnMedicos' },
+        pacientes: { panel: 'panelPacientes', btn: 'tabBtnPacientes' },
+        recetas: { panel: 'panelRecetas', btn: 'tabBtnRecetas' },
+        logs: { panel: 'panelLogs', btn: 'tabBtnLogs' }
+      };
+      Object.keys(paneles).forEach(k => {
+        const p = document.getElementById(paneles[k].panel);
+        const b = document.getElementById(paneles[k].btn);
+        const activo = k === pestana;
+        if (p) p.classList.toggle('hidden', !activo);
+        if (b) {
+          b.className = activo
+            ? 'flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-600 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center gap-2'
+            : 'flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2';
+        }
+      });
+    }
+
+    async function fetchAdminJson(url) {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const res = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.status === 401 || res.status === 403) {
+        cerrarSesionAdmin();
+        return null;
+      }
+      if (!res.ok) return null;
+      return await res.json();
+    }
+
+    async function cargarResumenAdmin() {
+      const data = await fetchAdminJson('/api/admin/resumen');
+      if (!data || !data.resumen) return;
+      const r = data.resumen;
+      const badgeHoy = document.getElementById('badgeFechaAdminHoy');
+      if (badgeHoy) badgeHoy.textContent = `Hoy: ${data.fechaHoyChile || formatearFechaDDMMAAAA(fechaHoyChile)}`;
+      document.getElementById('kpiMedicos').textContent = String(r.totalMedicos || 0);
+      document.getElementById('kpiEnAtencion').textContent = String(r.enAtencion || 0);
+      document.getElementById('kpiCitas').textContent = `${r.citasHoy || 0} / ${r.totalCitas || 0}`;
+      document.getElementById('kpiCanceladas').textContent = String(r.canceladas || 0);
+      document.getElementById('kpiPacientes').textContent = String(r.totalPacientes || 0);
+      document.getElementById('kpiRecetasLogs').textContent = `${r.totalRecetas || 0} / ${r.totalLogs || 0}`;
+    }
+
+    async function cargarMedicosAdmin() {
+      const data = await fetchAdminJson('/api/admin/medicos');
+      if (!data) return;
+      cacheMedicos = data.medicos || [];
+      cacheCitas = data.citas || [];
+      document.getElementById('countTabMedicos').textContent = String(cacheMedicos.length);
+      renderizarMedicosAdmin();
+    }
+
+    async function cargarPacientesAdmin() {
+      const data = await fetchAdminJson('/api/admin/pacientes');
+      if (!data) return;
+      cachePacientes = data.pacientes || [];
+      document.getElementById('countTabPacientes').textContent = String(cachePacientes.length);
+      renderizarPacientesAdmin();
+    }
+
+    async function cargarRecetasAdmin() {
+      const data = await fetchAdminJson('/api/admin/recetas');
+      if (!data) return;
+      cacheRecetas = data.recetas || [];
+      document.getElementById('countTabRecetas').textContent = String(cacheRecetas.length);
+      renderizarRecetasAdmin();
+    }
+
+    async function cargarLogsAdmin() {
+      const data = await fetchAdminJson('/api/admin/logs');
+      if (!data) return;
+      cacheLogs = data.logs || [];
+      document.getElementById('countTabLogs').textContent = String(cacheLogs.length);
+      renderizarLogsAdmin();
+    }
+
+    function renderizarMedicosAdmin() {
+      const cont = document.getElementById('contenedorMedicosAdmin');
+      const banner = document.getElementById('bannerEnAtencionGlobal');
+      if (!cont) return;
+
+      const enAtencionActivas = cacheCitas.filter(c => c.estado === 'EN_ATENCION');
+      if (banner) {
+        if (enAtencionActivas.length > 0) {
+          banner.classList.remove('hidden');
+          banner.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-cyan-800 dark:text-cyan-200 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse inline-block"></span>
+                Consultas En Atención en curso (${enAtencionActivas.length})
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${enAtencionActivas.map(c => `
+                <div class="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-cyan-500/30 text-xs flex items-center gap-2">
+                  <span class="font-bold text-slate-900 dark:text-white">${escHtml(c.nombreMedico)}</span>
+                  <span class="text-slate-400">→</span>
+                  <span class="font-semibold text-cyan-700 dark:text-cyan-300">${escHtml(c.nombrePaciente)} (${escHtml(c.rutFormateado)})</span>
+                  <span class="text-[11px] text-slate-500">${escHtml(c.hora)} hrs · ${escHtml(c.sillon)}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+
+      const q = (document.getElementById('filtroBusquedaMedicos')?.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const estadoFiltro = document.getElementById('filtroEstadoCitasAdmin')?.value || 'TODAS';
+      const fechaFiltro = document.getElementById('filtroFechaCitasAdmin')?.value || 'TODAS';
+
+      const medicosFiltrados = cacheMedicos.map(m => {
+        const citasFiltradas = (m.citas || []).filter(c => {
+          if (estadoFiltro !== 'TODAS' && c.estado !== estadoFiltro) return false;
+          if (fechaFiltro === 'HOY' && c.fecha !== fechaHoyChile) return false;
+          if (!q) return true;
+          const textoCita = `${m.nombre} ${m.especialidad} ${c.nombrePaciente} ${c.rutFormateado} ${c.rutPaciente} ${c.motivoCancelacion || ''}`
+            .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return textoCita.includes(q);
+        });
+        const coincideMedico = !q || `${m.nombre} ${m.especialidad} ${m.sillon} ${m.registroSis}`
+          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q);
+        return { medico: m, citasFiltradas, mostrar: (estadoFiltro === 'TODAS' && fechaFiltro === 'TODAS' && coincideMedico) || citasFiltradas.length > 0 };
+      }).filter(item => item.mostrar);
+
+      if (medicosFiltrados.length === 0) {
+        cont.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">No hay especialistas o citas que coincidan con el filtro seleccionado.</div>';
+        return;
+      }
+
+      cont.innerHTML = medicosFiltrados.map(({ medico: m, citasFiltradas }) => {
+        const r = m.resumen || {};
+        const estadoBox = m.enAtencion && m.pacienteEnAtencion
+          ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>En Atención: ${escHtml(m.pacienteEnAtencion.nombrePaciente)}</span>`
+          : `<span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Sin atención en curso</span>`;
+
+        const listaCitasHtml = citasFiltradas.length === 0
+          ? '<div class="p-3 text-center text-[11px] text-slate-400 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800">Sin citas registradas bajo este filtro.</div>'
+          : citasFiltradas.map(c => {
+              const badge = obtenerBadgeEstadoCita(c.estado);
+              const cancelHtml = c.estado === 'CANCELADA'
+                ? `<div class="mt-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-[11px] text-red-700 dark:text-red-300 space-y-0.5">
+                    <div><span class="font-bold">Motivo de cancelación:</span> ${escHtml(c.motivoCancelacion || 'Sin detalle registrado')}</div>
+                    <div class="text-[10px] text-red-600/80 dark:text-red-400/80">Cancelada por: ${escHtml(c.canceladaPor || 'Usuario')} ${c.canceladaEnChile ? '· ' + escHtml(c.canceladaEnChile) + ' hrs' : ''}</div>
+                  </div>`
+                : '';
+              return `
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 space-y-1.5">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="font-bold text-teal-600 dark:text-teal-400">${escHtml(c.fechaDDMMAAAA || formatearFechaDDMMAAAA(c.fecha))} · ${escHtml(c.hora)} hrs</span>
+                        <span class="text-slate-400">·</span>
+                        <span class="font-semibold text-slate-600 dark:text-slate-300">${escHtml(c.sillon)}</span>
+                      </div>
+                      <div class="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                        Paciente: ${escHtml(c.nombrePaciente)} <span class="font-mono font-normal text-slate-500">(${escHtml(c.rutFormateado)})</span>
+                      </div>
+                      <div class="text-[11px] text-slate-500 dark:text-slate-400">${escHtml(c.especialidad)}</div>
+                    </div>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${badge.clase}">${badge.label}</span>
+                  </div>
+                  ${cancelHtml}
+                </div>
+              `;
+            }).join('');
+
+        return `
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white">${escHtml(m.nombre)}</h3>
+                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">${escHtml(m.especialidad)}</span>
+                  <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${escHtml(m.sillon)}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">RUT: ${escHtml(m.rut || '-')} · ${escHtml(m.registroSis || 'SIS')}</p>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                ${estadoBox}
+                <div class="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                  <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Total: ${r.total || 0}</span>
+                  <span class="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">Activas: ${r.activas || 0}</span>
+                  <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Asistió: ${r.atendidas || 0}</span>
+                  <span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">No Asistió: ${r.noAsistio || 0}</span>
+                  <span class="px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400">Canceladas: ${r.canceladas || 0}</span>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+              ${listaCitasHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderizarPacientesAdmin() {
+      const cont = document.getElementById('contenedorPacientesAdmin');
+      if (!cont) return;
+
+      const q = (document.getElementById('filtroBusquedaPacientes')?.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const qRut = q.replace(/[^0-9k]/gi, '').toUpperCase();
+      const filtro = document.getElementById('filtroEstadoPacientesAdmin')?.value || 'TODOS';
+
+      const filtrados = cachePacientes.filter(p => {
+        if (filtro === 'EN_ATENCION' && !p.enAtencion) return false;
+        if (filtro === 'CON_CANCELADAS' && !p.canceladas) return false;
+        if (filtro === 'CON_INASISTENCIAS' && !p.noAsistio) return false;
+        if (filtro === 'CON_RECETAS' && !p.recetasCount) return false;
+        if (!q) return true;
+        const txt = `${p.nombrePaciente} ${p.rutFormateado} ${p.email} ${p.telefono}`
+          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return txt.includes(q) || (qRut && (p.rutPaciente || '').includes(qRut));
+      });
+
+      if (filtrados.length === 0) {
+        cont.innerHTML = '<div class="col-span-full p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">No se encontraron pacientes con los criterios ingresados.</div>';
+        return;
+      }
+
+      cont.innerHTML = filtrados.map(p => {
+        const citasResumen = (p.citas || []).slice(0, 3).map(c => {
+          const b = obtenerBadgeEstadoCita(c.estado);
+          const motivoTag = (c.estado === 'CANCELADA' && c.motivoCancelacion)
+            ? ` · Motivo: ${escHtml(c.motivoCancelacion)}`
+            : '';
+          return `
+            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-[11px]">
+              <div class="min-w-0 truncate">
+                <span class="font-bold text-slate-800 dark:text-slate-100">${escHtml(c.fechaDDMMAAAA || formatearFechaDDMMAAAA(c.fecha))} ${escHtml(c.hora)}</span>
+                <span class="text-slate-500"> · ${escHtml(c.nombreMedico)} (${escHtml(c.especialidad)})${motivoTag}</span>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${b.clase}">${b.label}</span>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="bg-white dark:bg-slate-900 border ${p.enAtencion ? 'border-cyan-500/50' : 'border-slate-200 dark:border-slate-800'} rounded-2xl p-5 shadow-sm space-y-3 flex flex-col justify-between">
+            <div class="space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">${escHtml(p.nombrePaciente)}</h3>
+                    ${p.enAtencion ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">En Atención</span>' : ''}
+                  </div>
+                  <p class="text-[11px] font-mono text-teal-600 dark:text-teal-400 font-semibold">${escHtml(p.rutFormateado)}</p>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">${escHtml(p.email || 'Sin correo')} · ${escHtml(p.telefono || 'Sin teléfono')}</p>
+                </div>
+                <button type="button" onclick="verDetallePacienteAdmin('${escHtml(p.rutPaciente)}')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25 transition shrink-0">
+                  Ver Historial
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Citas: ${p.totalCitas || 0}</span>
+                <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Asistió: ${p.atendidas || 0}</span>
+                <span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400">No Asistió: ${p.noAsistio || 0}</span>
+                <span class="px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400">Canceladas: ${p.canceladas || 0}</span>
+                <span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">Recetas: ${p.recetasCount || 0}</span>
+              </div>
+              ${citasResumen ? `<div class="space-y-1.5 pt-1">${citasResumen}</div>` : '<p class="text-[11px] text-slate-400">Sin citas registradas aún.</p>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function verDetallePacienteAdmin(rut) {
+      const modal = document.getElementById('modalDetallePacienteAdmin');
+      const cuerpo = document.getElementById('cuerpoModalPacienteAdmin');
+      const titulo = document.getElementById('tituloModalPacienteAdmin');
+      const sub = document.getElementById('subtituloModalPacienteAdmin');
+      if (!modal || !cuerpo) return;
+
+      cuerpo.innerHTML = '<div class="p-6 text-center text-slate-400">Cargando información clínica y de citas...</div>';
+      modal.classList.remove('hidden');
+      actualizarBloqueoScrollFondo();
+
+      const data = await fetchAdminJson('/api/admin/pacientes/' + encodeURIComponent(rut) + '/detalle');
+      if (!data || !data.ficha) {
+        cuerpo.innerHTML = '<div class="p-6 text-center text-red-500 font-semibold">No fue posible cargar el historial del paciente.</div>';
+        return;
+      }
+
+      const f = data.ficha;
+      const recetasPac = data.recetas || [];
+      if (titulo) titulo.textContent = f.nombrePaciente || 'Paciente DentalSis';
+      if (sub) sub.textContent = `RUT: ${f.rutFormateado || rut} · Tel: ${f.telefono || 'Sin registro'} · Email: ${f.email || 'Sin registro'}`;
+
+      const citasHtml = (f.citasPrevias && f.citasPrevias.length > 0)
+        ? f.citasPrevias.map(c => {
+            const b = obtenerBadgeEstadoCita(c.estado);
+            const mot = (c.estado === 'CANCELADA' && c.motivoCancelacion)
+              ? `<div class="text-[11px] text-red-600 dark:text-red-400 mt-1"><strong>Motivo cancelación:</strong> ${escHtml(c.motivoCancelacion)} (${escHtml(c.canceladaPor || 'Usuario')})</div>`
+              : '';
+            return `
+              <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3">
+                <div>
+                  <div class="font-bold text-slate-900 dark:text-white">${escHtml(formatearFechaDDMMAAAA(c.fecha))} · ${escHtml(c.hora)} hrs · ${escHtml(c.sillon || 'Box')}</div>
+                  <div class="text-[11px] text-slate-500">${escHtml(c.especialidad || 'Consulta')} · Especialista: ${escHtml(c.nombreMedico || 'Especialista')}</div>
+                  ${mot}
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${b.clase}">${b.label}</span>
+              </div>
+            `;
+          }).join('')
+        : '<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 text-slate-400 text-center">Sin citas registradas.</div>';
+
+      const recetasHtml = recetasPac.length > 0
+        ? recetasPac.map(r => `
+            <div class="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="font-bold text-slate-900 dark:text-white">Folio #${escHtml(r.folio)}</div>
+                <div class="text-[11px] text-slate-500">Emitida: ${escHtml(r.fechaEmisionChile)} a las ${escHtml(r.horaEmisionChile)} hrs · Por: ${escHtml(r.nombreMedico)}</div>
+              </div>
+              <button type="button" onclick="abrirModalRecetaAdmin('${escHtml(r.id)}')" class="px-3 py-1 rounded-lg text-[11px] font-bold bg-teal-600 hover:bg-teal-500 text-white">Ver Receta</button>
+            </div>
+          `).join('')
+        : '<div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 text-slate-400 text-center">Sin recetas médicas emitidas.</div>';
+
+      cuerpo.innerHTML = `
+        <div class="p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300">
+          <strong>Alergias registradas:</strong> ${escHtml(f.alergias || 'Sin alergias registradas')}
+        </div>
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Citas y Atenciones (${(f.citasPrevias || []).length})</h4>
+          <div class="space-y-2">${citasHtml}</div>
+        </div>
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Recetas Médicas Emitidas (${recetasPac.length})</h4>
+          <div class="space-y-2">${recetasHtml}</div>
+        </div>
+      `;
+    }
+
+    function cerrarModalPacienteAdmin() {
+      const modal = document.getElementById('modalDetallePacienteAdmin');
+      if (modal) modal.classList.add('hidden');
+      actualizarBloqueoScrollFondo();
+    }
+
+    function renderizarRecetasAdmin() {
+      const cont = document.getElementById('contenedorRecetasAdmin');
+      if (!cont) return;
+
+      const q = (document.getElementById('filtroBusquedaRecetas')?.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const filtradas = cacheRecetas.filter(r => {
+        if (!q) return true;
+        const txt = `${r.folio} ${r.nombrePaciente} ${r.rutFormateado} ${r.nombreMedico} ${r.especialidadMedico} ${(r.medicamentos || []).map(m => m.nombre).join(' ')}`
+          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return txt.includes(q);
+      });
+
+      if (filtradas.length === 0) {
+        cont.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">No hay recetas médicas emitidas registradas.</div>';
+        return;
+      }
+
+      cont.innerHTML = filtradas.map(r => {
+        const medsResumen = (r.medicamentos || []).map(m => `${escHtml(m.nombre)} ${escHtml(m.dosis || '')}`).join(', ') || 'Sin detalle de ítems';
+        return `
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1.5 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-bold font-mono bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/25">#${escHtml(r.folio)}</span>
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-100">${escHtml(r.fechaEmisionChile)} · ${escHtml(r.horaEmisionChile)} hrs (Hora Chile)</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs pt-1">
+                <div><span class="text-slate-400">Paciente:</span> <strong class="text-slate-900 dark:text-white">${escHtml(r.nombrePaciente)}</strong> <span class="font-mono text-slate-500">(${escHtml(r.rutFormateado)})</span></div>
+                <div><span class="text-slate-400">Emitida por:</span> <strong class="text-cyan-700 dark:text-cyan-300">${escHtml(r.nombreMedico)}</strong> <span class="text-slate-500">(${escHtml(r.especialidadMedico)})</span></div>
+              </div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate"><span class="font-semibold">Prescripción:</span> ${medsResumen}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button type="button" onclick="abrirModalRecetaAdmin('${escHtml(r.id)}')" class="px-4 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-sm transition">
+                Ver Receta Completa
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function abrirModalRecetaAdmin(recId) {
+      const r = cacheRecetas.find(item => String(item.id) === String(recId) || String(item.folio) === String(recId));
+      if (!r) return;
+      document.getElementById('admRecFolio').textContent = `#${r.folio}`;
+      const medsHtml = (r.medicamentos || []).map((m, idx) => `
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+          <div>
+            <span class="font-bold text-teal-600 dark:text-teal-400">${idx + 1}.</span>
+            <span class="font-bold text-slate-900 dark:text-white">${escHtml(m.nombre)} ${escHtml(m.dosis || '')}</span>
+            <span class="text-slate-500">(${escHtml(m.presentacion || '')})</span>
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 pl-4">${escHtml(m.posologia || `${m.cantidad || ''} ${m.frecuencia || ''} ${m.dias || ''}`)}</div>
+          </div>
+          ${m.totalUnidades ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">Total: ${escHtml(m.totalUnidades)}</span>` : ''}
+        </div>
+      `).join('');
+
+      document.getElementById('cuerpoModalRecetaAdmin').innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+          <div><span class="text-[10px] font-bold uppercase text-slate-400 block">Paciente</span><strong class="text-slate-900 dark:text-white">${escHtml(r.nombrePaciente)}</strong></div>
+          <div><span class="text-[10px] font-bold uppercase text-slate-400 block">RUT</span><strong class="font-mono">${escHtml(r.rutFormateado)}</strong></div>
+          <div><span class="text-[10px] font-bold uppercase text-slate-400 block">Emisión (Chile)</span><strong>${escHtml(r.fechaEmisionChile)} ${escHtml(r.horaEmisionChile)}</strong></div>
+          <div><span class="text-[10px] font-bold uppercase text-slate-400 block">Médico Tratante</span><strong class="text-teal-600 dark:text-teal-400">${escHtml(r.nombreMedico)}</strong></div>
+        </div>
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Prescripción Farmacológica</h4>
+          ${medsHtml || '<p class="text-slate-400">Sin medicamentos detallados.</p>'}
+        </div>
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Indicaciones</h4>
+          <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">${escHtml(r.indicaciones)}</div>
+        </div>
+        <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <span><strong>Firma HMAC-SHA256:</strong> <span class="font-mono">${escHtml((r.firmaHMAC || 'Verificada').slice(0, 32))}...</span></span>
+          <span>${escHtml(r.especialidadMedico)} · ${escHtml(r.registroSis)}</span>
+        </div>
+      `;
+      document.getElementById('modalVerRecetaAdmin').classList.remove('hidden');
+      actualizarBloqueoScrollFondo();
+    }
+
+    function cerrarModalRecetaAdmin() {
+      const modal = document.getElementById('modalVerRecetaAdmin');
+      if (modal) modal.classList.add('hidden');
+      actualizarBloqueoScrollFondo();
+    }
+
+    function renderizarLogsAdmin() {
+      const cont = document.getElementById('contenedorLogsAdmin');
+      if (!cont) return;
+
+      const q = (document.getElementById('filtroBusquedaLogs')?.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const sevFiltro = document.getElementById('filtroSeveridadLogs')?.value || 'TODAS';
+      const catFiltro = document.getElementById('filtroCategoriaLogs')?.value || 'TODAS';
+
+      const filtrados = cacheLogs.filter(l => {
+        if (sevFiltro !== 'TODAS' && l.nivel !== sevFiltro) return false;
+        const tipoUp = String(l.tipo || '').toUpperCase();
+        if (catFiltro === 'LOGIN' && !/LOGIN|REGISTRO|PASSWORD/.test(tipoUp)) return false;
+        if (catFiltro === 'CITAS' && !/CITA|RESERVA|CANCEL|ESTADO_CITA|CONFLICTO/.test(tipoUp)) return false;
+        if (catFiltro === 'CLINICO' && !/FICHA|RECETA|HISTORIAL|ADMIN_CONSULTA/.test(tipoUp)) return false;
+        if (catFiltro === 'SEGURIDAD' && !/BLOQUEO|DENEGAD|FALLID|XML|ADULTERAD|NO_AUTORIZADA/.test(tipoUp)) return false;
+        if (!q) return true;
+        const txt = `${l.tipo} ${traducirEventoLog(l.tipo)} ${l.usuarioNombre} ${l.usuarioRol} ${l.ip} ${l.detalle}`
+          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return txt.includes(q);
+      });
+
+      if (filtrados.length === 0) {
+        cont.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">No hay eventos de auditoría que coincidan con el filtro.</div>';
+        return;
+      }
+
+      cont.innerHTML = filtrados.map(l => {
+        const niv = (l.nivel || 'INFO').toUpperCase();
+        const badgeSev = niv === 'PELIGRO'
+          ? 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30'
+          : niv === 'ALERTA'
+            ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+            : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30';
+
+        const bordeIzq = niv === 'PELIGRO'
+          ? 'border-l-4 border-l-red-500'
+          : niv === 'ALERTA'
+            ? 'border-l-4 border-l-amber-500'
+            : 'border-l-4 border-l-teal-500';
+
+        const tituloEvento = traducirEventoLog(l.tipo);
+        const esIpLocal = l.ip === '127.0.0.1' || l.ip === '::1';
+        const ipBadgeClase = esIpLocal
+          ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+          : 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/30';
+
+        return `
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${bordeIzq} rounded-2xl p-4 shadow-sm space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeSev}">${escHtml(niv)}</span>
+                <span class="text-xs font-bold text-slate-900 dark:text-white">${escHtml(tituloEvento)}</span>
+                <span class="text-[10px] font-mono text-slate-400">(${escHtml(l.tipo)})</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-[11px]">
+                <span class="px-2.5 py-0.5 rounded-lg font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                  ${escHtml(l.fechaChile || '')} · ${escHtml(l.horaChile || '')} (CL)
+                </span>
+                <span class="px-2.5 py-0.5 rounded-lg font-mono font-semibold border ${ipBadgeClase}" title="Dirección IP de conexión">
+                  IP: ${escHtml(l.ip || '127.0.0.1')}
+                </span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-700 dark:text-slate-300">${escHtml(l.detalle || '')}</p>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
+              <div class="flex items-center gap-2">
+                <span>Realizado por: <strong class="text-slate-800 dark:text-slate-200">${escHtml(l.usuarioNombre || 'Sistema')}</strong></span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${escHtml(l.usuarioRol || 'Sistema')}</span>
+              </div>
+              ${l.hashInmutable ? `<span class="font-mono text-[10px] text-slate-400">Hash: ${escHtml(String(l.hashInmutable).slice(0, 16))}...</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function recargarTodoAdmin() {
+      await Promise.all([
+        cargarResumenAdmin(),
+        cargarMedicosAdmin(),
+        cargarPacientesAdmin(),
+        cargarRecetasAdmin(),
+        cargarLogsAdmin()
+      ]);
+    }
+
+    function inicializarAdmin() {
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
+      if (usuarioRaw) {
+        try {
+          adminActual = JSON.parse(usuarioRaw);
+          const navNom = document.getElementById('nombreAdminNav');
+          const navAv = document.getElementById('avatarAdminNav');
+          if (navNom && adminActual.nombre) navNom.textContent = adminActual.nombre;
+          if (navAv && adminActual.nombre) {
+            const p = adminActual.nombre.trim().split(/\s+/);
+            navAv.textContent = (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
+          }
+        } catch (e) {}
+      }
+      recargarTodoAdmin();
+      setInterval(() => {
+        if (!document.hidden) recargarTodoAdmin();
+      }, 20000);
+    }
+
+    inicializarAdmin();
+  </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 const rateLimit = require('express-rate-limit');
 const { registrarEvento } = require('../services/logger');
+const { obtenerIpCliente } = require('../services/ipClient');
 
 const intentosFallidos = new Map();
 
@@ -9,7 +10,7 @@ function obtenerClaveIntento(ip, identificador) {
 }
 
 function verificarBloqueoEscalonado(req, res, next) {
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
   const identificador = req.body.identificador || req.body.email || req.body.rut || 'anonimo';
   const clave = obtenerClaveIntento(ip, identificador);
   const registro = intentosFallidos.get(clave);
@@ -57,7 +58,7 @@ function limpiarFallosLogin(ip, identificador) {
 function rechazarPayloadsXml(req, res, next) {
   const contentType = (req.headers['content-type'] || '').toLowerCase();
   if (contentType.includes('xml')) {
-    const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+    const ip = obtenerIpCliente(req);
     registrarEvento('ATAQUE_XML_DETECTADO', 'Peticion XML rechazada para prevencion XXE', ip, null, 'PELIGRO');
     return res.status(415).json({
       error: 'Formato de contenido no soportado. Solo se admite application/json.'
@@ -104,6 +105,8 @@ const limiteOperacionesSensibles = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => obtenerIpCliente(req),
+  validate: { trustProxy: false, xForwardedForHeader: false, keyGeneratorIpFallback: false },
   message: {
     error: 'Limite de operaciones excedido para esta direccion IP. Intente mas tarde.'
   }
@@ -114,6 +117,8 @@ const limiteGlobal = rateLimit({
   max: 3000,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => obtenerIpCliente(req),
+  validate: { trustProxy: false, xForwardedForHeader: false, keyGeneratorIpFallback: false },
   skip: (req) => {
     const u = req.originalUrl || req.url || '';
     if (!u.startsWith('/api')) return true;

@@ -18,6 +18,7 @@ const {
 } = require('../models/dataStore');
 const { firmarReceta, verificarFirmaReceta } = require('../services/recetaCrypto');
 const { registrarEvento } = require('../services/logger');
+const { obtenerIpCliente } = require('../services/ipClient');
 
 const MAPA_UUIDS_ESP = {
   'DOC-1': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
@@ -311,7 +312,7 @@ function formatearFechaDMYBackend(fechaISO) {
 async function cambiarEstado(req, res) {
   const { idCita } = req.params;
   const { nuevoEstado, motivoCancelacion, motivo, passwordConfirmacion, password } = req.body || {};
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
 
   const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'];
   if (!estadosValidos.includes(nuevoEstado)) {
@@ -403,7 +404,10 @@ async function cambiarEstado(req, res) {
     }
 
     if (!bcrypt.compareSync(clave, medico.passwordHash)) {
-      registrarEvento('CANCELACION_ESPECIALISTA_DENEGADA', `Clave incorrecta al intentar cancelar cita ${idCita}`, ip, medico.id, 'PELIGRO');
+      registrarEvento('CANCELACION_ESPECIALISTA_DENEGADA', `Clave incorrecta al intentar cancelar cita ${idCita}`, ip, medico.id, 'PELIGRO', {
+        usuarioNombre: medico.nombre,
+        usuarioRol: 'Especialista'
+      });
       return res.status(403).json({ error: 'Contrasena incorrecta. Cancelacion de consulta denegada.' });
     }
 
@@ -435,13 +439,16 @@ async function cambiarEstado(req, res) {
   } catch (eDb) {}
 
   const respuestaCita = citaActualizada || { id: idCita, fecha: fechaCita, estado: nuevoEstado, ...detallesCancelacion };
+  const actorNombreCambio = (req.usuario && req.usuario.nombre) || 'Especialista';
+  const actorRolCambio = (req.usuario && req.usuario.rol) || 'Especialista';
   if (nuevoEstado === 'CANCELADA') {
     registrarEvento(
       'CITA_CANCELADA_POR_ESPECIALISTA',
       `Cita ${idCita} (${fechaCita}) cancelada por especialista. Motivo: ${detallesCancelacion.motivoCancelacion}`,
       ip,
       (req.usuario && req.usuario.id) || 'ESPECIALISTA',
-      'INFO'
+      'INFO',
+      { usuarioNombre: actorNombreCambio, usuarioRol: actorRolCambio }
     );
   } else {
     registrarEvento(
@@ -449,7 +456,8 @@ async function cambiarEstado(req, res) {
       `Cita ${idCita} (${fechaCita}) cambio a ${nuevoEstado}`,
       ip,
       (req.usuario && req.usuario.id) || 'ESPECIALISTA',
-      'INFO'
+      'INFO',
+      { usuarioNombre: actorNombreCambio, usuarioRol: actorRolCambio }
     );
   }
 
@@ -480,7 +488,7 @@ function actualizarFichaConReautenticacion(req, res) {
     tratamiento,
     observaciones
   } = req.body;
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
 
   if (!rut || !validarRutChileno(rut)) {
     return res.status(400).json({ error: 'RUT chileno invalido.' });
@@ -560,7 +568,7 @@ function emitirReceta(req, res) {
     indicaciones,
     passwordConfirmacion
   } = req.body;
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
 
   if (!rutPaciente || !validarRutChileno(rutPaciente)) {
     return res.status(400).json({ error: 'RUT del paciente invalido o no especificado.' });
@@ -653,7 +661,7 @@ function emitirReceta(req, res) {
 
 function verificarRecetaPublica(req, res) {
   const { receta } = req.body;
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
 
   if (!receta || !receta.id) {
     return res.status(400).json({ error: 'Payload de receta digital requerido.' });
@@ -685,7 +693,7 @@ function verificarRecetaPublica(req, res) {
 }
 
 function ingresarTurno(req, res) {
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
   const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
   const { fecha, horaInicio, horaFin, sillon } = req.body;
 
@@ -716,7 +724,7 @@ function ingresarTurno(req, res) {
 async function autorizarAccesoHistorial(req, res) {
   const { rutPaciente, passwordConfirmacion } = req.body;
   const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
 
   if (!rutPaciente || !validarRutChileno(rutPaciente)) {
     return res.status(400).json({ error: 'RUT chileno de paciente invalido.' });
@@ -904,5 +912,6 @@ module.exports = {
   emitirReceta,
   verificarRecetaPublica,
   ingresarTurno,
-  buscarPacientes
+  buscarPacientes,
+  cargarFichaCompleta
 };

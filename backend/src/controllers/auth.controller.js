@@ -11,13 +11,14 @@ const {
 } = require('../models/dataStore');
 const { registrarFalloLogin, limpiarFallosLogin } = require('../middleware/seguridad');
 const { registrarEvento } = require('../services/logger');
+const { obtenerIpCliente } = require('../services/ipClient');
 
 const { ROLES } = require('../auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
 
 async function login(req, res) {
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
   const { identificador, password, rol } = req.body;
 
   if (!identificador || !password) {
@@ -179,7 +180,10 @@ async function login(req, res) {
 
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
 
-  registrarEvento('LOGIN_EXITOSO', `Autenticacion correcta para ${identificador}`, ip, usuarioEncontrado.id, 'INFO');
+  registrarEvento('LOGIN_EXITOSO', `Autenticacion correcta para ${identificador}`, ip, usuarioEncontrado.id, 'INFO', {
+    usuarioNombre: usuarioEncontrado.nombre,
+    usuarioRol: rolAsignado
+  });
 
   const { passwordHash, ...perfilSeguro } = usuarioEncontrado;
   perfilSeguro.rol = rolAsignado;
@@ -208,7 +212,7 @@ function verificarToken(req, res, next) {
 }
 
 async function registro(req, res) {
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
   const { rut, nombre, email, telefono, password } = req.body;
 
   try {
@@ -250,7 +254,10 @@ async function registro(req, res) {
     } catch (eDb) {
     }
 
-    registrarEvento('REGISTRO_USUARIO_EXITOSO', `Nuevo usuario registrado: ${nuevoUsuario.email} (RUT: ${nuevoUsuario.rut})`, ip, nuevoUsuario.id, 'INFO');
+    registrarEvento('REGISTRO_USUARIO_EXITOSO', `Nuevo usuario registrado: ${nuevoUsuario.email} (RUT: ${nuevoUsuario.rut})`, ip, nuevoUsuario.id, 'INFO', {
+      usuarioNombre: nuevoUsuario.nombre,
+      usuarioRol: 'Paciente'
+    });
 
     const token = jwt.sign(
       { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rol: 'Paciente' },
@@ -270,7 +277,7 @@ async function registro(req, res) {
 }
 
 function actualizarPassword(req, res) {
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
   const { identificador, passwordActual, nuevaPassword } = req.body;
 
   if (!passwordActual) {

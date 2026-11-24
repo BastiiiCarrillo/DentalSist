@@ -12,16 +12,17 @@ const {
   sanitizarEntradas,
   limiteGlobal
 } = require('./middleware/seguridad');
-const { obtenerLogs } = require('./services/logger');
+const { obtenerLogsAuditoria } = require('./services/logger');
 
 const authRutas = require('./routes/auth.routes');
 const pacienteRutas = require('./routes/paciente.routes');
 const especialistaRutas = require('./routes/especialista.routes');
 const medicamentosRutas = require('./routes/medicamentos.routes');
+const adminRutas = require('./routes/admin.routes');
 const { verificarToken, verificarRol } = require('./controllers/auth.controller');
 
 const app = express();
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 app.use(helmet({
   contentSecurityPolicy: false
@@ -57,11 +58,13 @@ app.use('/api/auth', authRutas);
 app.use('/api/pacientes', pacienteRutas);
 app.use('/api/especialistas', especialistaRutas);
 app.use('/api/medicamentos', medicamentosRutas);
+app.use('/api/admin', adminRutas);
 
-app.get('/api/auditoria', verificarToken, verificarRol('SuperAdmin', 'Admin'), (req, res) => {
+app.get('/api/auditoria', verificarToken, verificarRol('SuperAdmin', 'Admin'), async (req, res) => {
+  const logs = await obtenerLogsAuditoria();
   res.status(200).json({
-    total: obtenerLogs().length,
-    logs: obtenerLogs()
+    total: logs.length,
+    logs
   });
 });
 
@@ -83,6 +86,10 @@ app.get('/paciente', (req, res) => {
 
 app.get('/especialista', (req, res) => {
   res.sendFile(path.join(rutaPublica, 'especialista.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(rutaPublica, 'admin.html'));
 });
 
 app.use((err, req, res, next) => {

@@ -34,7 +34,11 @@
       try {
         const u = JSON.parse(usuarioRaw);
         const rol = (u.rol || '').toLowerCase();
-        if (rol !== 'odontologo' && rol !== 'odontólogo' && rol !== 'superadmin' && rol !== 'admin') {
+        if (rol === 'superadmin' || rol === 'admin') {
+          window.location.replace('/admin');
+          return;
+        }
+        if (rol !== 'odontologo' && rol !== 'odontólogo') {
           window.location.replace('/paciente');
           return;
         }
@@ -441,8 +445,8 @@
   </div>
 
   <div id="modalReceta" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full my-8 shadow-2xl overflow-hidden flex flex-col">
-      <div class="p-6 bg-gradient-to-r from-teal-600 to-cyan-600 text-white flex items-center justify-between">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full max-h-[90vh] my-4 shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-6 bg-gradient-to-r from-teal-600 to-cyan-600 text-white flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-bold text-white text-lg">
             DS
@@ -461,7 +465,7 @@
         </div>
       </div>
 
-      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
+      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs overflow-y-auto">
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
@@ -516,15 +520,15 @@
         </div>
       </div>
 
-      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-end shrink-0">
         <button onclick="cerrarModalReceta()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">Cerrar</button>
       </div>
     </div>
   </div>
 
   <div id="modalFichaClinica" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full my-8 shadow-2xl overflow-hidden flex flex-col">
-      <div class="p-6 bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 text-white flex items-center justify-between border-b border-cyan-500/30">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] my-4 shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-6 bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 text-white flex items-center justify-between border-b border-cyan-500/30 shrink-0">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center font-bold text-white text-lg shadow-md shadow-cyan-500/30">
             DS
@@ -543,7 +547,7 @@
         </div>
       </div>
 
-      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
+      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs overflow-y-auto">
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Nombre del Paciente</span>
@@ -590,7 +594,7 @@
         </div>
       </div>
 
-      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-end shrink-0">
         <button onclick="cerrarModalFichaClinica()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">Cerrar</button>
       </div>
     </div>
@@ -1224,7 +1228,11 @@
       try {
         const u = JSON.parse(usuarioRaw);
         const rol = (u.rol || '').toLowerCase();
-        if (rol !== 'odontologo' && rol !== 'odontólogo' && rol !== 'superadmin' && rol !== 'admin') {
+        if (rol === 'superadmin' || rol === 'admin') {
+          window.location.replace('/admin');
+          return null;
+        }
+        if (rol !== 'odontologo' && rol !== 'odontólogo') {
           window.location.href = '/login';
           return null;
         }
@@ -2427,6 +2435,26 @@
           err.classList.remove('hidden');
         }
       }
+    }
+
+    function inicializarBloqueoScrollModales() {
+      const sincronizar = () => {
+        const overlays = Array.from(document.querySelectorAll('div.fixed.inset-0'));
+        const algunoAbierto = overlays.some(el => !el.classList.contains('hidden'));
+        document.body.classList.toggle('overflow-hidden', algunoAbierto);
+        document.documentElement.classList.toggle('overflow-hidden', algunoAbierto);
+      };
+      const obs = new MutationObserver(sincronizar);
+      document.querySelectorAll('div.fixed.inset-0').forEach(el => {
+        obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+      });
+      sincronizar();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inicializarBloqueoScrollModales);
+    } else {
+      inicializarBloqueoScrollModales();
     }
 
     renderizarListaMedicamentos();

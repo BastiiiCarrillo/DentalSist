@@ -305,6 +305,11 @@ function buscarUsuarioPorRut(rut) {
   return usuarios.find(u => limpiarRut(u.rut) === rutLimpio) || null;
 }
 
+function buscarUsuarioPorId(idUsuario) {
+  if (!idUsuario) return null;
+  return usuarios.find(u => String(u.id) === String(idUsuario) || (String(idUsuario) === '11111111-1111-1111-1111-111111111111' && u.id === 'USR-ADMIN-1')) || null;
+}
+
 function buscarUsuarioPorEmail(email) {
   if (!email) return null;
   const clean = email.toLowerCase().trim();
@@ -614,6 +619,10 @@ function obtenerRecetasPorPaciente(rutPaciente) {
   return recetas.filter(r => r.rutPaciente === rutLimpio);
 }
 
+function obtenerTodasLasRecetas() {
+  return [...recetas];
+}
+
 let turnosMedicos = [];
 
 function guardarTurnoMedico(datos) {
@@ -757,6 +766,7 @@ module.exports = {
   buscarMedicoPorId,
   buscarMedicoPorEmail,
   buscarMedicoPorRut,
+  buscarUsuarioPorId,
   buscarUsuarioPorRut,
   buscarUsuarioPorEmail,
   crearUsuario,
@@ -772,6 +782,7 @@ module.exports = {
   guardarReceta,
   obtenerRecetaPorId,
   obtenerRecetasPorPaciente,
+  obtenerTodasLasRecetas,
   guardarTurnoMedico,
   obtenerTurnosPorMedico,
   reiniciarEstadoParaPruebas

@@ -14,6 +14,7 @@ const {
   buscarMedicoPorEmail
 } = require('../models/dataStore');
 const { registrarEvento } = require('../services/logger');
+const { obtenerIpCliente } = require('../services/ipClient');
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -127,7 +128,7 @@ async function mapearEspecialista(idMedico, especialidad, nombre) {
 }
 
 async function reservarCita(req, res) {
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
   const errorValidacion = validarDatosReserva(req.body);
 
   if (errorValidacion) {
@@ -246,7 +247,10 @@ async function reservarCita(req, res) {
       }
     }
 
-    registrarEvento('RESERVA_CONFIRMADA', `Cita ${cita.id} agendada para ${cita.rutFormateado}`, ip, cita.rutPaciente, 'INFO');
+    registrarEvento('RESERVA_CONFIRMADA', `Cita ${cita.id} agendada para ${cita.rutFormateado}`, ip, cita.rutPaciente, 'INFO', {
+      usuarioNombre: cita.nombrePaciente,
+      usuarioRol: 'Paciente'
+    });
     return res.status(201).json({
       mensaje: 'Cita reservada exitosamente.',
       cita
@@ -462,7 +466,7 @@ async function cancelarCitaPaciente(req, res) {
   const { idCita } = req.params;
   const { motivo, password, passwordConfirmacion } = req.body || {};
   const clave = password || passwordConfirmacion || '';
-  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+  const ip = obtenerIpCliente(req);
 
   if (!req.usuario) {
     return res.status(401).json({ error: 'Debe iniciar sesion para cancelar una cita.' });
@@ -586,7 +590,10 @@ async function cancelarCitaPaciente(req, res) {
     }
   } catch (eDb) {}
 
-  registrarEvento('CITA_CANCELADA_POR_PACIENTE', `Cita ${idCita} cancelada por paciente ${rutSolicitante}. Motivo: ${motivoLimpio}`, ip, rutSolicitante, 'INFO');
+  registrarEvento('CITA_CANCELADA_POR_PACIENTE', `Cita ${idCita} cancelada por paciente ${rutSolicitante}. Motivo: ${motivoLimpio}`, ip, rutSolicitante, 'INFO', {
+    usuarioNombre: req.usuario.nombre || usuarioAuth.nombre || rutSolicitante,
+    usuarioRol: req.usuario.rol || 'Paciente'
+  });
 
   return res.status(200).json({
     mensaje: 'Cita cancelada exitosamente.',
