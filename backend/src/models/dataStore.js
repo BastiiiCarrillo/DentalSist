@@ -10,29 +10,51 @@ const medicosSemilla = [
     email: 'alvaro.soto@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('SotoCirugia2026!Clinica', 10),
-    horariosBase: ['09:00', '10:00', '11:00', '14:30', '16:00', '17:30']
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '14:30', '15:00', '16:00', '17:00', '17:30']
+  },
+  {
+    id: 'DOC-5',
+    rut: '15.612.394-1',
+    nombre: 'Dr. Ignacio Valenzuela R.',
+    especialidad: 'Cirugía Bucal',
+    sillon: 'Sillón 2',
+    email: 'ignacio.valenzuela@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('Valenzuela2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
   },
   {
     id: 'DOC-2',
     rut: '16.781.423-5',
     nombre: 'Dra. Fernanda Ríos',
     especialidad: 'Odontología General',
-    sillon: 'Sillón 2',
+    sillon: 'Sillón 1',
     email: 'fernanda.rios@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('RiosOdonto2026!Clinica', 10),
-    horariosBase: ['09:00', '10:00', '11:00', '14:30', '16:00', '17:30']
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '14:30', '15:00', '16:00', '17:00', '17:30']
   },
   {
-    id: 'DOC-3',
-    rut: '15.932.114-8',
-    nombre: 'Dr. Matías Silva',
-    especialidad: 'Endodoncia',
-    sillon: 'Sillón 3',
-    email: 'matias.silva@dentalsis.cl',
+    id: 'DOC-6',
+    rut: '17.204.819-3',
+    nombre: 'Dr. Camilo Morales P.',
+    especialidad: 'Odontología General',
+    sillon: 'Sillón 2',
+    email: 'camilo.morales@dentalsis.cl',
     rol: 'ODONTOLOGO',
-    passwordHash: bcrypt.hashSync('SilvaEndo2026!Clinica', 10),
-    horariosBase: ['09:00', '10:00', '11:00', '14:30', '16:00']
+    passwordHash: bcrypt.hashSync('Morales2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
+  },
+  {
+    id: 'DOC-7',
+    rut: '18.012.443-8',
+    nombre: 'Dra. Valentina Castro T.',
+    especialidad: 'Odontología General',
+    sillon: 'Sillón 3',
+    email: 'valentina.castro@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('Castro2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
   },
   {
     id: 'DOC-4',
@@ -43,7 +65,62 @@ const medicosSemilla = [
     email: 'marcela.lagos@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('LagosOdonto2026!Dental', 10),
-    horariosBase: ['09:00', '10:00', '11:30', '15:00', '16:30']
+    horariosBase: ['09:00', '10:00', '11:00', '11:30', '12:00', '15:00', '16:00', '16:30', '17:00']
+  },
+  {
+    id: 'DOC-8',
+    rut: '16.483.210-9',
+    nombre: 'Dr. Felipe Bravo M.',
+    especialidad: 'Ortodoncia',
+    sillon: 'Sillón 1',
+    email: 'felipe.bravo@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('Bravo2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
+  },
+  {
+    id: 'DOC-3',
+    rut: '15.932.114-8',
+    nombre: 'Dr. Matías Silva',
+    especialidad: 'Endodoncia',
+    sillon: 'Sillón 3',
+    email: 'matias.silva@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('SilvaEndo2026!Clinica', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '14:30', '15:00', '16:00', '17:00']
+  },
+  {
+    id: 'DOC-9',
+    rut: '17.519.203-K',
+    nombre: 'Dra. Constanza Herrera S.',
+    especialidad: 'Endodoncia',
+    sillon: 'Sillón 2',
+    email: 'constanza.herrera@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('Herrera2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
+  },
+  {
+    id: 'DOC-10',
+    rut: '15.340.892-4',
+    nombre: 'Dr. Rodrigo Fuentes L.',
+    especialidad: 'Periodoncia',
+    sillon: 'Sillón 3',
+    email: 'rodrigo.fuentes@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('Fuentes2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
+  },
+  {
+    id: 'DOC-11',
+    rut: '18.391.029-7',
+    nombre: 'Dra. Camila Paz Aedo',
+    especialidad: 'Odontopediatría',
+    sillon: 'Sillón 4',
+    email: 'camila.aedo@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('Aedo2026!Dental', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
   }
 ];
 

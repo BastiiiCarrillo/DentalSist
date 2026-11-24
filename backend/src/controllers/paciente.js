@@ -103,16 +103,25 @@ function reservarCita(req, res) {
           if (pacId) {
             let espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1';
             let sillon = 1;
-            if (cita.idMedico === 'DOC-2' || (cita.especialidad && cita.especialidad.includes('General'))) {
-              espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
-              sillon = 2;
-            } else if (cita.idMedico === 'DOC-3' || (cita.especialidad && cita.especialidad.includes('Endodoncia'))) {
-              espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
-              sillon = 3;
-            } else if (cita.idMedico === 'DOC-4' || (cita.especialidad && cita.especialidad.includes('Ortodoncia'))) {
-              espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
-              sillon = 4;
-            }
+            try {
+              const rEsp = await db.query(
+                'SELECT id, sillon_habitual FROM especialistas WHERE id::text = $1 OR nombre ILIKE $2 OR email ILIKE $3 LIMIT 1;',
+                [cita.idMedico, `%${cita.nombreMedico}%`, `%${cita.idMedico}%`]
+              );
+              if (rEsp.rows && rEsp.rows.length > 0) {
+                espUuid = rEsp.rows[0].id;
+                sillon = rEsp.rows[0].sillon_habitual || 1;
+              } else if (cita.idMedico === 'DOC-2' || (cita.especialidad && cita.especialidad.includes('General'))) {
+                espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2';
+                sillon = 2;
+              } else if (cita.idMedico === 'DOC-3' || (cita.especialidad && cita.especialidad.includes('Endodoncia'))) {
+                espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3';
+                sillon = 3;
+              } else if (cita.idMedico === 'DOC-4' || (cita.especialidad && cita.especialidad.includes('Ortodoncia'))) {
+                espUuid = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4';
+                sillon = 4;
+              }
+            } catch (eEsp) {}
             const horaInicio = cita.hora.length === 5 ? cita.hora + ':00' : cita.hora;
             const partesHora = cita.hora.split(':');
             const h = parseInt(partesHora[0], 10);
