@@ -1293,22 +1293,48 @@
       renderizarListaAgendaCitas();
     }
 
+    function obtenerInfoEstadoCita(c) {
+      const est = (c && c.estado) || 'PENDIENTE';
+      const esPasada = Boolean(c && c.fecha && c.fecha < hoyISODefault);
+      if (est === 'ATENDIDA') {
+        return { label: '✓ Asistió · Atendida', clase: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25', pendienteAsistencia: false };
+      }
+      if (est === 'NO_ASISTIO') {
+        return { label: '✕ No Asistió', clase: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30', pendienteAsistencia: false };
+      }
+      if (est === 'CANCELADA') {
+        return { label: 'Cancelada', clase: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20', pendienteAsistencia: false };
+      }
+      if (est === 'EN_ATENCION') {
+        return { label: 'En Atención', clase: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20', pendienteAsistencia: false };
+      }
+      if (est === 'CONFIRMADA') {
+        return { label: 'Confirmada', clase: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', pendienteAsistencia: esPasada };
+      }
+      return { label: 'Pendiente', clase: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', pendienteAsistencia: esPasada };
+    }
+
     function renderizarCalendarioAgenda() {
       const titulo = document.getElementById('tituloMesAgenda');
       const grilla = document.getElementById('grillaCalendarioAgenda');
       if (titulo) titulo.textContent = `${NOMBRES_MESES_AGENDA[mesAgendaVisualizado]} ${anoAgendaVisualizado}`;
       if (!grilla) return;
 
-      const conteoPorFecha = new Map();
+      const resumenPorFecha = new Map();
       citasMedicoCache.forEach(c => {
-        if (c.estado !== 'CANCELADA' && c.fecha) {
-          conteoPorFecha.set(c.fecha, (conteoPorFecha.get(c.fecha) || 0) + 1);
-        }
+        if (!c.fecha) return;
+        const curr = resumenPorFecha.get(c.fecha) || { total: 0, noAsistio: 0, atendidas: 0, canceladas: 0, activas: 0 };
+        curr.total += 1;
+        if (c.estado === 'NO_ASISTIO') curr.noAsistio += 1;
+        else if (c.estado === 'ATENDIDA') curr.atendidas += 1;
+        else if (c.estado === 'CANCELADA') curr.canceladas += 1;
+        else curr.activas += 1;
+        resumenPorFecha.set(c.fecha, curr);
       });
 
       const resumenTotal = document.getElementById('resumenTotalAgenda');
-      const totalActivas = citasMedicoCache.filter(c => c.estado !== 'CANCELADA').length;
-      if (resumenTotal) resumenTotal.textContent = `${totalActivas} cita${totalActivas === 1 ? '' : 's'} activa${totalActivas === 1 ? '' : 's'}`;
+      const totalCitas = citasMedicoCache.length;
+      if (resumenTotal) resumenTotal.textContent = `${totalCitas} cita${totalCitas === 1 ? '' : 's'} en agenda`;
 
       const primerDiaSemana = new Date(anoAgendaVisualizado, mesAgendaVisualizado, 1).getDay();
       const totalDiasMes = new Date(anoAgendaVisualizado, mesAgendaVisualizado + 1, 0).getDate();
@@ -1322,7 +1348,8 @@
         const fechaISO = `${anoAgendaVisualizado}-${String(mesAgendaVisualizado + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const esSeleccionado = fechaISO === fechaAgendaSeleccionada && modoVistaAgenda === 'dia';
         const esHoy = fechaISO === hoyISODefault;
-        const cantidadCitas = conteoPorFecha.get(fechaISO) || 0;
+        const infoDia = resumenPorFecha.get(fechaISO);
+        const cantidadCitas = infoDia ? infoDia.total : 0;
 
         let clases = 'relative py-1.5 rounded-xl text-[11px] font-semibold transition flex flex-col items-center justify-center ';
         if (esSeleccionado) {
@@ -1335,11 +1362,22 @@
           clases += 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-transparent ';
         }
 
+        let dotColor = 'bg-teal-500';
+        if (esSeleccionado) {
+          dotColor = 'bg-white';
+        } else if (infoDia) {
+          if (infoDia.noAsistio > 0) dotColor = 'bg-rose-500';
+          else if (infoDia.activas === 0 && infoDia.atendidas > 0) dotColor = 'bg-emerald-500';
+          else if (infoDia.activas === 0 && infoDia.canceladas > 0) dotColor = 'bg-slate-400';
+        }
+
         const indicador = cantidadCitas > 0
-          ? `<span class="w-1.5 h-1.5 rounded-full mt-0.5 ${esSeleccionado ? 'bg-white' : 'bg-teal-500'}"></span>`
+          ? `<span class="w-1.5 h-1.5 rounded-full mt-0.5 ${dotColor}"></span>`
           : '<span class="w-1.5 h-1.5 mt-0.5 opacity-0">.</span>';
 
-        const tituloDia = cantidadCitas > 0 ? `${cantidadCitas} cita(s) programada(s)` : 'Sin citas';
+        const tituloDia = infoDia
+          ? `${infoDia.total} cita(s): ${infoDia.atendidas} asistió, ${infoDia.noAsistio} no asistió, ${infoDia.activas} por atender`
+          : 'Sin citas';
         html += `<button type="button" onclick="seleccionarDiaAgenda('${fechaISO}')" title="${tituloDia}" class="${clases}"><span>${d}</span>${indicador}</button>`;
       }
 
@@ -1399,32 +1437,31 @@
 
       let html = '';
       listaFiltrada.forEach(c => {
-        let claseBadge = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
-        if (c.estado === 'PENDIENTE') claseBadge = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-        else if (c.estado === 'CONFIRMADA') claseBadge = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-        else if (c.estado === 'EN_ATENCION') claseBadge = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
-        else if (c.estado === 'ATENDIDA') claseBadge = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-        else if (c.estado === 'CANCELADA') claseBadge = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+        const infoEstado = obtenerInfoEstadoCita(c);
 
         let botonesAccion = '';
         if (c.estado === 'PENDIENTE') {
           botonesAccion = `
-            <div class="flex gap-1.5 pt-1">
+            <div class="flex flex-wrap gap-1 pt-1">
               <button onclick="cambiarEstadoCita('${c.id}', 'CONFIRMADA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white shadow">Confirmar</button>
+              <button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>
               <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
             </div>
           `;
         } else if (c.estado === 'CONFIRMADA') {
           botonesAccion = `
-            <div class="flex gap-1.5 pt-1">
-              <button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar Atención</button>
+            <div class="flex flex-wrap gap-1 pt-1">
+              <button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar</button>
+              <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Asistió</button>
+              <button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>
               <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
             </div>
           `;
         } else if (c.estado === 'EN_ATENCION') {
           botonesAccion = `
-            <div class="flex gap-1.5 pt-1">
-              <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Finalizar Atención</button>
+            <div class="flex flex-wrap gap-1 pt-1">
+              <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Finalizar (Asistió)</button>
+              <button onclick="cambiarEstadoCita('${c.id}', 'NO_ASISTIO')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-600/10 hover:bg-rose-600/20 text-rose-600 dark:text-rose-400 border border-rose-500/20">No Asistió</button>
             </div>
           `;
         }
@@ -1433,6 +1470,12 @@
         const esSeleccionado = rutClean && rutClean === rutPacienteActual;
         const nombreSafe = String(c.nombrePaciente || 'Paciente').replace(/'/g, '');
         const etiquetaFecha = modoVistaAgenda === 'todas' ? `${c.fecha} · ` : '';
+        const avisoAsistencia = infoEstado.pendienteAsistencia
+          ? '<span class="block text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">Asistencia sin registrar</span>'
+          : '';
+        const bloqueMotivo = (c.estado === 'CANCELADA' && c.motivoCancelacion)
+          ? `<div class="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/70 dark:border-red-900/40 text-red-700 dark:text-red-300"><span class="font-bold">Motivo:</span> ${c.motivoCancelacion}</div>`
+          : '';
         html += `
           <div class="p-3.5 rounded-2xl border ${esSeleccionado ? 'border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'} space-y-2.5 transition">
             <div class="flex items-start justify-between cursor-pointer gap-2" onclick="solicitarFirmaAccesoHistorial('${rutClean || c.rutPaciente}', '${nombreSafe}')">
@@ -1440,10 +1483,12 @@
                 <span class="text-xs font-bold text-teal-600 dark:text-teal-400 block">${etiquetaFecha}${c.hora} hrs · ${c.sillon || 'Box 1'}</span>
                 <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${c.nombrePaciente || 'Paciente'}</h4>
                 <p class="text-[11px] text-slate-500 font-mono">${c.rutFormateado || formatearRutClinico(c.rutPaciente)}</p>
+                ${avisoAsistencia}
               </div>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${claseBadge}">${c.estado}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${infoEstado.clase}">${infoEstado.label}</span>
             </div>
-            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+            ${bloqueMotivo}
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span class="text-slate-600 dark:text-slate-300 font-medium truncate">${c.especialidad || 'Consulta'}</span>
               ${botonesAccion}
             </div>
@@ -1796,38 +1841,54 @@
       }
 
       const citas = ficha.citasPrevias || [];
+      renderizarHistorialCitasPaciente(citas);
+    }
+
+    function renderizarHistorialCitasPaciente(citas) {
       const contadorHistorial = document.getElementById('contadorCitasPaciente');
-      if (contadorHistorial) {
-        contadorHistorial.textContent = `${citas.length} cita${citas.length === 1 ? '' : 's'}`;
-      }
-
       const contenedorHistorial = document.getElementById('contenedorHistorialPaciente');
-      if (contenedorHistorial) {
-        if (citas.length === 0) {
-          contenedorHistorial.innerHTML = '<div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Este paciente no registra citas previas en el sistema.</div>';
-        } else {
-          let h = '';
-          citas.forEach(c => {
-            let bColor = 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700';
-            if (c.estado === 'CONFIRMADA') bColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-            else if (c.estado === 'EN_ATENCION') bColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
-            else if (c.estado === 'ATENDIDA') bColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-            else if (c.estado === 'CANCELADA') bColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
-            else if (c.estado === 'PENDIENTE') bColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+      const asistencias = citas.filter(c => c.estado === 'ATENDIDA').length;
+      const inasistencias = citas.filter(c => c.estado === 'NO_ASISTIO').length;
+      const canceladas = citas.filter(c => c.estado === 'CANCELADA').length;
 
-            h += `
-              <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                <div>
-                  <span class="font-bold text-slate-900 dark:text-white block">${c.fecha} · ${c.hora} hrs</span>
-                  <span class="text-[11px] text-slate-500 dark:text-slate-400">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon}</span>
-                </div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${bColor}">${c.estado}</span>
-              </div>
-            `;
-          });
-          contenedorHistorial.innerHTML = h;
-        }
+      if (contadorHistorial) {
+        contadorHistorial.textContent = `${citas.length} cita${citas.length === 1 ? '' : 's'} · ${asistencias} asistió · ${inasistencias} no asistió`;
       }
+
+      if (!contenedorHistorial) return;
+      if (citas.length === 0) {
+        contenedorHistorial.innerHTML = '<div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Este paciente no registra citas previas en el sistema.</div>';
+        return;
+      }
+
+      let h = '';
+      if (asistencias > 0 || inasistencias > 0 || canceladas > 0) {
+        h += `
+          <div class="flex flex-wrap gap-1.5 pb-1">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">✓ Asistió: ${asistencias}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20">✕ No asistió: ${inasistencias}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-300 border border-red-500/20">Canceladas: ${canceladas}</span>
+          </div>
+        `;
+      }
+
+      citas.forEach(c => {
+        const infoEstado = obtenerInfoEstadoCita(c);
+        const motivoHtml = (c.estado === 'CANCELADA' && c.motivoCancelacion)
+          ? `<span class="block text-[10px] text-red-600 dark:text-red-400 mt-0.5">Motivo: ${c.motivoCancelacion}</span>`
+          : '';
+        h += `
+          <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+            <div class="min-w-0">
+              <span class="font-bold text-slate-900 dark:text-white block">${c.fecha} · ${c.hora} hrs</span>
+              <span class="text-[11px] text-slate-500 dark:text-slate-400 block">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon || 'Box 1'}</span>
+              ${motivoHtml}
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${infoEstado.clase}">${infoEstado.label}</span>
+          </div>
+        `;
+      });
+      contenedorHistorial.innerHTML = h;
     }
 
     function seleccionarPacienteAgenda(rut, nombre) {
@@ -1836,8 +1897,6 @@
 
     async function cargarFichaPaciente(rut) {
       const token = sessionStorage.getItem('dentalsis_token');
-      const contenedorHistorial = document.getElementById('contenedorHistorialPaciente');
-      const contadorHistorial = document.getElementById('contadorCitasPaciente');
       try {
         const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rut), {
           headers: { 'Authorization': 'Bearer ' + token }
@@ -1866,37 +1925,7 @@
           document.getElementById('campoAlergia').value = ficha.alergias || 'Sin alergias registradas';
         }
 
-        const citas = ficha.citasPrevias || [];
-        if (contadorHistorial) {
-          contadorHistorial.textContent = `${citas.length} cita${citas.length === 1 ? '' : 's'}`;
-        }
-
-        if (contenedorHistorial) {
-          if (citas.length === 0) {
-            contenedorHistorial.innerHTML = '<div class="p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Este paciente no registra citas previas en el sistema.</div>';
-          } else {
-            let h = '';
-            citas.forEach(c => {
-              let bColor = 'bg-slate-100 dark:bg-slate-800 text-slate-600 border-slate-200 dark:border-slate-700';
-              if (c.estado === 'CONFIRMADA') bColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-              else if (c.estado === 'EN_ATENCION') bColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
-              else if (c.estado === 'ATENDIDA') bColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-              else if (c.estado === 'CANCELADA') bColor = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
-              else if (c.estado === 'PENDIENTE') bColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-
-              h += `
-                <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                  <div>
-                    <span class="font-bold text-slate-900 dark:text-white block">${c.fecha} · ${c.hora} hrs</span>
-                    <span class="text-[11px] text-slate-500 dark:text-slate-400">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon}</span>
-                  </div>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${bColor}">${c.estado}</span>
-                </div>
-              `;
-            });
-            contenedorHistorial.innerHTML = h;
-          }
-        }
+        renderizarHistorialCitasPaciente(ficha.citasPrevias || []);
       } catch (e) {}
     }
 
@@ -2152,18 +2181,23 @@
         } else {
           let html = '';
           consultas.forEach(c => {
+            const infoEst = obtenerInfoEstadoCita(c);
+            const motivoHtml = (c.estado === 'CANCELADA' && c.motivoCancelacion)
+              ? `<p class="text-[11px] text-red-600 dark:text-red-400"><strong>Motivo de cancelación:</strong> ${c.motivoCancelacion}</p>`
+              : '';
             html += `
               <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">${c.fecha || ''} · ${c.hora || ''} hrs</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${c.especialidad || 'Atención Odontológica'}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${c.especialidad || c.tipoAtencion || 'Atención Odontológica'}</span>
                 </div>
                 <p class="text-xs text-slate-700 dark:text-slate-300">
                   <strong>Procedimiento / Diagnóstico:</strong> ${c.diagnostico || c.procedimiento || c.tratamiento || 'Control de atención clínica.'}
                 </p>
+                ${motivoHtml}
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
                   <span>Especialista: ${c.nombreMedico || 'Dr./Dra. Especialista Dental'} · ${c.sillon || 'Box Clínico'}</span>
-                  <span class="font-semibold text-emerald-600 dark:text-emerald-400">${c.estado || 'Atención Completada'}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${infoEst.clase}">${infoEst.label}</span>
                 </div>
               </div>
             `;

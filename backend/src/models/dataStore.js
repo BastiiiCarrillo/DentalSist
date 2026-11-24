@@ -531,15 +531,16 @@ function obtenerCitasPorPaciente(rutPaciente) {
 }
 
 const TRANSICIONES_VALIDAS = {
-  PENDIENTE: ['CONFIRMADA', 'EN_ATENCION', 'CANCELADA'],
-  CONFIRMADA: ['EN_ATENCION', 'CANCELADA'],
-  EN_ATENCION: ['ATENDIDA', 'CANCELADA'],
+  PENDIENTE: ['CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'],
+  CONFIRMADA: ['EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'],
+  EN_ATENCION: ['ATENDIDA', 'CANCELADA', 'NO_ASISTIO'],
+  NO_ASISTIO: ['EN_ATENCION', 'ATENDIDA'],
   ATENDIDA: [],
   CANCELADA: []
 };
 
-function actualizarEstadoCita(idCita, nuevoEstado) {
-  const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA'];
+function actualizarEstadoCita(idCita, nuevoEstado, detalles = {}) {
+  const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'];
   if (!estadosValidos.includes(nuevoEstado)) {
     throw new Error('Estado de cita invalido.');
   }
@@ -556,6 +557,11 @@ function actualizarEstadoCita(idCita, nuevoEstado) {
 
   cita.estado = nuevoEstado;
   cita.actualizadoEn = new Date().toISOString();
+  if (nuevoEstado === 'CANCELADA') {
+    if (detalles.motivoCancelacion) cita.motivoCancelacion = detalles.motivoCancelacion;
+    if (detalles.canceladaPor) cita.canceladaPor = detalles.canceladaPor;
+    cita.canceladaEn = cita.actualizadoEn;
+  }
   return cita;
 }
 

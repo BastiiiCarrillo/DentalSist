@@ -1,10 +1,17 @@
+const bcrypt = require('bcrypt');
 const {
   validarRutChileno,
   obtenerMedicosDisponibles,
   crearCita,
   obtenerCitasPorPaciente,
+  obtenerTodasLasCitas,
+  actualizarEstadoCita,
   obtenerFichaClinica,
-  obtenerRecetasPorPaciente
+  obtenerRecetasPorPaciente,
+  buscarUsuarioPorRut,
+  buscarUsuarioPorEmail,
+  buscarMedicoPorRut,
+  buscarMedicoPorEmail
 } = require('../models/dataStore');
 const { registrarEvento } = require('../services/logger');
 
@@ -381,7 +388,7 @@ async function consultarMisCitas(req, res) {
     const db = require('../models/db');
     if (db.obtenerPool()) {
       const rDb = await db.query(
-        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor", e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
         ['.', '', '-', '', rutLimpio]
       );
       if (rDb.rows && rDb.rows.length > 0) {
@@ -430,6 +437,8 @@ async function consultarMisCitas(req, res) {
             estado: r.estado,
             sillon: 'Box ' + r.sillon,
             nombreMedico: r.nombreMedico || 'Especialista Dental',
+            motivoCancelacion: r.motivoCancelacion || null,
+            canceladaPor: r.canceladaPor || null,
             diagnostico: diagLimpio,
             tratamiento: fMatch ? fMatch.tratamiento_realizado : null,
             observaciones: fMatch ? fMatch.observaciones : null,
@@ -449,9 +458,146 @@ async function consultarMisCitas(req, res) {
   });
 }
 
+async function cancelarCitaPaciente(req, res) {
+  const { idCita } = req.params;
+  const { motivo, password, passwordConfirmacion } = req.body || {};
+  const clave = password || passwordConfirmacion || '';
+  const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
+
+  if (!req.usuario) {
+    return res.status(401).json({ error: 'Debe iniciar sesion para cancelar una cita.' });
+  }
+
+  const motivoLimpio = typeof motivo === 'string' ? motivo.trim() : '';
+  if (motivoLimpio.length < 5 || motivoLimpio.length > 500) {
+    return res.status(400).json({ error: 'Debe ingresar un motivo valido para cancelar la cita (entre 5 y 500 caracteres).' });
+  }
+
+  if (!clave) {
+    return res.status(401).json({ error: 'Confirmacion obligatoria: Debe ingresar su contrasena para cancelar la cita.' });
+  }
+
+  let usuarioAuth = null;
+  if (req.usuario.rut) {
+    usuarioAuth = buscarUsuarioPorRut(req.usuario.rut) || buscarMedicoPorRut(req.usuario.rut);
+  }
+  if (!usuarioAuth && req.usuario.email) {
+    usuarioAuth = buscarUsuarioPorEmail(req.usuario.email) || buscarMedicoPorEmail(req.usuario.email);
+  }
+
+  if (!usuarioAuth || !usuarioAuth.passwordHash) {
+    try {
+      const db = require('../models/db');
+      if (db.obtenerPool()) {
+        const rutTokenLimpio = (req.usuario.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
+        const rU = await db.query(
+          'SELECT id, rut, email, password_hash as "passwordHash" FROM usuarios WHERE id::text = $1 OR LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, $3, $4), $5, $6) = $7 LIMIT 1;',
+          [String(req.usuario.id || ''), req.usuario.email || '', '.', '', '-', '', rutTokenLimpio]
+        );
+        if (rU.rows && rU.rows.length > 0) {
+          usuarioAuth = rU.rows[0];
+        } else {
+          const rE = await db.query(
+            'SELECT id, rut, email, password_hash as "passwordHash" FROM especialistas WHERE id::text = $1 OR LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, $3, $4), $5, $6) = $7 LIMIT 1;',
+            [String(req.usuario.id || ''), req.usuario.email || '', '.', '', '-', '', rutTokenLimpio]
+          );
+          if (rE.rows && rE.rows.length > 0) {
+            usuarioAuth = rE.rows[0];
+          }
+        }
+      }
+    } catch (eDb) {}
+  }
+
+  if (!usuarioAuth || !usuarioAuth.passwordHash) {
+    return res.status(401).json({ error: 'No fue posible verificar las credenciales de su cuenta.' });
+  }
+
+  let claveValida = false;
+  try {
+    claveValida = bcrypt.compareSync(clave, usuarioAuth.passwordHash);
+  } catch (e) {}
+
+  if (!claveValida) {
+    registrarEvento('CANCELACION_CITA_DENEGADA', `Clave incorrecta al intentar cancelar cita ${idCita}`, ip, req.usuario.rut || req.usuario.id, 'ALERTA');
+    return res.status(403).json({ error: 'Contrasena incorrecta. No se pudo confirmar la cancelacion de la cita.' });
+  }
+
+  const rutSolicitante = (req.usuario.rut || usuarioAuth.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  const rolUpper = (req.usuario.rol || '').toUpperCase();
+  const esAdmin = rolUpper === 'SUPERADMIN' || rolUpper === 'ADMIN';
+
+  let citaMemoria = obtenerTodasLasCitas().find(c => c.id === idCita) || null;
+  let citaDb = null;
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const rC = await db.query(
+        'SELECT c.id, c.estado, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, REPLACE(REPLACE(p.rut, $1, $2), $3, $4) as "rutPaciente" FROM citas c JOIN pacientes p ON c.paciente_id = p.id WHERE c.id::text = $5 LIMIT 1;',
+        ['.', '', '-', '', idCita]
+      );
+      if (rC.rows && rC.rows.length > 0) {
+        citaDb = rC.rows[0];
+      }
+    }
+  } catch (eDb) {}
+
+  const citaObjetivo = citaDb || citaMemoria;
+  if (!citaObjetivo) {
+    return res.status(404).json({ error: 'Cita no encontrada.' });
+  }
+
+  const rutPropietario = (citaObjetivo.rutPaciente || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  if (!esAdmin && rutSolicitante && rutPropietario && rutSolicitante !== rutPropietario) {
+    registrarEvento('CANCELACION_NO_AUTORIZADA', `Intento de cancelar cita ajena ${idCita}`, ip, rutSolicitante, 'PELIGRO');
+    return res.status(403).json({ error: 'No tienes autorizacion para cancelar una cita de otro paciente.' });
+  }
+
+  if (citaObjetivo.estado !== 'PENDIENTE' && citaObjetivo.estado !== 'CONFIRMADA') {
+    return res.status(400).json({ error: `No es posible cancelar esta cita porque su estado actual es ${citaObjetivo.estado}.` });
+  }
+
+  let citaActualizada = null;
+  if (citaMemoria) {
+    citaActualizada = actualizarEstadoCita(idCita, 'CANCELADA', {
+      motivoCancelacion: motivoLimpio,
+      canceladaPor: 'PACIENTE'
+    });
+  }
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool() && citaDb) {
+      const rUpd = await db.query(
+        'UPDATE citas SET estado = $1, motivo_cancelacion = $2, cancelada_por = $3, cancelada_en = CURRENT_TIMESTAMP WHERE id::text = $4 RETURNING id, estado, motivo_cancelacion as "motivoCancelacion", cancelada_por as "canceladaPor";',
+        ['CANCELADA', motivoLimpio, 'PACIENTE', idCita]
+      );
+      if (rUpd.rows && rUpd.rows.length > 0 && !citaActualizada) {
+        citaActualizada = {
+          id: rUpd.rows[0].id,
+          fecha: citaDb.fecha,
+          hora: String(citaDb.hora || '').substring(0, 5),
+          estado: rUpd.rows[0].estado,
+          motivoCancelacion: rUpd.rows[0].motivoCancelacion,
+          canceladaPor: rUpd.rows[0].canceladaPor
+        };
+      }
+    }
+  } catch (eDb) {}
+
+  registrarEvento('CITA_CANCELADA_POR_PACIENTE', `Cita ${idCita} cancelada por paciente ${rutSolicitante}. Motivo: ${motivoLimpio}`, ip, rutSolicitante, 'INFO');
+
+  return res.status(200).json({
+    mensaje: 'Cita cancelada exitosamente.',
+    cita: citaActualizada || { id: idCita, estado: 'CANCELADA', motivoCancelacion: motivoLimpio, canceladaPor: 'PACIENTE' }
+  });
+}
+
 module.exports = {
   reservarCita,
   consultarDisponibilidad,
   consultarMisCitas,
+  cancelarCitaPaciente,
   validarDatosReserva
 };

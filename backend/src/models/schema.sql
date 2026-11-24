@@ -54,11 +54,15 @@ CREATE TABLE IF NOT EXISTS citas (
   hora_inicio TIME NOT NULL,
   hora_fin TIME NOT NULL,
   tipo_consulta VARCHAR(80) NOT NULL,
-  estado VARCHAR(25) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT uq_sillon_horario UNIQUE (sillon_numero, fecha, hora_inicio),
-  CONSTRAINT uq_especialista_horario UNIQUE (especialista_id, fecha, hora_inicio)
+  estado VARCHAR(25) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO')),
+  motivo_cancelacion TEXT,
+  cancelada_por VARCHAR(30),
+  cancelada_en TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_sillon_horario_activo ON citas (sillon_numero, fecha, hora_inicio) WHERE estado != 'CANCELADA';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_especialista_horario_activo ON citas (especialista_id, fecha, hora_inicio) WHERE estado != 'CANCELADA';
 
 CREATE TABLE IF NOT EXISTS turnos_especialistas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

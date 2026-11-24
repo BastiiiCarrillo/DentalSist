@@ -34,9 +34,10 @@ const MAPA_UUIDS_ESP = {
 };
 
 const TRANSICIONES_ESTADO = {
-  PENDIENTE: ['CONFIRMADA', 'EN_ATENCION', 'CANCELADA'],
-  CONFIRMADA: ['EN_ATENCION', 'CANCELADA'],
-  EN_ATENCION: ['ATENDIDA', 'CANCELADA'],
+  PENDIENTE: ['CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'],
+  CONFIRMADA: ['EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'],
+  EN_ATENCION: ['ATENDIDA', 'CANCELADA', 'NO_ASISTIO'],
+  NO_ASISTIO: ['EN_ATENCION', 'ATENDIDA'],
   ATENDIDA: [],
   CANCELADA: []
 };
@@ -125,7 +126,7 @@ async function cargarFichaCompleta(rut) {
     const db = require('../models/db');
     if (db.obtenerPool()) {
       const rCitas = await db.query(
-        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor", e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
         ['.', '', '-', '', rutLimpio]
       );
       if (rCitas.rows && rCitas.rows.length > 0) {
@@ -136,7 +137,9 @@ async function cargarFichaCompleta(rut) {
           especialidad: r.especialidad,
           estado: r.estado,
           sillon: 'Box ' + r.sillon,
-          nombreMedico: r.nombreMedico || 'Especialista Dental'
+          nombreMedico: r.nombreMedico || 'Especialista Dental',
+          motivoCancelacion: r.motivoCancelacion || null,
+          canceladaPor: r.canceladaPor || null
         }));
       }
     }
@@ -201,6 +204,7 @@ async function obtenerAgenda(req, res) {
       if (esAdmin && !MAPA_UUIDS_ESP[idMedico] && !medico.uuid) {
         sql = `
           SELECT c.id, TO_CHAR(c.fecha, 'YYYY-MM-DD') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon,
+                 c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor",
                  p.nombre || ' ' || p.apellido as "nombrePaciente", REPLACE(REPLACE(p.rut, '.', ''), '-', '') as "rutLimpio", p.rut as "rutFormateado", p.telefono as "telefonoPaciente",
                  e.nombre as "nombreMedico"
           FROM citas c
@@ -215,6 +219,7 @@ async function obtenerAgenda(req, res) {
       } else {
         sql = `
           SELECT c.id, TO_CHAR(c.fecha, 'YYYY-MM-DD') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon,
+                 c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor",
                  p.nombre || ' ' || p.apellido as "nombrePaciente", REPLACE(REPLACE(p.rut, '.', ''), '-', '') as "rutLimpio", p.rut as "rutFormateado", p.telefono as "telefonoPaciente",
                  e.nombre as "nombreMedico"
           FROM citas c
@@ -244,7 +249,9 @@ async function obtenerAgenda(req, res) {
           nombrePaciente: r.nombrePaciente,
           rutPaciente: r.rutLimpio || (r.rutFormateado || '').replace(/[^0-9kK]/g, '').toUpperCase(),
           rutFormateado: r.rutFormateado || r.rutLimpio,
-          telefonoPaciente: r.telefonoPaciente
+          telefonoPaciente: r.telefonoPaciente,
+          motivoCancelacion: r.motivoCancelacion || null,
+          canceladaPor: r.canceladaPor || null
         }));
       }
     }
@@ -288,19 +295,22 @@ async function obtenerAgenda(req, res) {
 
 async function cambiarEstado(req, res) {
   const { idCita } = req.params;
-  const { nuevoEstado } = req.body;
+  const { nuevoEstado, motivoCancelacion } = req.body;
   const ip = req.ip || (req.socket && req.socket.remoteAddress) || (req.connection && req.connection.remoteAddress) || '127.0.0.1';
 
-  const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA'];
+  const estadosValidos = ['PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'];
   if (!estadosValidos.includes(nuevoEstado)) {
     return res.status(400).json({ error: 'Estado de cita invalido.' });
   }
 
   let citaActualizada = null;
   let errorMemoria = null;
+  const detallesCancelacion = nuevoEstado === 'CANCELADA'
+    ? { motivoCancelacion: (motivoCancelacion || '').trim() || 'Cancelada por especialista', canceladaPor: 'ESPECIALISTA' }
+    : {};
 
   try {
-    citaActualizada = actualizarEstadoCita(idCita, nuevoEstado);
+    citaActualizada = actualizarEstadoCita(idCita, nuevoEstado, detallesCancelacion);
   } catch (eMem) {
     errorMemoria = eMem;
   }
@@ -316,7 +326,12 @@ async function cambiarEstado(req, res) {
         if (!permitidos.includes(nuevoEstado) && estadoActual !== nuevoEstado) {
           return res.status(400).json({ error: `Transicion de estado no permitida desde ${estadoActual} a ${nuevoEstado}.` });
         }
-        const rUpd = await db.query('UPDATE citas SET estado = $1 WHERE id::text = $2 RETURNING id, estado;', [nuevoEstado, idCita]);
+        const rUpd = nuevoEstado === 'CANCELADA'
+          ? await db.query(
+            'UPDATE citas SET estado = $1, motivo_cancelacion = COALESCE($2, motivo_cancelacion), cancelada_por = $3, cancelada_en = CURRENT_TIMESTAMP WHERE id::text = $4 RETURNING id, estado, motivo_cancelacion as "motivoCancelacion";',
+            [nuevoEstado, detallesCancelacion.motivoCancelacion || null, 'ESPECIALISTA', idCita]
+          )
+          : await db.query('UPDATE citas SET estado = $1 WHERE id::text = $2 RETURNING id, estado;', [nuevoEstado, idCita]);
         if (rUpd.rows && rUpd.rows.length > 0) {
           actualizadaDb = rUpd.rows[0];
         }
@@ -329,7 +344,7 @@ async function cambiarEstado(req, res) {
     return res.status(400).json({ error: errorMemoria ? errorMemoria.message : 'Cita no encontrada.' });
   }
 
-  const respuestaCita = citaActualizada || { id: idCita, estado: nuevoEstado };
+  const respuestaCita = citaActualizada || { id: idCita, estado: nuevoEstado, ...detallesCancelacion };
   registrarEvento('ESTADO_CITA_ACTUALIZADO', `Cita ${idCita} cambio a ${nuevoEstado}`, ip, (req.usuario && req.usuario.id) || 'ESPECIALISTA', 'INFO');
   return res.status(200).json({
     mensaje: 'Estado de cita actualizado exitosamente.',

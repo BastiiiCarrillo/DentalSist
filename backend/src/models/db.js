@@ -101,6 +101,16 @@ async function sincronizarEspecialistasEnDb(p) {
           sillon_habitual = EXCLUDED.sillon_habitual;
       `, esp);
     }
+
+    await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT;`).catch(() => {});
+    await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelada_por VARCHAR(30);`).catch(() => {});
+    await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelada_en TIMESTAMP WITH TIME ZONE;`).catch(() => {});
+    await p.query(`ALTER TABLE citas DROP CONSTRAINT IF EXISTS citas_estado_check;`).catch(() => {});
+    await p.query(`ALTER TABLE citas ADD CONSTRAINT citas_estado_check CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'));`).catch(() => {});
+    await p.query(`ALTER TABLE citas DROP CONSTRAINT IF EXISTS uq_sillon_horario;`).catch(() => {});
+    await p.query(`ALTER TABLE citas DROP CONSTRAINT IF EXISTS uq_especialista_horario;`).catch(() => {});
+    await p.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_sillon_horario_activo ON citas (sillon_numero, fecha, hora_inicio) WHERE estado != 'CANCELADA';`).catch(() => {});
+    await p.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_especialista_horario_activo ON citas (especialista_id, fecha, hora_inicio) WHERE estado != 'CANCELADA';`).catch(() => {});
   } catch (errSync) {}
 }
 

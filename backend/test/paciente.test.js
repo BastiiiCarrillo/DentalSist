@@ -4,10 +4,11 @@ const assert = require('node:assert');
 const {
   validarRutChileno,
   crearCita,
+  crearUsuario,
   obtenerCitasPorPaciente,
   reiniciarEstadoParaPruebas
 } = require('../src/models/dataStore');
-const { validarDatosReserva } = require('../src/controllers/paciente');
+const { validarDatosReserva, cancelarCitaPaciente } = require('../src/controllers/paciente');
 
 describe('Modulo de Pacientes y Agendamiento', () => {
 
@@ -132,6 +133,67 @@ describe('Modulo de Pacientes y Agendamiento', () => {
         esInvitado: true
       });
     }, /Ya cuentas con una cita médica agendada en este mismo horario/);
+  });
+
+  test('Cancelacion de cita por paciente exige motivo y re-autenticacion con contrasena', async () => {
+    crearUsuario({
+      rut: '19.876.543-0',
+      nombre: 'Francisca Morales',
+      email: 'francisca.cancel@correo.cl',
+      telefono: '+56911223344',
+      password: 'PacienteCancel2026!'
+    });
+
+    const cita = crearCita({
+      rutPaciente: '19.876.543-0',
+      nombrePaciente: 'Francisca Morales',
+      emailPaciente: 'francisca.cancel@correo.cl',
+      telefonoPaciente: '+56911223344',
+      idMedico: 'DOC-1',
+      fecha: '2026-11-28',
+      hora: '10:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+
+    let statusCapturado = null;
+    let jsonCapturado = null;
+    const resMock = {
+      status: (code) => {
+        statusCapturado = code;
+        return {
+          json: (data) => {
+            jsonCapturado = data;
+          }
+        };
+      }
+    };
+
+    const usuarioToken = { id: 'USR-TEST', rut: '19876543-0', email: 'francisca.cancel@correo.cl', rol: 'Paciente' };
+
+    await cancelarCitaPaciente({
+      params: { idCita: cita.id },
+      usuario: usuarioToken,
+      body: { motivo: 'abc', password: 'PacienteCancel2026!' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 400);
+    assert.ok(jsonCapturado.error.includes('motivo'));
+
+    await cancelarCitaPaciente({
+      params: { idCita: cita.id },
+      usuario: usuarioToken,
+      body: { motivo: 'No puedo asistir por trabajo', password: 'ClaveIncorrecta999' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 403);
+
+    await cancelarCitaPaciente({
+      params: { idCita: cita.id },
+      usuario: usuarioToken,
+      body: { motivo: 'No puedo asistir por trabajo', password: 'PacienteCancel2026!' }
+    }, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.strictEqual(jsonCapturado.cita.estado, 'CANCELADA');
+    assert.strictEqual(jsonCapturado.cita.motivoCancelacion, 'No puedo asistir por trabajo');
   });
 
 });

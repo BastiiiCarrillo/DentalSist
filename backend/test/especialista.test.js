@@ -43,6 +43,20 @@ describe('Modulo de Especialista, Fichas Clinicas y Recetas', () => {
     const atendida = actualizarEstadoCita(cita.id, 'ATENDIDA');
     assert.strictEqual(atendida.estado, 'ATENDIDA');
 
+    const citaAusente = crearCita({
+      rutPaciente: '18.234.901-1',
+      nombrePaciente: 'Camilo Vega',
+      emailPaciente: 'camilo@correo.cl',
+      telefonoPaciente: '+56987654321',
+      idMedico: 'DOC-1',
+      fecha: '2026-11-25',
+      hora: '12:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+    const noAsistio = actualizarEstadoCita(citaAusente.id, 'NO_ASISTIO');
+    assert.strictEqual(noAsistio.estado, 'NO_ASISTIO');
+
     assert.throws(() => {
       actualizarEstadoCita(cita.id, 'ESTADO_INEXISTENTE');
     }, /invalido/);
