@@ -22,10 +22,12 @@ const adminRutas = require('./routes/admin.routes');
 const { verificarToken, verificarRol } = require('./controllers/auth.controller');
 
 const app = express();
+app.disable('x-powered-by');
 app.set('trust proxy', true);
 
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: false,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
 app.use(cors({

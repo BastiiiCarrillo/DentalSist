@@ -158,15 +158,15 @@ const medicosSemilla = [
   {
     id: 'DOC-12',
     uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12',
-    rut: '18.275.622-9',
-    nombre: 'Dr. Gabriel Navarro V.',
+    rut: '17.749.622-7',
+    nombre: 'Dr. AuditUser Especialista',
     especialidad: 'Odontología General',
     sillon: 'Box 4',
     registroSis: 'MED-SIS-2026-308',
     registroColegio: 'COL-ODONT-8217',
-    email: 'gabriel.navarro@dentalsis.cl',
+    email: 'audituser.especialista@dentalsis.cl',
     rol: 'ODONTOLOGO',
-    passwordHash: bcrypt.hashSync('AuditMed2026!Clinica', 10),
+    passwordHash: bcrypt.hashSync('AudEsp!sW222@a#rY', 10),
     horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
   }
 ];
@@ -204,13 +204,14 @@ const usuariosSemilla = [
   },
   {
     id: 'USR-PAC-AUDIT-1',
-    rut: '20048043-0',
-    rutFormateado: '20.048.043-0',
-    nombre: 'Luciano Palma Cortés',
-    email: 'luciano.palma@audit-dentalsis.cl',
+    rut: '22090455-5',
+    rutFormateado: '22.090.455-5',
+    nombre: 'AuditUser Cliente',
+    email: 'audituser.cliente@dentalsis.cl',
     telefono: '+56 9 6482 1930',
     rol: 'PACIENTE',
-    passwordHash: bcrypt.hashSync('AuditPac2026!Dental', 10)
+    estado: 'ACTIVO',
+    passwordHash: bcrypt.hashSync('AudCli!v4U%$ku8T4', 10)
   }
 ];
 
@@ -429,7 +430,7 @@ function cambiarPassword(identificador, passwordActual, nuevaPassword) {
   if (identificador.includes('@')) {
     usuario = buscarUsuarioPorEmail(identificador) || buscarMedicoPorEmail(identificador);
   } else {
-    usuario = buscarUsuarioPorRut(identificador);
+    usuario = buscarUsuarioPorRut(identificador) || buscarMedicoPorRut(identificador);
   }
 
   if (!usuario) {
@@ -757,8 +758,8 @@ function obtenerTurnosPorMedico(idMedico, fecha = null) {
 }
 
 function reiniciarEstadoParaPruebas() {
-  medicos = [...medicosSemilla];
-  usuarios = [...usuariosSemilla];
+  medicos = medicosSemilla.map(m => ({ ...m }));
+  usuarios = usuariosSemilla.map(u => ({ ...u }));
   citas = [];
   turnosMedicos = [];
   fichasClinicas = [
@@ -787,11 +788,18 @@ function obtenerTodasLasCitas() {
 
 function listarPacientesSistema() {
   const mapa = new Map();
-  const agregar = (rut, nombre, email, telefono, fecha, atendido) => {
+  const rutsConCuenta = new Set(
+    usuarios
+      .filter(u => String(u.rol || '').toUpperCase() === 'PACIENTE')
+      .map(u => limpiarRut(u.rut || ''))
+      .filter(Boolean)
+  );
+  const agregar = (rut, nombre, email, telefono, fecha, atendido, esReservaInvitado = false) => {
     if (!rut) return;
     const rutLimpio = limpiarRut(rut);
     if (!rutLimpio || rutLimpio.length < 7) return;
     const existente = mapa.get(rutLimpio);
+    const tieneCuenta = rutsConCuenta.has(rutLimpio);
     if (!existente) {
       mapa.set(rutLimpio, {
         rutPaciente: rutLimpio,
@@ -801,7 +809,9 @@ function listarPacientesSistema() {
         telefono: telefono || '',
         ultimaFecha: fecha || '',
         totalCitas: fecha ? 1 : 0,
-        atendido: Boolean(atendido)
+        atendido: Boolean(atendido),
+        tieneCuenta,
+        esInvitado: !tieneCuenta || Boolean(esReservaInvitado)
       });
     } else {
       if (nombre && nombre.trim() && (existente.nombrePaciente === 'Paciente DentalSis' || existente.nombrePaciente === 'Paciente')) {
@@ -816,24 +826,25 @@ function listarPacientesSistema() {
         }
       }
       if (atendido) existente.atendido = true;
+      if (esReservaInvitado) existente.esInvitado = true;
     }
   };
 
   usuarios.forEach(u => {
     const rol = (u.rol || '').toUpperCase();
     if (rol === 'PACIENTE') {
-      agregar(u.rut, u.nombre, u.email, u.telefono, '', false);
+      agregar(u.rut, u.nombre, u.email, u.telefono, '', false, false);
     }
   });
 
   fichasClinicas.forEach(f => {
     const tieneConsultas = Array.isArray(f.historialConsultas) && f.historialConsultas.length > 0;
     const ultima = tieneConsultas ? f.historialConsultas[0].fecha : '';
-    agregar(f.rutPaciente, f.nombrePaciente, f.email, f.telefono, ultima, tieneConsultas);
+    agregar(f.rutPaciente, f.nombrePaciente, f.email, f.telefono, ultima, tieneConsultas, false);
   });
 
   citas.forEach(c => {
-    agregar(c.rutPaciente, c.nombrePaciente, c.emailPaciente, c.telefonoPaciente, c.fecha, c.estado === 'ATENDIDA' || c.estado === 'EN_ATENCION');
+    agregar(c.rutPaciente, c.nombrePaciente, c.emailPaciente, c.telefonoPaciente, c.fecha, c.estado === 'ATENDIDA' || c.estado === 'EN_ATENCION', Boolean(c.esInvitado));
   });
 
   return Array.from(mapa.values());

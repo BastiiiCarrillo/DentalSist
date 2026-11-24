@@ -18,6 +18,63 @@ const { ROLES } = require('../auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
 
+const MAPA_UUID_DOC_AUTH = {
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1': 'DOC-1',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2': 'DOC-2',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3': 'DOC-3',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4': 'DOC-4',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5': 'DOC-5',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6': 'DOC-6',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7': 'DOC-7',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8': 'DOC-8',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9': 'DOC-9',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10': 'DOC-10',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12': 'DOC-12'
+};
+
+async function buscarUsuarioLoginDb(identificador, soloEspecialistas) {
+  try {
+    const db = require('../models/db');
+    if (!db.obtenerPool()) return null;
+    const idLimpio = identificador.trim().toLowerCase();
+    const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
+    const cuerpoLimpio = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
+
+    const consultarEsp = async () => {
+      const rEsp = await db.query(
+        'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio", COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
+        [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
+      );
+      if (rEsp.rows && rEsp.rows.length > 0) {
+        const rowEsp = rEsp.rows[0];
+        const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
+        const idNorm = MAPA_UUID_DOC_AUTH[String(rowEsp.id)] || String(rowEsp.id);
+        return { ...rowEsp, id: idNorm, uuid: String(rowEsp.id), sillon: sillonFmt, rol: 'Odontologo' };
+      }
+      return null;
+    };
+
+    const consultarUsr = async (filtrarEsp) => {
+      const sql = filtrarEsp
+        ? 'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE (LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6) AND (UPPER(u.rol) = $7 OR UPPER(u.rol) = $8) LIMIT 1;'
+        : 'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;';
+      const params = filtrarEsp
+        ? [idLimpio, '.', '', '-', '', rutLimpio, 'ODONTOLOGO', 'SUPERADMIN']
+        : [idLimpio, '.', '', '-', '', rutLimpio];
+      const rDb = await db.query(sql, params);
+      return (rDb.rows && rDb.rows.length > 0) ? rDb.rows[0] : null;
+    };
+
+    if (soloEspecialistas) {
+      return (await consultarEsp()) || (await consultarUsr(true));
+    }
+    return (await consultarUsr(false)) || (await consultarEsp());
+  } catch (eDb) {
+    return null;
+  }
+}
+
 async function login(req, res) {
   const ip = obtenerIpCliente(req);
   const { identificador, password, rol } = req.body;
@@ -29,94 +86,35 @@ async function login(req, res) {
 
   let usuarioEncontrado = null;
   const tipoUsuario = (rol || '').toLowerCase();
+  const esLoginEspecialista = tipoUsuario === 'especialista' || tipoUsuario === 'medico' || tipoUsuario === 'odontologo';
 
-  if (tipoUsuario === 'especialista' || tipoUsuario === 'medico' || tipoUsuario === 'odontologo') {
-    if (identificador.includes('@')) {
-      usuarioEncontrado = buscarMedicoPorEmail(identificador);
-    } else {
-      usuarioEncontrado = buscarMedicoPorRut(identificador);
-    }
-    if (!usuarioEncontrado) {
-      const uMem = identificador.includes('@') ? buscarUsuarioPorEmail(identificador) : buscarUsuarioPorRut(identificador);
-      if (uMem && (uMem.rol === 'SUPERADMIN' || uMem.rol === 'ADMIN' || uMem.rol === 'ODONTOLOGO')) {
-        usuarioEncontrado = uMem;
-      }
-    }
-    if (!usuarioEncontrado) {
-      try {
-        const db = require('../models/db');
-        if (db.obtenerPool()) {
-          const idLimpio = identificador.trim().toLowerCase();
-          const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
-          const cuerpoLimpio = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
-          const rEsp = await db.query(
-            'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio", COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
-            [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
-          );
-          if (rEsp.rows && rEsp.rows.length > 0) {
-            const rowEsp = rEsp.rows[0];
-            const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
-            usuarioEncontrado = { ...rowEsp, sillon: sillonFmt, rol: 'Odontologo' };
-          } else {
-            const rDb = await db.query(
-              'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE (LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6) AND (UPPER(u.rol) = $7 OR UPPER(u.rol) = $8) LIMIT 1;',
-              [idLimpio, '.', '', '-', '', rutLimpio, 'ODONTOLOGO', 'SUPERADMIN']
-            );
-            if (rDb.rows && rDb.rows.length > 0) {
-              usuarioEncontrado = rDb.rows[0];
-            }
-          }
-        }
-      } catch (eDb) {
-      }
-    }
-    if (!usuarioEncontrado) {
-      registrarFalloLogin(ip, identificador);
-      return res.status(401).json({ error: 'No se encontro una cuenta de especialista con estas credenciales.' });
-    }
-  } else {
-    if (identificador.includes('@')) {
-      usuarioEncontrado = buscarUsuarioPorEmail(identificador);
+  usuarioEncontrado = await buscarUsuarioLoginDb(identificador, esLoginEspecialista);
+
+  if (!usuarioEncontrado) {
+    if (esLoginEspecialista) {
+      usuarioEncontrado = identificador.includes('@')
+        ? buscarMedicoPorEmail(identificador)
+        : buscarMedicoPorRut(identificador);
       if (!usuarioEncontrado) {
-        usuarioEncontrado = buscarMedicoPorEmail(identificador);
+        const uMem = identificador.includes('@') ? buscarUsuarioPorEmail(identificador) : buscarUsuarioPorRut(identificador);
+        if (uMem && (uMem.rol === 'SUPERADMIN' || uMem.rol === 'ADMIN' || uMem.rol === 'ODONTOLOGO')) {
+          usuarioEncontrado = uMem;
+        }
+      }
+      if (!usuarioEncontrado) {
+        registrarFalloLogin(ip, identificador);
+        return res.status(401).json({ error: 'No se encontro una cuenta de especialista con estas credenciales.' });
       }
     } else {
-      usuarioEncontrado = buscarUsuarioPorRut(identificador);
+      if (identificador.includes('@')) {
+        usuarioEncontrado = buscarUsuarioPorEmail(identificador) || buscarMedicoPorEmail(identificador);
+      } else {
+        usuarioEncontrado = buscarUsuarioPorRut(identificador) || buscarMedicoPorRut(identificador);
+      }
       if (!usuarioEncontrado) {
-        usuarioEncontrado = buscarMedicoPorRut(identificador);
+        registrarFalloLogin(ip, identificador);
+        return res.status(401).json({ error: 'Credenciales de acceso invalidas.' });
       }
-    }
-    if (!usuarioEncontrado) {
-      try {
-        const db = require('../models/db');
-        if (db.obtenerPool()) {
-          const idLimpio = identificador.trim().toLowerCase();
-          const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
-          const cuerpoLimpio = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
-          const rDb = await db.query(
-            'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
-            [idLimpio, '.', '', '-', '', rutLimpio]
-          );
-          if (rDb.rows && rDb.rows.length > 0) {
-            usuarioEncontrado = rDb.rows[0];
-          } else {
-            const rEsp = await db.query(
-              'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio", COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
-              [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
-            );
-            if (rEsp.rows && rEsp.rows.length > 0) {
-              const rowEsp = rEsp.rows[0];
-              const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
-              usuarioEncontrado = { ...rowEsp, sillon: sillonFmt, rol: 'Odontologo' };
-            }
-          }
-        }
-      } catch (eDb) {
-      }
-    }
-    if (!usuarioEncontrado) {
-      registrarFalloLogin(ip, identificador);
-      return res.status(401).json({ error: 'Credenciales de acceso invalidas.' });
     }
   }
 
@@ -129,6 +127,11 @@ async function login(req, res) {
   if (!claveCorrecta) {
     registrarFalloLogin(ip, identificador);
     return res.status(401).json({ error: 'Credenciales de acceso invalidas.' });
+  }
+
+  if (usuarioEncontrado.estado && String(usuarioEncontrado.estado).toUpperCase() !== 'ACTIVO') {
+    registrarEvento('LOGIN_CUENTA_INACTIVA', `Intento de acceso con cuenta deshabilitada: ${identificador}`, ip, usuarioEncontrado.id, 'ALERTA');
+    return res.status(403).json({ error: 'Esta cuenta se encuentra deshabilitada. Contacte al administrador.' });
   }
 
   limpiarFallosLogin(ip, identificador);
@@ -405,14 +408,14 @@ async function completarPasswordTemporal(req, res) {
     if (db.obtenerPool()) {
       let rowDb = null;
       const rUser = await db.query(
-        'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $4, $5), $6, $7) = REPLACE(REPLACE(u.rut, $4, $5), $6, $7) WHERE u.id::text = $1 OR LOWER(u.email) = $2 OR REPLACE(REPLACE(u.rut, $4, $5), $6, $7) = $3 LIMIT 1;',
+        'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $4, $5), $6, $7) = REPLACE(REPLACE(u.rut, $4, $5), $6, $7) WHERE u.id::text = $1 OR ($2 <> \'\' AND LOWER(u.email) = $2) OR ($3 <> \'\' AND REPLACE(REPLACE(u.rut, $4, $5), $6, $7) = $3) LIMIT 1;',
         [idUsuario, emailUsuario, rutClean, '.', '', '-', '']
       );
       if (rUser.rows && rUser.rows.length > 0) {
         rowDb = { tabla: 'usuarios', row: rUser.rows[0] };
       } else {
         const rEsp = await db.query(
-          'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE e.id::text = $1 OR LOWER(e.email) = $2 OR REPLACE(REPLACE(e.rut, $5, $6), $7, $8) = $3 OR SUBSTRING(REPLACE(REPLACE(e.rut, $5, $6), $7, $8) FROM 1 FOR 8) = $4 LIMIT 1;',
+          'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE e.id::text = $1 OR ($2 <> \'\' AND LOWER(e.email) = $2) OR ($3 <> \'\' AND REPLACE(REPLACE(e.rut, $5, $6), $7, $8) = $3) OR ($4 <> \'\' AND SUBSTRING(REPLACE(REPLACE(e.rut, $5, $6), $7, $8) FROM 1 FOR 8) = $4) LIMIT 1;',
           [idUsuario, emailUsuario, rutClean, cuerpoRut, '.', '', '-', '']
         );
         if (rEsp.rows && rEsp.rows.length > 0) {

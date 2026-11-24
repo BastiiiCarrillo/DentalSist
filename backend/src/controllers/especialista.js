@@ -3,6 +3,7 @@ const {
   buscarMedicoPorId,
   buscarMedicoPorEmail,
   buscarMedicoPorRut,
+  buscarUsuarioPorRut,
   obtenerCitasPorMedico,
   obtenerCitasPorPaciente,
   obtenerTodasLasCitas,
@@ -124,11 +125,19 @@ async function cargarFichaCompleta(rut) {
   }
 
   let citasPrevias = obtenerCitasPorPaciente(rut);
+  let esPacienteInvitado = !buscarUsuarioPorRut(rut);
   try {
     const db = require('../models/db');
     if (db.obtenerPool()) {
+      const rCuenta = await db.query(
+        'SELECT id FROM usuarios WHERE REPLACE(REPLACE(rut, $1, $2), $3, $4) = $5 AND UPPER(rol) = $6 LIMIT 1;',
+        ['.', '', '-', '', rutLimpio, 'PACIENTE']
+      );
+      if (rCuenta.rows && rCuenta.rows.length > 0) {
+        esPacienteInvitado = false;
+      }
       const rCitas = await db.query(
-        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor", e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, COALESCE(c.es_invitado, false) as "esInvitado", c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor", e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
         ['.', '', '-', '', rutLimpio]
       );
       if (rCitas.rows && rCitas.rows.length > 0) {
@@ -139,6 +148,7 @@ async function cargarFichaCompleta(rut) {
           especialidad: r.especialidad,
           estado: r.estado,
           sillon: 'Box ' + r.sillon,
+          esInvitado: Boolean(r.esInvitado || esPacienteInvitado),
           nombreMedico: r.nombreMedico || 'Especialista Dental',
           motivoCancelacion: r.motivoCancelacion || null,
           canceladaPor: r.canceladaPor || null
@@ -148,6 +158,8 @@ async function cargarFichaCompleta(rut) {
   } catch (eDb) {
   }
 
+  ficha.tieneCuenta = !esPacienteInvitado;
+  ficha.esInvitado = esPacienteInvitado || citasPrevias.some(c => Boolean(c.esInvitado));
   ficha.citasPrevias = citasPrevias;
   return ficha;
 }
@@ -222,6 +234,12 @@ async function obtenerAgenda(req, res) {
       if (esAdmin && !MAPA_UUIDS_ESP[idMedico] && !medico.uuid) {
         sql = `
           SELECT c.id, TO_CHAR(c.fecha, 'YYYY-MM-DD') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon,
+                 COALESCE(c.es_invitado, false) as "esInvitado",
+                 EXISTS (
+                   SELECT 1 FROM usuarios u
+                   WHERE REPLACE(REPLACE(u.rut, '.', ''), '-', '') = REPLACE(REPLACE(p.rut, '.', ''), '-', '')
+                     AND UPPER(u.rol) = 'PACIENTE'
+                 ) as "tieneCuentaPaciente",
                  c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor",
                  p.nombre || ' ' || p.apellido as "nombrePaciente", REPLACE(REPLACE(p.rut, '.', ''), '-', '') as "rutLimpio", p.rut as "rutFormateado", p.telefono as "telefonoPaciente",
                  e.nombre as "nombreMedico"
@@ -237,6 +255,12 @@ async function obtenerAgenda(req, res) {
       } else {
         sql = `
           SELECT c.id, TO_CHAR(c.fecha, 'YYYY-MM-DD') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon,
+                 COALESCE(c.es_invitado, false) as "esInvitado",
+                 EXISTS (
+                   SELECT 1 FROM usuarios u
+                   WHERE REPLACE(REPLACE(u.rut, '.', ''), '-', '') = REPLACE(REPLACE(p.rut, '.', ''), '-', '')
+                     AND UPPER(u.rol) = 'PACIENTE'
+                 ) as "tieneCuentaPaciente",
                  c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor",
                  p.nombre || ' ' || p.apellido as "nombrePaciente", REPLACE(REPLACE(p.rut, '.', ''), '-', '') as "rutLimpio", p.rut as "rutFormateado", p.telefono as "telefonoPaciente",
                  e.nombre as "nombreMedico"
@@ -264,6 +288,7 @@ async function obtenerAgenda(req, res) {
           especialidad: r.especialidad,
           estado: r.estado,
           sillon: 'Box ' + r.sillon,
+          esInvitado: Boolean(r.esInvitado || !r.tieneCuentaPaciente),
           nombrePaciente: r.nombrePaciente,
           rutPaciente: r.rutLimpio || (r.rutFormateado || '').replace(/[^0-9kK]/g, '').toUpperCase(),
           rutFormateado: r.rutFormateado || r.rutLimpio,
@@ -545,7 +570,7 @@ function actualizarFichaConReautenticacion(req, res) {
     if (req.usuario.rut) medico = buscarMedicoPorRut(req.usuario.rut);
     if (!medico && req.usuario.email) medico = buscarMedicoPorEmail(req.usuario.email);
   }
-  if (!medico) {
+  if (!medico || !medico.passwordHash) {
     return res.status(404).json({ error: 'Medico especialista no encontrado.' });
   }
 
@@ -564,9 +589,13 @@ function actualizarFichaConReautenticacion(req, res) {
     });
   }
 
-  if (!diagnostico || !tratamiento || !tipoAtencion) {
+  if (
+    typeof diagnostico !== 'string' || !diagnostico.trim() || diagnostico.trim().length > 2000
+    || typeof tratamiento !== 'string' || !tratamiento.trim() || tratamiento.trim().length > 2000
+    || typeof tipoAtencion !== 'string' || !tipoAtencion.trim() || tipoAtencion.trim().length > 120
+  ) {
     return res.status(400).json({
-      error: 'Debe ingresar tipo de atencion, diagnostico y tratamiento.'
+      error: 'Debe ingresar tipo de atencion, diagnostico y tratamiento validos.'
     });
   }
 
@@ -621,7 +650,7 @@ function emitirReceta(req, res) {
     if (req.usuario.rut) medico = buscarMedicoPorRut(req.usuario.rut);
     if (!medico && req.usuario.email) medico = buscarMedicoPorEmail(req.usuario.email);
   }
-  if (!medico) {
+  if (!medico || !medico.passwordHash) {
     return res.status(404).json({ error: 'Medico especialista no encontrado.' });
   }
 
@@ -635,8 +664,8 @@ function emitirReceta(req, res) {
     return res.status(403).json({ error: 'Contrasena incorrecta. No se puede firmar la receta.' });
   }
 
-  if (!Array.isArray(medicamentos) || medicamentos.length === 0) {
-    return res.status(400).json({ error: 'Debe prescribir al menos un medicamento con su posologia.' });
+  if (!Array.isArray(medicamentos) || medicamentos.length === 0 || medicamentos.some(m => !m || typeof m !== 'object' || typeof m.nombre !== 'string' || !m.nombre.trim())) {
+    return res.status(400).json({ error: 'Debe prescribir al menos un medicamento valido con su posologia.' });
   }
 
   let nombreFinal = nombreEnviado || '';
@@ -786,25 +815,35 @@ async function autorizarAccesoHistorial(req, res) {
     try {
       const db = require('../models/db');
       if (db.obtenerPool()) {
-        const rU = await db.query(
-          'SELECT id, nombre, email, rut, password_hash as "passwordHash" FROM usuarios WHERE id::text = $1 OR rut = $2 OR email = $3 LIMIT 1;',
-          [String(idMedico), req.usuario ? req.usuario.rut || '' : '', req.usuario ? req.usuario.email || '' : '']
+        const rutReqClean = ((req.usuario && req.usuario.rut) || '').replace(/[^0-9kK]/g, '').toUpperCase();
+        const emailReqClean = ((req.usuario && req.usuario.email) || '').trim().toLowerCase();
+        const rEsp = await db.query(
+          'SELECT id, nombre, email, rut, password_hash as "passwordHash" FROM especialistas WHERE id::text = $1 OR ($2 <> \'\' AND LOWER(email) = $2) OR ($3 <> \'\' AND REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3) LIMIT 1;',
+          [String(idMedico), emailReqClean, rutReqClean]
         );
-        if (rU.rows && rU.rows.length > 0) {
-          medico = {
-            id: rU.rows[0].id,
-            nombre: rU.rows[0].nombre,
-            email: rU.rows[0].email,
-            rut: rU.rows[0].rut,
-            passwordHash: rU.rows[0].passwordHash
-          };
+        if (rEsp.rows && rEsp.rows.length > 0) {
+          medico = rEsp.rows[0];
+        } else {
+          const rU = await db.query(
+            'SELECT id, nombre, email, rut, password_hash as "passwordHash" FROM usuarios WHERE (UPPER(rol) IN (\'ODONTOLOGO\', \'SUPERADMIN\', \'ADMIN\')) AND (id::text = $1 OR ($2 <> \'\' AND LOWER(email) = $2) OR ($3 <> \'\' AND REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3)) LIMIT 1;',
+            [String(idMedico), emailReqClean, rutReqClean]
+          );
+          if (rU.rows && rU.rows.length > 0) {
+            medico = {
+              id: rU.rows[0].id,
+              nombre: rU.rows[0].nombre,
+              email: rU.rows[0].email,
+              rut: rU.rows[0].rut,
+              passwordHash: rU.rows[0].passwordHash
+            };
+          }
         }
       }
     } catch (eDb) {
     }
   }
 
-  if (!medico) {
+  if (!medico || !medico.passwordHash) {
     return res.status(404).json({ error: 'Medico especialista no encontrado.' });
   }
 
@@ -860,10 +899,12 @@ async function buscarPacientes(req, res) {
   const qRut = qRaw.replace(/[^0-9kK]/g, '').toUpperCase();
 
   const mapa = new Map();
+  const rutsConCuenta = new Set();
   const integrar = (item) => {
     if (!item || !item.rutPaciente) return;
     const key = String(item.rutPaciente).replace(/[^0-9kK]/g, '').toUpperCase();
     if (!key || key.length < 7) return;
+    if (item.tieneCuenta) rutsConCuenta.add(key);
     const prev = mapa.get(key);
     if (!prev) {
       mapa.set(key, {
@@ -872,7 +913,9 @@ async function buscarPacientes(req, res) {
         nombrePaciente: (item.nombrePaciente || 'Paciente DentalSis').trim(),
         ultimaFecha: item.ultimaFecha || '',
         totalCitas: Number(item.totalCitas) || 0,
-        atendido: Boolean(item.atendido)
+        atendido: Boolean(item.atendido),
+        tieneCuenta: Boolean(item.tieneCuenta),
+        esInvitado: Boolean(item.esInvitado)
       });
     } else {
       if (item.nombrePaciente && (prev.nombrePaciente === 'Paciente DentalSis' || prev.nombrePaciente === 'Paciente')) {
@@ -883,25 +926,41 @@ async function buscarPacientes(req, res) {
         prev.ultimaFecha = item.ultimaFecha;
       }
       if (item.atendido) prev.atendido = true;
+      if (item.esInvitado) prev.esInvitado = true;
     }
   };
 
   try {
     const db = require('../models/db');
     if (db.obtenerPool()) {
-      const rPac = await db.query(`
-        SELECT p.rut,
-               TRIM(CONCAT(COALESCE(p.nombre, ''), ' ', COALESCE(p.apellido, ''))) as "nombrePaciente",
-               COUNT(DISTINCT c.id) as "totalCitas",
-               MAX(TO_CHAR(c.fecha, 'YYYY-MM-DD')) as "ultimaFecha",
-               (COUNT(DISTINCT fc.id) > 0 OR COALESCE(BOOL_OR(c.estado = 'ATENDIDA'), false)) as atendido
-        FROM pacientes p
-        LEFT JOIN citas c ON c.paciente_id = p.id
-        LEFT JOIN fichas_clinicas fc ON fc.paciente_id = p.id
-        GROUP BY p.id, p.rut, p.nombre, p.apellido
-        ORDER BY atendido DESC, "totalCitas" DESC, "ultimaFecha" DESC NULLS LAST, p.nombre ASC
-        LIMIT 100;
-      `);
+      const [rPac, rUsr] = await Promise.all([
+        db.query(`
+          SELECT p.rut,
+                 TRIM(CONCAT(COALESCE(p.nombre, ''), ' ', COALESCE(p.apellido, ''))) as "nombrePaciente",
+                 COUNT(DISTINCT c.id) as "totalCitas",
+                 MAX(TO_CHAR(c.fecha, 'YYYY-MM-DD')) as "ultimaFecha",
+                 (COUNT(DISTINCT fc.id) > 0 OR COALESCE(BOOL_OR(c.estado = 'ATENDIDA'), false)) as atendido,
+                 COALESCE(BOOL_OR(c.es_invitado), false) as "esInvitado"
+          FROM pacientes p
+          LEFT JOIN citas c ON c.paciente_id = p.id
+          LEFT JOIN fichas_clinicas fc ON fc.paciente_id = p.id
+          GROUP BY p.id, p.rut, p.nombre, p.apellido
+          ORDER BY atendido DESC, "totalCitas" DESC, "ultimaFecha" DESC NULLS LAST, p.nombre ASC
+          LIMIT 100;
+        `),
+        db.query(`SELECT rut, nombre FROM usuarios WHERE UPPER(rol) = 'PACIENTE';`)
+      ]);
+      if (rUsr && rUsr.rows) {
+        rUsr.rows.forEach(u => {
+          const rutLimpio = (u.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
+          integrar({
+            rutPaciente: rutLimpio,
+            rutFormateado: u.rut || formatearRut(rutLimpio),
+            nombrePaciente: u.nombre || 'Paciente',
+            tieneCuenta: true
+          });
+        });
+      }
       if (rPac.rows && rPac.rows.length > 0) {
         rPac.rows.forEach(r => {
           const rutLimpio = (r.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
@@ -911,7 +970,8 @@ async function buscarPacientes(req, res) {
             nombrePaciente: r.nombrePaciente || 'Paciente',
             ultimaFecha: r.ultimaFecha || '',
             totalCitas: parseInt(r.totalCitas, 10) || 0,
-            atendido: Boolean(r.atendido)
+            atendido: Boolean(r.atendido),
+            esInvitado: Boolean(r.esInvitado)
           });
         });
       }
@@ -921,7 +981,14 @@ async function buscarPacientes(req, res) {
 
   listarPacientesSistema().forEach(integrar);
 
-  let lista = Array.from(mapa.values());
+  let lista = Array.from(mapa.values()).map(p => {
+    const tieneCuenta = rutsConCuenta.has(p.rutPaciente);
+    return {
+      ...p,
+      tieneCuenta,
+      esInvitado: !tieneCuenta || p.esInvitado
+    };
+  });
 
   if (qNorm) {
     lista = lista.filter(p => {

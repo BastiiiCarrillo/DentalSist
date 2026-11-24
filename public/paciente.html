@@ -97,7 +97,11 @@
         <span class="hidden sm:inline">Mis Reservas</span>
       </button>
 
-      <div id="contenedorAuthNavbar">
+      <div id="contenedorAuthNavbar" class="flex items-center gap-2">
+        <span id="badgeInvitadoNavbar" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <span>Modo Invitado</span>
+        </span>
         <a id="btnIniciarSesionNavbar" href="/login" class="p-2 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white flex items-center gap-1.5 sm:gap-2 shadow-sm transition" title="Iniciar Sesión / Registrarse">
           <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,6 +295,7 @@
       </div>
 
       <div class="text-center space-y-1">
+        <span id="badgeInvitadoModal" class="hidden inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">Reserva como Invitado</span>
         <h3 class="text-lg font-bold text-slate-900 dark:text-white">¡Cita Confirmada con Éxito!</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400">Comprobante de reserva oficial de DentalSis emitido</p>
       </div>
@@ -646,10 +651,10 @@
       },
       {
         id: 'DOC-12',
-        nombre: 'Dr. Gabriel Navarro V.',
+        nombre: 'Dr. AuditUser Especialista',
         especialidad: 'Odontología General',
         sillon: 'Box 4',
-        iniciales: 'GN',
+        iniciales: 'AE',
         color: 'from-cyan-600 to-emerald-600'
       }
     ];
@@ -891,12 +896,12 @@
 
         card.innerHTML = `
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${m.color} text-white font-bold flex items-center justify-center text-sm shadow-sm select-none">
-              ${m.iniciales}
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${escHtml(m.color)} text-white font-bold flex items-center justify-center text-sm shadow-sm select-none">
+              ${escHtml(m.iniciales)}
             </div>
             <div>
-              <h4 class="text-xs font-bold text-slate-900 dark:text-white">${m.nombre}</h4>
-              <p class="text-[11px] ${esSeleccionado ? 'text-cyan-600 dark:text-cyan-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}">${m.especialidad} · ${m.sillon}</p>
+              <h4 class="text-xs font-bold text-slate-900 dark:text-white">${escHtml(m.nombre)}</h4>
+              <p class="text-[11px] ${esSeleccionado ? 'text-cyan-600 dark:text-cyan-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}">${escHtml(m.especialidad)} · ${escHtml(m.sillon)}</p>
             </div>
           </div>
           ${badgeHtml}
@@ -919,19 +924,37 @@
       actualizarDisponibilidadEnVivo();
     }
 
+    function mostrarModoInvitadoPacienteUI(activarInvitado) {
+      const badgeNav = document.getElementById('badgeInvitadoNavbar');
+      const badge = document.getElementById('badgeEstadoPaciente');
+      if (badgeNav) {
+        badgeNav.classList.toggle('hidden', !activarInvitado);
+        badgeNav.classList.toggle('sm:inline-flex', activarInvitado);
+      }
+      if (badge) {
+        badge.classList.remove('hidden');
+        if (activarInvitado) {
+          badge.textContent = 'Paciente Invitado';
+          badge.className = 'px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-[10px] font-bold shrink-0';
+        } else {
+          badge.textContent = 'Cuenta Verificada';
+          badge.className = 'px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-700 dark:text-teal-300 text-[10px] font-bold shrink-0';
+        }
+      }
+    }
+
     function inicializarEstadoPaciente() {
       const token = sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token');
       const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
       const btnNavbar = document.getElementById('btnIniciarSesionNavbar');
       const perfilNavbar = document.getElementById('perfilUsuarioNavbar');
-      const badge = document.getElementById('badgeEstadoPaciente');
 
       if (token && usuarioRaw) {
         try {
           const usuario = JSON.parse(usuarioRaw);
           if (btnNavbar) btnNavbar.classList.add('hidden');
           if (perfilNavbar) perfilNavbar.classList.remove('hidden');
-          if (badge) badge.classList.remove('hidden');
+          mostrarModoInvitadoPacienteUI(false);
 
           const nombreEl = document.getElementById('nombreUsuarioNavbar');
           const avatarEl = document.getElementById('avatarUsuarioNavbar');
@@ -960,6 +983,7 @@
         } catch (e) {
           if (btnNavbar) btnNavbar.classList.remove('hidden');
           if (perfilNavbar) perfilNavbar.classList.add('hidden');
+          mostrarModoInvitadoPacienteUI(true);
           const inpRut = document.getElementById('inputRutPaciente');
           const inpNom = document.getElementById('inputNombrePaciente');
           const inpTel = document.getElementById('inputTelefonoPaciente');
@@ -976,7 +1000,7 @@
       } else {
         if (btnNavbar) btnNavbar.classList.remove('hidden');
         if (perfilNavbar) perfilNavbar.classList.add('hidden');
-        if (badge) badge.classList.add('hidden');
+        mostrarModoInvitadoPacienteUI(true);
         const inpRut = document.getElementById('inputRutPaciente');
         const inpNom = document.getElementById('inputNombrePaciente');
         const inpTel = document.getElementById('inputTelefonoPaciente');
@@ -1105,7 +1129,7 @@
       const mesPadded = String(mesSeleccionado + 1).padStart(2, '0');
       const diaPadded = String(diaSeleccionado).padStart(2, '0');
       const fechaISO = `${anoSeleccionado}-${mesPadded}-${diaPadded}`;
-      const esInvitado = !sessionStorage.getItem('dentalsis_token');
+      const esInvitado = !(sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token'));
 
       const idMedicoFinal = idMedicoSeleccionado || 'DOC-1';
 
@@ -1162,8 +1186,12 @@
           medico: nombreMedicoFinal,
           sillon: (datos.cita && datos.cita.sillon) ? datos.cita.sillon : 'Box 1',
           fechaHora: `${fechaSeleccionada} · ${horaSeleccionada} hrs`,
-          estado: 'CONFIRMADA'
+          estado: 'CONFIRMADA',
+          esInvitado: Boolean((datos.cita && datos.cita.esInvitado) || esInvitado)
         };
+
+        const badgeInvModal = document.getElementById('badgeInvitadoModal');
+        if (badgeInvModal) badgeInvModal.classList.toggle('hidden', !citaRecienAgendada.esInvitado);
 
         document.getElementById('modalConfirmacionCita').classList.remove('hidden');
       } catch (err) {
@@ -1182,7 +1210,7 @@
       document.getElementById('comprobantePaciente').textContent = citaRecienAgendada.nombre;
       document.getElementById('comprobanteRut').textContent = citaRecienAgendada.rut;
       document.getElementById('comprobanteFolio').textContent = '#' + citaRecienAgendada.id;
-      document.getElementById('comprobanteEstado').textContent = formatearEstadoLegible(citaRecienAgendada.estado || 'CONFIRMADA');
+      document.getElementById('comprobanteEstado').textContent = formatearEstadoLegible(citaRecienAgendada.estado || 'CONFIRMADA') + (citaRecienAgendada.esInvitado ? ' · Invitado' : '');
       document.getElementById('comprobanteEspecialidad').textContent = citaRecienAgendada.especialidad || 'Consulta Odontológica';
       document.getElementById('comprobanteFechaHora').textContent = citaRecienAgendada.fechaHora;
       document.getElementById('comprobanteMedico').textContent = `${citaRecienAgendada.medico} · ${citaRecienAgendada.sillon}`;
@@ -1225,7 +1253,7 @@
       document.getElementById('comprobantePaciente').textContent = u.nombre || c.nombrePaciente || 'Paciente Registrado';
       document.getElementById('comprobanteRut').textContent = u.rut || c.rutPaciente || 'RUT Registrado';
       document.getElementById('comprobanteFolio').textContent = '#' + c.id;
-      document.getElementById('comprobanteEstado').textContent = formatearEstadoLegible(c.estado || 'CONFIRMADA');
+      document.getElementById('comprobanteEstado').textContent = formatearEstadoLegible(c.estado || 'CONFIRMADA') + (c.esInvitado ? ' · Invitado' : '');
       document.getElementById('comprobanteEspecialidad').textContent = c.especialidad || 'Consulta Odontológica';
       document.getElementById('comprobanteFechaHora').textContent = `${formatearFechaDDMMAAAA(c.fecha)} · ${c.hora} hrs`;
       const sill = c.sillon ? String(c.sillon).replace('Sillón', 'Box').replace('Sillon', 'Box') : 'Box 1';
@@ -1252,11 +1280,11 @@
           htmlMeds += `
             <div class="p-2.5 rounded-lg bg-white/90 dark:bg-slate-900/80 border border-teal-200/70 dark:border-teal-800/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
               <div>
-                <span class="font-bold text-slate-900 dark:text-white text-xs">${m.nombre}</span>
-                <span class="text-[11px] text-teal-700 dark:text-teal-300 ml-1.5 font-medium">${m.dosis || ''} ${m.presentacion || ''}</span>
+                <span class="font-bold text-slate-900 dark:text-white text-xs">${escHtml(m.nombre)}</span>
+                <span class="text-[11px] text-teal-700 dark:text-teal-300 ml-1.5 font-medium">${escHtml(m.dosis || '')} ${escHtml(m.presentacion || '')}</span>
               </div>
               <div class="text-[11px] text-slate-600 dark:text-slate-300">
-                <span class="font-semibold text-teal-700 dark:text-teal-400">Posología:</span> ${m.posologia || 'Según indicación médica'} ${m.dias ? '· ' + m.dias + ' días' : ''}
+                <span class="font-semibold text-teal-700 dark:text-teal-400">Posología:</span> ${escHtml(m.posologia || 'Según indicación médica')} ${m.dias ? '· ' + escHtml(m.dias) + ' días' : ''}
               </div>
             </div>
           `;
@@ -1382,7 +1410,7 @@
         const res = await fetch('/api/pacientes/citas/' + encodeURIComponent(rut), { headers });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          contenedor.innerHTML = `<div class="p-4 text-center text-xs text-amber-600 dark:text-amber-400">${errData.error || 'No fue posible consultar las citas para este RUT.'}</div>`;
+          contenedor.innerHTML = `<div class="p-4 text-center text-xs text-amber-600 dark:text-amber-400">${escHtml(errData.error || 'No fue posible consultar las citas para este RUT.')}</div>`;
           return;
         }
 

@@ -278,22 +278,24 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
 
   test('Cuentas de auditoria (cliente y especialista) autentican correctamente via Bcrypt', async () => {
     const resLoginPac = await peticionJson(puerto, '/api/auth/login', 'POST', null, { 'X-Forwarded-For': '190.5.49.10' }, {
-      identificador: '20.048.043-0',
-      password: 'AuditPac2026!Dental',
+      identificador: '22.090.455-5',
+      password: 'AudCli!v4U%$ku8T4',
       rol: 'paciente'
     });
     assert.strictEqual(resLoginPac.status, 200);
-    assert.strictEqual(resLoginPac.data.usuario.email, 'luciano.palma@audit-dentalsis.cl');
+    assert.strictEqual(resLoginPac.data.usuario.email, 'audituser.cliente@dentalsis.cl');
+    assert.strictEqual(resLoginPac.data.usuario.nombre, 'AuditUser Cliente');
     assert.strictEqual(resLoginPac.data.usuario.rol, 'Paciente');
 
     const resLoginMed = await peticionJson(puerto, '/api/auth/login', 'POST', null, { 'X-Forwarded-For': '190.5.49.11' }, {
-      identificador: 'gabriel.navarro@dentalsis.cl',
-      password: 'AuditMed2026!Clinica',
+      identificador: 'audituser.especialista@dentalsis.cl',
+      password: 'AudEsp!sW222@a#rY',
       rol: 'especialista'
     });
     assert.strictEqual(resLoginMed.status, 200);
     assert.strictEqual(resLoginMed.data.usuario.id, 'DOC-12');
-    assert.strictEqual(resLoginMed.data.usuario.rut, '18.275.622-9');
+    assert.strictEqual(resLoginMed.data.usuario.rut, '17.749.622-7');
+    assert.strictEqual(resLoginMed.data.usuario.nombre, 'Dr. AuditUser Especialista');
     assert.strictEqual(resLoginMed.data.usuario.rol, 'Odontologo');
   });
 
@@ -363,7 +365,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
         'POST',
         tokenAdmin,
         { 'X-Forwarded-For': '198.51.100.31' },
-        { tipo: 'usuario', identificador: 'luciano.palma@audit-dentalsis.cl' }
+        { tipo: 'usuario', identificador: 'audituser.cliente@dentalsis.cl' }
       );
       assert.strictEqual(resSinClave.status, 400);
 
@@ -373,7 +375,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
         'POST',
         tokenAdmin,
         { 'X-Forwarded-For': '198.51.100.32' },
-        { tipo: 'usuario', identificador: 'luciano.palma@audit-dentalsis.cl', passwordAdmin: 'Incorrecta99!' }
+        { tipo: 'usuario', identificador: 'audituser.cliente@dentalsis.cl', passwordAdmin: 'Incorrecta99!' }
       );
       assert.strictEqual(resClaveMala.status, 403);
 
@@ -383,7 +385,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
         'POST',
         tokenAdmin,
         { 'X-Forwarded-For': '198.51.100.33' },
-        { tipo: 'usuario', identificador: 'luciano.palma@audit-dentalsis.cl', passwordAdmin: '86244212351532Aa_' }
+        { tipo: 'usuario', identificador: 'audituser.cliente@dentalsis.cl', passwordAdmin: '86244212351532Aa_' }
       );
       assert.strictEqual(resResetPac.status, 200);
       assert.ok(resResetPac.data.passwordTemporal);
@@ -392,7 +394,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
       const pwdTempPac = resResetPac.data.passwordTemporal;
 
       const logsTrasReset = await obtenerLogsAuditoria();
-      const logReset = logsTrasReset.find(l => l.tipo === 'ADMIN_RESET_PASSWORD' && l.detalle.includes('luciano.palma@audit-dentalsis.cl'));
+      const logReset = logsTrasReset.find(l => l.tipo === 'ADMIN_RESET_PASSWORD' && l.detalle.includes('audituser.cliente@dentalsis.cl'));
       assert.ok(logReset);
       assert.strictEqual(logReset.nivel, 'ALERTA');
       assert.ok(!logReset.detalle.includes(pwdTempPac));
@@ -403,7 +405,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
         'POST',
         null,
         { 'X-Forwarded-For': '198.51.100.34' },
-        { identificador: 'luciano.palma@audit-dentalsis.cl', password: pwdTempPac, rol: 'paciente' }
+        { identificador: 'audituser.cliente@dentalsis.cl', password: pwdTempPac, rol: 'paciente' }
       );
       assert.strictEqual(resLoginTempPac.status, 200);
       assert.strictEqual(resLoginTempPac.data.requiereCambioPassword, true);
@@ -411,7 +413,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
 
       const resPortalBloqueado = await peticionJson(
         puerto,
-        '/api/pacientes/citas/20.048.043-0',
+        '/api/pacientes/citas/22.090.455-5',
         'GET',
         resLoginTempPac.data.tempToken
       );
@@ -456,7 +458,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
         'POST',
         null,
         { 'X-Forwarded-For': '198.51.100.38' },
-        { identificador: 'luciano.palma@audit-dentalsis.cl', password: 'NuevaPac2026!Seguro', rol: 'paciente' }
+        { identificador: 'audituser.cliente@dentalsis.cl', password: 'NuevaPac2026!Seguro', rol: 'paciente' }
       );
       assert.strictEqual(resLoginFinalPac.status, 200);
       assert.ok(resLoginFinalPac.data.token);
@@ -479,7 +481,7 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
         'POST',
         null,
         { 'X-Forwarded-For': '198.51.100.40' },
-        { identificador: 'gabriel.navarro@dentalsis.cl', password: pwdTempMed, rol: 'especialista' }
+        { identificador: 'audituser.especialista@dentalsis.cl', password: pwdTempMed, rol: 'especialista' }
       );
       assert.strictEqual(resLoginTempMed.status, 200);
       assert.strictEqual(resLoginTempMed.data.requiereCambioPassword, true);
@@ -508,6 +510,127 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
       db.query = origQuery;
       reiniciarEstadoParaPruebas();
       limpiarLogsParaPruebas();
+    }
+  });
+
+  test('Endurecimiento de seguridad: sin credenciales DB hardcoded, preservacion de claves especiales y bloqueo de cuentas inactivas', async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const db = require('../src/models/db');
+    const { sanitizarEntradas } = require('../src/middleware/seguridad');
+    const ds = require('../src/models/dataStore');
+    const origPool = db.obtenerPool;
+    const origQuery = db.query;
+    db.obtenerPool = () => null;
+    db.query = async () => ({ rows: [] });
+
+    try {
+      const dbCode = fs.readFileSync(path.join(__dirname, '..', 'src', 'models', 'db.js'), 'utf8');
+      assert.ok(!dbCode.includes('DEFAULT_CONN'));
+
+      const reqMock = {
+        body: {
+          nombre: '<script>alert(1)</script>',
+          passwordAdmin: 'Admin<2026>&"',
+          passwordNueva: 'Nueva<Clave>&2026!',
+          confirmarPassword: 'Nueva<Clave>&2026!'
+        },
+        query: {},
+        params: {}
+      };
+      sanitizarEntradas(reqMock, {}, () => {});
+      assert.strictEqual(reqMock.body.nombre, '&lt;script&gt;alert(1)&lt;/script&gt;');
+      assert.strictEqual(reqMock.body.passwordAdmin, 'Admin<2026>&"');
+      assert.strictEqual(reqMock.body.passwordNueva, 'Nueva<Clave>&2026!');
+      assert.strictEqual(reqMock.body.confirmarPassword, 'Nueva<Clave>&2026!');
+
+      const usr = ds.buscarUsuarioPorEmail('audituser.cliente@dentalsis.cl');
+      usr.estado = 'INACTIVO';
+      const resInactivo = await peticionJson(puerto, '/api/auth/login', 'POST', null, { 'X-Forwarded-For': '198.51.100.77' }, {
+        identificador: 'audituser.cliente@dentalsis.cl',
+        password: 'AudCli!v4U%$ku8T4',
+        rol: 'paciente'
+      });
+      assert.strictEqual(resInactivo.status, 403);
+      usr.estado = 'ACTIVO';
+    } finally {
+      db.obtenerPool = origPool;
+      db.query = origQuery;
+    }
+  });
+
+  test('Consistencia de conteo totalPacientes entre KPI resumen y pestana pacientes e identificacion de invitado', async () => {
+    const db = require('../src/models/db');
+    const origPool = db.obtenerPool;
+    const origQuery = db.query;
+
+    db.obtenerPool = () => ({ mocked: true });
+    db.query = async (sql) => {
+      if (sql.includes('FROM especialistas')) {
+        return { rows: [] };
+      }
+      if (sql.includes('FROM pacientes p') && sql.includes('fichasCount')) {
+        return {
+          rows: [
+            { rut: '18.234.901-1', nombrePaciente: 'Camilo Vega Ortiz', email: 'camilo.vega@correo.cl', telefono: '+56 9 8765 4321', fichasCount: '1' },
+            { rut: '19.876.543-0', nombrePaciente: 'Francisca Morales', email: 'francisca@correo.cl', telefono: '+56 9 1122 3344', fichasCount: '0' },
+            { rut: '22.090.455-5', nombrePaciente: 'AuditUser Cliente', email: 'audituser.cliente@dentalsis.cl', telefono: '+56 9 6482 1930', fichasCount: '0' }
+          ]
+        };
+      }
+      if (sql.includes('FROM usuarios') && sql.includes('PACIENTE')) {
+        return {
+          rows: [
+            { rut: '18.234.901-1', nombre: 'Camilo Vega Ortiz', email: 'camilo.vega@correo.cl' },
+            { rut: '22.090.455-5', nombre: 'AuditUser Cliente', email: 'audituser.cliente@dentalsis.cl' }
+          ]
+        };
+      }
+      return { rows: [] };
+    };
+
+    try {
+      crearCita({
+        rutPaciente: '12.541.563-6',
+        nombrePaciente: 'Invitado Prueba',
+        emailPaciente: 'invitado@correo.cl',
+        telefonoPaciente: '+56 9 5555 6666',
+        idMedico: 'DOC-1',
+        fecha: '2026-11-24',
+        hora: '12:00',
+        especialidad: 'Cirugía Bucal',
+        esInvitado: true
+      });
+
+      const [resResumen, resPacientes, resMedicos] = await Promise.all([
+        peticionJson(puerto, '/api/admin/resumen', 'GET', tokenAdmin),
+        peticionJson(puerto, '/api/admin/pacientes', 'GET', tokenAdmin),
+        peticionJson(puerto, '/api/admin/medicos', 'GET', tokenAdmin)
+      ]);
+
+      assert.strictEqual(resResumen.status, 200);
+      assert.strictEqual(resPacientes.status, 200);
+      assert.strictEqual(resMedicos.status, 200);
+
+      assert.strictEqual(resResumen.data.resumen.totalPacientes, resPacientes.data.total);
+      assert.strictEqual(resPacientes.data.total, 4);
+
+      const pacInv = resPacientes.data.pacientes.find(p => p.rutPaciente === '125415636');
+      assert.ok(pacInv);
+      assert.strictEqual(pacInv.esInvitado, true);
+      assert.strictEqual(pacInv.tieneCuenta, false);
+
+      const pacReg = resPacientes.data.pacientes.find(p => p.rutPaciente === '182349011');
+      assert.ok(pacReg);
+      assert.strictEqual(pacReg.tieneCuenta, true);
+      assert.strictEqual(pacReg.esInvitado, false);
+
+      const citaInv = resMedicos.data.citas.find(c => c.rutPaciente === '125415636');
+      assert.ok(citaInv);
+      assert.strictEqual(citaInv.esInvitado, true);
+    } finally {
+      db.obtenerPool = origPool;
+      db.query = origQuery;
     }
   });
 });

@@ -2,8 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 
-const DEFAULT_CONN = Buffer.from('cG9zdGdyZXNxbDovL25lb25kYl9vd25lcjpucGdfVkJ0SmxkMFFTN3lLQGVwLWZsYXQtY2xvdWQtYmR3bnk5NHEuYy04LnVzLWVhc3QtMi5hd3MubmVvbi50ZWNoL25lb25kYj9zc2xtb2RlPXJlcXVpcmU=', 'base64').toString('utf8');
-
 let pool = null;
 
 function cargarEnv() {
@@ -32,16 +30,13 @@ function cargarEnv() {
       } catch (err) {}
     }
   }
-  if (!process.env.DATABASE_URL) {
-    process.env.DATABASE_URL = DEFAULT_CONN;
-  }
 }
 
 cargarEnv();
 
 function obtenerPool() {
   cargarEnv();
-  const connStr = (process.env.DATABASE_URL || DEFAULT_CONN).replace(/['"]/g, '').trim();
+  const connStr = (process.env.DATABASE_URL || '').replace(/['"]/g, '').trim();
   if (!pool && connStr) {
     pool = new Pool({
       connectionString: connStr,
@@ -88,7 +83,7 @@ async function sincronizarEspecialistasEnDb(p) {
       ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9', '17.519.203-K', 'Dra. Constanza Herrera S.', 'constanza.herrera@dentalsis.cl', '$2b$10$glX1C6Y51khURsyfzivi8.Yq2/TpJbtH0T4dCABr6OA3zrtfqO9IW', 3, 'MED-SIS-2026-305', 'COL-ODONT-8214', 2],
       ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10', '15.340.892-4', 'Dr. Rodrigo Fuentes L.', 'rodrigo.fuentes@dentalsis.cl', '$2b$10$fzXclstmtK.i0ymUz2Nv9eoY7Q0Bq9K6pM74MgQxfK9dDVeeHJ5eK', 5, 'MED-SIS-2026-306', 'COL-ODONT-8215', 3],
       ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', '18.391.029-7', 'Dra. Camila Paz Aedo', 'camila.aedo@dentalsis.cl', '$2b$10$UJK/QBILd3tr4FcwNW8xKexV9avbCd.CCsW75t4VSTdK3ymrA1mM6', 6, 'MED-SIS-2026-307', 'COL-ODONT-8216', 4],
-      ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12', '18.275.622-9', 'Dr. Gabriel Navarro V.', 'gabriel.navarro@dentalsis.cl', '$2b$10$rQDqrJA9O9rL2MmaYPQdteErEJYKd32fzC7rzx3uRjw9sUdDoKWxW', 2, 'MED-SIS-2026-308', 'COL-ODONT-8217', 4]
+      ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12', '17.749.622-7', 'Dr. AuditUser Especialista', 'audituser.especialista@dentalsis.cl', '$2b$10$2kx/k.kSFTAXOm0ZH5sZJeK8Ol/X2axg6M3J4F/6H7TdgGNvfsCYK', 2, 'MED-SIS-2026-308', 'COL-ODONT-8217', 4]
     ];
 
     for (const esp of especialistasDatos) {
@@ -96,7 +91,12 @@ async function sincronizarEspecialistasEnDb(p) {
         INSERT INTO especialistas (id, rut, nombre, email, password_hash, especialidad_id, registro_sis, registro_colegio, sillon_habitual)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (id) DO UPDATE SET
-          password_hash = EXCLUDED.password_hash,
+          rut = EXCLUDED.rut,
+          email = EXCLUDED.email,
+          password_hash = CASE
+            WHEN especialistas.email IS DISTINCT FROM EXCLUDED.email THEN EXCLUDED.password_hash
+            ELSE especialistas.password_hash
+          END,
           nombre = EXCLUDED.nombre,
           especialidad_id = EXCLUDED.especialidad_id,
           sillon_habitual = EXCLUDED.sillon_habitual;
@@ -106,32 +106,44 @@ async function sincronizarEspecialistasEnDb(p) {
     await p.query(`
       INSERT INTO usuarios (id, rut, nombre, email, password_hash, rol, estado)
       VALUES ($1, $2, $3, $4, $5, 'PACIENTE', 'ACTIVO')
-      ON CONFLICT (email) DO NOTHING;
+      ON CONFLICT (id) DO UPDATE SET
+        rut = EXCLUDED.rut,
+        nombre = EXCLUDED.nombre,
+        email = EXCLUDED.email,
+        password_hash = CASE
+          WHEN usuarios.email IS DISTINCT FROM EXCLUDED.email THEN EXCLUDED.password_hash
+          ELSE usuarios.password_hash
+        END;
     `, [
       '44444444-4444-4444-4444-444444444442',
-      '20.048.043-0',
-      'Luciano Palma Cortés',
-      'luciano.palma@audit-dentalsis.cl',
-      '$2b$10$IbKhW./QVxBXuiDhWU1GFuST4OHINT0wW14SOH3wN4amacjfTx.5S'
+      '22.090.455-5',
+      'AuditUser Cliente',
+      'audituser.cliente@dentalsis.cl',
+      '$2b$10$Gtt6WfLnb6D0STEhEO3CmOzT3O7OPfUWjxMT1x/9OkpDp1U2kxI16'
     ]).catch(() => {});
 
     await p.query(`
       INSERT INTO pacientes (id, rut, nombre, apellido, fecha_nacimiento, telefono, email)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (rut) DO NOTHING;
+      ON CONFLICT (id) DO UPDATE SET
+        rut = EXCLUDED.rut,
+        nombre = EXCLUDED.nombre,
+        apellido = EXCLUDED.apellido,
+        email = EXCLUDED.email;
     `, [
       '55555555-5555-5555-5555-555555555552',
-      '20.048.043-0',
-      'Luciano',
-      'Palma Cortés',
+      '22.090.455-5',
+      'AuditUser',
+      'Cliente',
       '1998-05-18',
       '+56 9 6482 1930',
-      'luciano.palma@audit-dentalsis.cl'
+      'audituser.cliente@dentalsis.cl'
     ]).catch(() => {});
 
     await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT;`).catch(() => {});
     await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelada_por VARCHAR(30);`).catch(() => {});
     await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelada_en TIMESTAMP WITH TIME ZONE;`).catch(() => {});
+    await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS es_invitado BOOLEAN NOT NULL DEFAULT FALSE;`).catch(() => {});
     await p.query(`ALTER TABLE citas DROP CONSTRAINT IF EXISTS citas_estado_check;`).catch(() => {});
     await p.query(`ALTER TABLE citas ADD CONSTRAINT citas_estado_check CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO'));`).catch(() => {});
     await p.query(`ALTER TABLE citas DROP CONSTRAINT IF EXISTS uq_sillon_horario;`).catch(() => {});

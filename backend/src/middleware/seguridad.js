@@ -78,13 +78,29 @@ function sanitizarCadena(str) {
     .replace(/javascript:/gi, '');
 }
 
+const CLAVES_PASSWORD_SIN_ESCAPAR = new Set([
+  'password',
+  'passwordActual',
+  'nuevaPassword',
+  'confirmPass',
+  'passwordConfirmacion',
+  'clave',
+  'passwordAdmin',
+  'passwordNueva',
+  'confirmarPassword',
+  'passwordTemporal'
+]);
+
 function sanitizarObjeto(obj) {
   if (!obj || typeof obj !== 'object') return obj;
   for (const clave of Object.keys(obj)) {
+    if (!Object.prototype.hasOwnProperty.call(obj, clave)) {
+      continue;
+    }
     if (clave === '__proto__' || clave === 'constructor' || clave === 'prototype') {
       continue;
     }
-    if (clave === 'password' || clave === 'passwordActual' || clave === 'nuevaPassword' || clave === 'confirmPass' || clave === 'passwordConfirmacion' || clave === 'clave') {
+    if (CLAVES_PASSWORD_SIN_ESCAPAR.has(clave)) {
       continue;
     }
     if (typeof obj[clave] === 'string') {

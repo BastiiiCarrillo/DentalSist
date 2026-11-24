@@ -192,12 +192,12 @@ async function reservarCita(req, res) {
         let pacId = (rPacExistente.rows && rPacExistente.rows.length > 0) ? rPacExistente.rows[0].id : null;
         if (pacId) {
           await db.query(
-            'UPDATE pacientes SET telefono = $1, email = $2 WHERE id = $3;',
+            'UPDATE pacientes SET telefono = COALESCE(NULLIF(telefono, \'\'), $1), email = COALESCE(NULLIF(email, \'\'), $2) WHERE id = $3;',
             [req.body.telefono.trim(), req.body.email.trim().toLowerCase(), pacId]
           );
         } else {
           const resPac = await db.query(
-            'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = EXCLUDED.telefono, email = EXCLUDED.email RETURNING id;',
+            'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = COALESCE(NULLIF(pacientes.telefono, \'\'), EXCLUDED.telefono), email = COALESCE(NULLIF(pacientes.email, \'\'), EXCLUDED.email) RETURNING id;',
             [cita.rutFormateado, nom, ape, '2000-01-01', req.body.telefono.trim(), req.body.email.trim().toLowerCase()]
           );
           pacId = (resPac && resPac.rows && resPac.rows[0]) ? resPac.rows[0].id : null;
@@ -226,8 +226,8 @@ async function reservarCita(req, res) {
           }
 
           const rIns = await db.query(
-            'INSERT INTO citas (paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;',
-            [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA']
+            'INSERT INTO citas (paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado, es_invitado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id;',
+            [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA', Boolean(cita.esInvitado)]
           );
           if (!rIns || !rIns.rows || rIns.rows.length === 0) {
             const { citas } = require('../models/dataStore');
@@ -244,13 +244,13 @@ async function reservarCita(req, res) {
         const { citas } = require('../models/dataStore');
         const idxCita = citas.findIndex(item => item.id === cita.id);
         if (idxCita !== -1) citas.splice(idxCita, 1);
-        return res.status(409).json({ error: 'El horario seleccionado ya se encuentra reservado en la clínica.' });
+        return res.status(409).json({ error: 'El horario seleccionado ya no se encuentra disponible.' });
       }
     }
 
-    registrarEvento('RESERVA_CONFIRMADA', `Cita ${cita.id} agendada para ${cita.rutFormateado}`, ip, cita.rutPaciente, 'INFO', {
+    registrarEvento('RESERVA_CONFIRMADA', `Cita ${cita.id} agendada para ${cita.rutFormateado}${cita.esInvitado ? ' (Paciente Invitado)' : ''}`, ip, cita.rutPaciente, 'INFO', {
       usuarioNombre: cita.nombrePaciente,
-      usuarioRol: 'Paciente'
+      usuarioRol: cita.esInvitado ? 'Paciente (Invitado)' : 'Paciente'
     });
     return res.status(201).json({
       mensaje: 'Cita reservada exitosamente.',
@@ -393,7 +393,7 @@ async function consultarMisCitas(req, res) {
     const db = require('../models/db');
     if (db.obtenerPool()) {
       const rDb = await db.query(
-        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor", e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, COALESCE(c.es_invitado, false) as "esInvitado", c.motivo_cancelacion as "motivoCancelacion", c.cancelada_por as "canceladaPor", e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
         ['.', '', '-', '', rutLimpio]
       );
       if (rDb.rows && rDb.rows.length > 0) {
@@ -441,6 +441,7 @@ async function consultarMisCitas(req, res) {
             especialidad: r.especialidad,
             estado: r.estado,
             sillon: 'Box ' + r.sillon,
+            esInvitado: Boolean(r.esInvitado),
             nombreMedico: r.nombreMedico || 'Especialista Dental',
             motivoCancelacion: r.motivoCancelacion || null,
             canceladaPor: r.canceladaPor || null,

@@ -96,12 +96,18 @@ async function obtenerCitasCompletasAdmin() {
     if (db.obtenerPool()) {
       const r = await db.query(`
         SELECT c.id, TO_CHAR(c.fecha, 'YYYY-MM-DD') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad,
-               c.estado, c.sillon_numero as sillon, c.motivo_cancelacion as "motivoCancelacion",
+               c.estado, c.sillon_numero as sillon, COALESCE(c.es_invitado, false) as "esInvitado",
+               c.motivo_cancelacion as "motivoCancelacion",
                c.cancelada_por as "canceladaPor", c.cancelada_en as "canceladaEn",
                c.especialista_id as "especialistaUuid",
                p.nombre || ' ' || p.apellido as "nombrePaciente",
                REPLACE(REPLACE(p.rut, '.', ''), '-', '') as "rutLimpio",
                p.rut as "rutFormateado", p.telefono as "telefonoPaciente", p.email as "emailPaciente",
+               EXISTS (
+                 SELECT 1 FROM usuarios u
+                 WHERE REPLACE(REPLACE(u.rut, '.', ''), '-', '') = REPLACE(REPLACE(p.rut, '.', ''), '-', '')
+                   AND UPPER(u.rol) = 'PACIENTE'
+               ) as "tieneCuentaPaciente",
                e.nombre as "nombreMedico", es.nombre as "especialidadMedico"
         FROM citas c
         JOIN pacientes p ON c.paciente_id = p.id
@@ -129,12 +135,13 @@ async function obtenerCitasCompletasAdmin() {
             hora: String(row.hora || '').substring(0, 5),
             sillon: `Box ${row.sillon || 1}`,
             estado: row.estado || 'PENDIENTE',
+            esInvitado: Boolean(row.esInvitado || !row.tieneCuentaPaciente),
             motivoCancelacion: row.motivoCancelacion || null,
             canceladaPor: row.canceladaPor || null,
             canceladaEn: row.canceladaEn || null,
             canceladaEnChile,
             nombrePaciente: (row.nombrePaciente || 'Paciente').trim(),
-            rutPaciente: row.rutLimpio || limpiarRut(row.rutFormateado || ''),
+            rutPaciente: limpiarRut(row.rutLimpio || row.rutFormateado || ''),
             rutFormateado: row.rutFormateado || formatearRut(row.rutLimpio || ''),
             telefonoPaciente: row.telefonoPaciente || '',
             emailPaciente: row.emailPaciente || ''
@@ -168,6 +175,7 @@ async function obtenerCitasCompletasAdmin() {
         hora: String(cm.hora || '').substring(0, 5),
         sillon: cm.sillon || 'Box 1',
         estado: cm.estado || 'PENDIENTE',
+        esInvitado: Boolean(cm.esInvitado),
         motivoCancelacion: cm.motivoCancelacion || null,
         canceladaPor: cm.canceladaPor || null,
         canceladaEn: cm.canceladaEn || null,
@@ -287,6 +295,139 @@ async function obtenerRecetasCompletasAdmin() {
   return combinadas;
 }
 
+async function construirListadoPacientesAdmin(citas, recetas) {
+  const mapa = new Map();
+  const rutsConCuenta = new Set();
+
+  const integrar = (item) => {
+    const key = limpiarRut(item.rutPaciente || item.rutFormateado || '');
+    if (!key || key.length < 7) return;
+    if (item.tieneCuenta) rutsConCuenta.add(key);
+    const prev = mapa.get(key) || {
+      rutPaciente: key,
+      rutFormateado: item.rutFormateado || formatearRut(key),
+      nombrePaciente: 'Paciente DentalSis',
+      email: '',
+      telefono: '',
+      ultimaFecha: '',
+      ultimaFechaFmt: '',
+      fichasCount: 0,
+      recetasCount: 0,
+      totalCitas: 0,
+      enAtencion: 0,
+      activas: 0,
+      atendidas: 0,
+      noAsistio: 0,
+      canceladas: 0,
+      tieneCuenta: false,
+      esInvitado: false,
+      citas: []
+    };
+    if (item.nombrePaciente && (prev.nombrePaciente === 'Paciente DentalSis' || prev.nombrePaciente === 'Paciente')) {
+      prev.nombrePaciente = item.nombrePaciente.trim();
+    }
+    if (item.email && !prev.email) prev.email = item.email;
+    if (item.telefono && !prev.telefono) prev.telefono = item.telefono;
+    if (item.ultimaFecha && (!prev.ultimaFecha || item.ultimaFecha > prev.ultimaFecha)) {
+      prev.ultimaFecha = item.ultimaFecha;
+      prev.ultimaFechaFmt = formatearFechaDDMMAAAA(item.ultimaFecha);
+    }
+    if (typeof item.fichasCount === 'number') {
+      prev.fichasCount = Math.max(prev.fichasCount, item.fichasCount);
+    }
+    if (item.esInvitado) prev.esInvitado = true;
+    mapa.set(key, prev);
+  };
+
+  try {
+    const dbMod = require('../models/db');
+    if (dbMod.obtenerPool()) {
+      const [rPac, rUsr] = await Promise.all([
+        dbMod.query(`
+          SELECT p.rut, TRIM(CONCAT(COALESCE(p.nombre, ''), ' ', COALESCE(p.apellido, ''))) as "nombrePaciente",
+                 p.email, p.telefono, COUNT(DISTINCT fc.id) as "fichasCount"
+          FROM pacientes p
+          LEFT JOIN fichas_clinicas fc ON fc.paciente_id = p.id
+          GROUP BY p.id, p.rut, p.nombre, p.apellido, p.email, p.telefono;
+        `),
+        dbMod.query(`SELECT rut, nombre, email FROM usuarios WHERE UPPER(rol) = 'PACIENTE';`)
+      ]);
+      if (rUsr && rUsr.rows) {
+        rUsr.rows.forEach(u => integrar({
+          rutPaciente: u.rut,
+          rutFormateado: u.rut,
+          nombrePaciente: u.nombre,
+          email: u.email,
+          tieneCuenta: true
+        }));
+      }
+      if (rPac && rPac.rows) {
+        rPac.rows.forEach(r => integrar({
+          rutPaciente: r.rut,
+          rutFormateado: r.rut,
+          nombrePaciente: r.nombrePaciente,
+          email: r.email,
+          telefono: r.telefono,
+          fichasCount: parseInt(r.fichasCount, 10) || 0
+        }));
+      }
+    }
+  } catch (eDb) {}
+
+  listarPacientesSistema().forEach(p => integrar(p));
+
+  citas.forEach(c => {
+    integrar({
+      rutPaciente: c.rutPaciente,
+      rutFormateado: c.rutFormateado,
+      nombrePaciente: c.nombrePaciente,
+      email: c.emailPaciente,
+      telefono: c.telefonoPaciente,
+      ultimaFecha: c.fecha,
+      esInvitado: Boolean(c.esInvitado)
+    });
+    const pac = mapa.get(c.rutPaciente);
+    if (pac) {
+      pac.citas.push(c);
+      pac.totalCitas += 1;
+      if (c.estado === 'EN_ATENCION') pac.enAtencion += 1;
+      else if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') pac.activas += 1;
+      else if (c.estado === 'ATENDIDA') pac.atendidas += 1;
+      else if (c.estado === 'NO_ASISTIO') pac.noAsistio += 1;
+      else if (c.estado === 'CANCELADA') pac.canceladas += 1;
+    }
+  });
+
+  recetas.forEach(r => {
+    integrar({
+      rutPaciente: r.rutPaciente,
+      rutFormateado: r.rutFormateado,
+      nombrePaciente: r.nombrePaciente
+    });
+    const pac = mapa.get(r.rutPaciente);
+    if (pac) {
+      pac.recetasCount += 1;
+    }
+  });
+
+  const pacientes = Array.from(mapa.values()).map(p => {
+    const tieneCuenta = rutsConCuenta.has(p.rutPaciente);
+    return {
+      ...p,
+      tieneCuenta,
+      esInvitado: !tieneCuenta || p.citas.some(c => Boolean(c.esInvitado))
+    };
+  });
+
+  pacientes.sort((a, b) => {
+    if (b.enAtencion !== a.enAtencion) return b.enAtencion - a.enAtencion;
+    if (b.totalCitas !== a.totalCitas) return b.totalCitas - a.totalCitas;
+    return (a.nombrePaciente || '').localeCompare(b.nombrePaciente || '');
+  });
+
+  return pacientes;
+}
+
 async function obtenerResumenAdmin(req, res) {
   const hoyChile = resolverFechaChileHoy();
   const [medicos, citas, recetas, logs] = await Promise.all([
@@ -296,10 +437,7 @@ async function obtenerResumenAdmin(req, res) {
     obtenerLogsAuditoria()
   ]);
 
-  const pacientesSet = new Set();
-  listarPacientesSistema().forEach(p => pacientesSet.add(p.rutPaciente));
-  citas.forEach(c => { if (c.rutPaciente) pacientesSet.add(c.rutPaciente); });
-
+  const pacientes = await construirListadoPacientesAdmin(citas, recetas);
   const citasHoy = citas.filter(c => c.fecha === hoyChile);
   const alertasCriticas = logs.filter(l => l.nivel === 'ALERTA' || l.nivel === 'PELIGRO').length;
 
@@ -307,7 +445,7 @@ async function obtenerResumenAdmin(req, res) {
     fechaHoyChile: formatearFechaDDMMAAAA(hoyChile),
     resumen: {
       totalMedicos: medicos.length,
-      totalPacientes: pacientesSet.size,
+      totalPacientes: pacientes.length,
       totalCitas: citas.length,
       citasHoy: citasHoy.length,
       enAtencion: citas.filter(c => c.estado === 'EN_ATENCION').length,
@@ -375,102 +513,7 @@ async function obtenerPacientesAdmin(req, res) {
     obtenerRecetasCompletasAdmin()
   ]);
 
-  const mapa = new Map();
-  const integrar = (item) => {
-    const key = limpiarRut(item.rutPaciente || item.rutFormateado || '');
-    if (!key || key.length < 7) return;
-    const prev = mapa.get(key) || {
-      rutPaciente: key,
-      rutFormateado: item.rutFormateado || formatearRut(key),
-      nombrePaciente: 'Paciente DentalSis',
-      email: '',
-      telefono: '',
-      ultimaFecha: '',
-      ultimaFechaFmt: '',
-      fichasCount: 0,
-      recetasCount: 0,
-      totalCitas: 0,
-      enAtencion: 0,
-      activas: 0,
-      atendidas: 0,
-      noAsistio: 0,
-      canceladas: 0,
-      citas: []
-    };
-    if (item.nombrePaciente && (prev.nombrePaciente === 'Paciente DentalSis' || prev.nombrePaciente === 'Paciente')) {
-      prev.nombrePaciente = item.nombrePaciente.trim();
-    }
-    if (item.email && !prev.email) prev.email = item.email;
-    if (item.telefono && !prev.telefono) prev.telefono = item.telefono;
-    if (item.ultimaFecha && (!prev.ultimaFecha || item.ultimaFecha > prev.ultimaFecha)) {
-      prev.ultimaFecha = item.ultimaFecha;
-      prev.ultimaFechaFmt = formatearFechaDDMMAAAA(item.ultimaFecha);
-    }
-    if (typeof item.fichasCount === 'number') {
-      prev.fichasCount = Math.max(prev.fichasCount, item.fichasCount);
-    }
-    mapa.set(key, prev);
-  };
-
-  try {
-    const db = require('../models/db');
-    if (db.obtenerPool()) {
-      const rPac = await db.query(`
-        SELECT p.rut, TRIM(CONCAT(COALESCE(p.nombre, ''), ' ', COALESCE(p.apellido, ''))) as "nombrePaciente",
-               p.email, p.telefono, COUNT(DISTINCT fc.id) as "fichasCount"
-        FROM pacientes p
-        LEFT JOIN fichas_clinicas fc ON fc.paciente_id = p.id
-        GROUP BY p.id, p.rut, p.nombre, p.apellido, p.email, p.telefono;
-      `);
-      if (rPac && rPac.rows) {
-        rPac.rows.forEach(r => integrar({
-          rutPaciente: r.rut,
-          rutFormateado: r.rut,
-          nombrePaciente: r.nombrePaciente,
-          email: r.email,
-          telefono: r.telefono,
-          fichasCount: parseInt(r.fichasCount, 10) || 0
-        }));
-      }
-    }
-  } catch (eDb) {}
-
-  listarPacientesSistema().forEach(p => integrar(p));
-
-  citas.forEach(c => {
-    integrar({
-      rutPaciente: c.rutPaciente,
-      rutFormateado: c.rutFormateado,
-      nombrePaciente: c.nombrePaciente,
-      email: c.emailPaciente,
-      telefono: c.telefonoPaciente,
-      ultimaFecha: c.fecha
-    });
-    const pac = mapa.get(c.rutPaciente);
-    if (pac) {
-      pac.citas.push(c);
-      pac.totalCitas += 1;
-      if (c.estado === 'EN_ATENCION') pac.enAtencion += 1;
-      else if (c.estado === 'PENDIENTE' || c.estado === 'CONFIRMADA') pac.activas += 1;
-      else if (c.estado === 'ATENDIDA') pac.atendidas += 1;
-      else if (c.estado === 'NO_ASISTIO') pac.noAsistio += 1;
-      else if (c.estado === 'CANCELADA') pac.canceladas += 1;
-    }
-  });
-
-  recetas.forEach(r => {
-    integrar({
-      rutPaciente: r.rutPaciente,
-      rutFormateado: r.rutFormateado,
-      nombrePaciente: r.nombrePaciente
-    });
-    const pac = mapa.get(r.rutPaciente);
-    if (pac) {
-      pac.recetasCount += 1;
-    }
-  });
-
-  let pacientes = Array.from(mapa.values());
+  let pacientes = await construirListadoPacientesAdmin(citas, recetas);
   if (qNorm) {
     pacientes = pacientes.filter(p => {
       const nom = (p.nombrePaciente || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -478,12 +521,6 @@ async function obtenerPacientesAdmin(req, res) {
       return nom.includes(qNorm) || correo.includes(qNorm) || (qRut && p.rutPaciente.includes(qRut));
     });
   }
-
-  pacientes.sort((a, b) => {
-    if (b.enAtencion !== a.enAtencion) return b.enAtencion - a.enAtencion;
-    if (b.totalCitas !== a.totalCitas) return b.totalCitas - a.totalCitas;
-    return (a.nombrePaciente || '').localeCompare(b.nombrePaciente || '');
-  });
 
   return res.status(200).json({
     total: pacientes.length,

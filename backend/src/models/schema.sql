@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS citas (
   hora_fin TIME NOT NULL,
   tipo_consulta VARCHAR(80) NOT NULL,
   estado VARCHAR(25) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_ATENCION', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO')),
+  es_invitado BOOLEAN NOT NULL DEFAULT FALSE,
   motivo_cancelacion TEXT,
   cancelada_por VARCHAR(30),
   cancelada_en TIMESTAMP WITH TIME ZONE,
@@ -156,7 +157,7 @@ BEGIN
     v_hash
   );
   
-  RETURN NEW;
+  RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -181,8 +182,12 @@ INSERT INTO usuarios (id, rut, nombre, email, password_hash, rol, estado) VALUES
   ('11111111-1111-1111-1111-111111111111', '15.432.890-K', 'Ing. Admin DentalSis', 'admin@dentalsis.cl', '$2b$10$xOoBM3N7FKtCxET2Vxc7R.Ae8sTwea13ecHhOJqZD0X4eh2IMlFH.', 'ADMIN', 'ACTIVO'),
   ('33333333-3333-3333-3333-333333333333', '17.452.809-6', 'Valeria Muñoz (Recepción)', 'recepcion@dentalsis.cl', '$2b$10$Z5fhlJsSkhmpepSK6VSSYulHXTTlM.iJeD4RbqYvPuXdFYdIGbpma', 'RECEPCIONISTA', 'ACTIVO'),
   ('44444444-4444-4444-4444-444444444441', '18.234.901-1', 'Camilo Vega Ortiz', 'camilo.vega@correo.cl', '$2b$10$IOOc/VBzysdLY6oX.4V/n.HFJ8YJRg1vGL3EC9QGyhFebtfYa60Pi', 'PACIENTE', 'ACTIVO'),
-  ('44444444-4444-4444-4444-444444444442', '20.048.043-0', 'Luciano Palma Cortés', 'luciano.palma@audit-dentalsis.cl', '$2b$10$IbKhW./QVxBXuiDhWU1GFuST4OHINT0wW14SOH3wN4amacjfTx.5S', 'PACIENTE', 'ACTIVO')
-ON CONFLICT (email) DO NOTHING;
+  ('44444444-4444-4444-4444-444444444442', '22.090.455-5', 'AuditUser Cliente', 'audituser.cliente@dentalsis.cl', '$2b$10$Gtt6WfLnb6D0STEhEO3CmOzT3O7OPfUWjxMT1x/9OkpDp1U2kxI16', 'PACIENTE', 'ACTIVO')
+ON CONFLICT (id) DO UPDATE SET
+  rut = EXCLUDED.rut,
+  nombre = EXCLUDED.nombre,
+  email = EXCLUDED.email,
+  password_hash = EXCLUDED.password_hash;
 
 INSERT INTO especialistas (id, rut, nombre, email, password_hash, especialidad_id, registro_sis, registro_colegio, sillon_habitual) VALUES
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', '14.892.341-2', 'Dr. Álvaro Soto M.', 'alvaro.soto@dentalsis.cl', '$2b$10$vheBClgiy6WOhwrWcCV0bObmfR1iJA6TxjPf6.sKWzDgguwgPm1y2', 1, 'MED-SIS-2026-081', 'COL-ODONT-4491', 1),
@@ -196,8 +201,10 @@ INSERT INTO especialistas (id, rut, nombre, email, password_hash, especialidad_i
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9', '17.519.203-K', 'Dra. Constanza Herrera S.', 'constanza.herrera@dentalsis.cl', '$2b$10$glX1C6Y51khURsyfzivi8.Yq2/TpJbtH0T4dCABr6OA3zrtfqO9IW', 3, 'MED-SIS-2026-305', 'COL-ODONT-8214', 2),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10', '15.340.892-4', 'Dr. Rodrigo Fuentes L.', 'rodrigo.fuentes@dentalsis.cl', '$2b$10$fzXclstmtK.i0ymUz2Nv9eoY7Q0Bq9K6pM74MgQxfK9dDVeeHJ5eK', 5, 'MED-SIS-2026-306', 'COL-ODONT-8215', 3),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', '18.391.029-7', 'Dra. Camila Paz Aedo', 'camila.aedo@dentalsis.cl', '$2b$10$UJK/QBILd3tr4FcwNW8xKexV9avbCd.CCsW75t4VSTdK3ymrA1mM6', 6, 'MED-SIS-2026-307', 'COL-ODONT-8216', 4),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12', '18.275.622-9', 'Dr. Gabriel Navarro V.', 'gabriel.navarro@dentalsis.cl', '$2b$10$rQDqrJA9O9rL2MmaYPQdteErEJYKd32fzC7rzx3uRjw9sUdDoKWxW', 2, 'MED-SIS-2026-308', 'COL-ODONT-8217', 4)
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12', '17.749.622-7', 'Dr. AuditUser Especialista', 'audituser.especialista@dentalsis.cl', '$2b$10$2kx/k.kSFTAXOm0ZH5sZJeK8Ol/X2axg6M3J4F/6H7TdgGNvfsCYK', 2, 'MED-SIS-2026-308', 'COL-ODONT-8217', 4)
 ON CONFLICT (id) DO UPDATE SET
+  rut = EXCLUDED.rut,
+  email = EXCLUDED.email,
   password_hash = EXCLUDED.password_hash,
   nombre = EXCLUDED.nombre,
   especialidad_id = EXCLUDED.especialidad_id,
@@ -205,8 +212,12 @@ ON CONFLICT (id) DO UPDATE SET
 
 INSERT INTO pacientes (id, rut, nombre, apellido, fecha_nacimiento, telefono, email, alergias_cifradas, antecedentes_cifrados) VALUES
   ('55555555-5555-5555-5555-555555555551', '18.234.901-1', 'Camilo', 'Vega Ortiz', '1995-06-14', '+56 9 8765 4321', 'camilo.vega@correo.cl', 'AES256GCM:a7b8c9d0:PENICILINA_SHOCK_ANAFILACTICO', 'AES256GCM:1a2b3c4d:HIPERTENSION_CONTROLADA'),
-  ('55555555-5555-5555-5555-555555555552', '20.048.043-0', 'Luciano', 'Palma Cortés', '1998-05-18', '+56 9 6482 1930', 'luciano.palma@audit-dentalsis.cl', NULL, NULL)
-ON CONFLICT (rut) DO NOTHING;
+  ('55555555-5555-5555-5555-555555555552', '22.090.455-5', 'AuditUser', 'Cliente', '1998-05-18', '+56 9 6482 1930', 'audituser.cliente@dentalsis.cl', NULL, NULL)
+ON CONFLICT (id) DO UPDATE SET
+  rut = EXCLUDED.rut,
+  nombre = EXCLUDED.nombre,
+  apellido = EXCLUDED.apellido,
+  email = EXCLUDED.email;
 
 INSERT INTO citas (id, paciente_id, especialista_id, sillon_numero, fecha, hora_inicio, hora_fin, tipo_consulta, estado) VALUES
   ('66666666-6666-6666-6666-666666666661', '55555555-5555-5555-5555-555555555551', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 1, CURRENT_DATE, '11:00:00', '11:45:00', 'Evaluación Quirúrgica Tercer Molar', 'CONFIRMADA')
