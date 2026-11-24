@@ -8,11 +8,13 @@ const {
   actualizarFichaConReautenticacion,
   emitirReceta,
   verificarRecetaPublica,
-  ingresarTurno
+  ingresarTurno,
+  buscarPacientes
 } = require('../controllers/especialista');
 const { verificarToken, verificarRol } = require('../controllers/auth.controller');
 const { limiteOperacionesSensibles } = require('../middleware/seguridad');
 
+router.get('/pacientes', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), buscarPacientes);
 router.get('/agenda/:idMedico', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), obtenerAgenda);
 router.patch('/citas/:idCita/estado', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), cambiarEstado);
 router.get('/ficha/:rut', verificarToken, verificarRol('Odontologo', 'SuperAdmin'), obtenerFichaPaciente);

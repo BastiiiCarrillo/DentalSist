@@ -48,11 +48,13 @@ async function login(req, res) {
           const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
           const cuerpoLimpio = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
           const rEsp = await db.query(
-            'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
+            'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
             [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
           );
           if (rEsp.rows && rEsp.rows.length > 0) {
-            usuarioEncontrado = { ...rEsp.rows[0], rol: 'Odontologo' };
+            const rowEsp = rEsp.rows[0];
+            const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
+            usuarioEncontrado = { ...rowEsp, sillon: sillonFmt, rol: 'Odontologo' };
           } else {
             const rDb = await db.query(
               'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE (LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6) AND (UPPER(u.rol) = $7 OR UPPER(u.rol) = $8) LIMIT 1;',
@@ -97,11 +99,13 @@ async function login(req, res) {
             usuarioEncontrado = rDb.rows[0];
           } else {
             const rEsp = await db.query(
-              'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
+              'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
               [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
             );
             if (rEsp.rows && rEsp.rows.length > 0) {
-              usuarioEncontrado = { ...rEsp.rows[0], rol: 'Odontologo' };
+              const rowEsp = rEsp.rows[0];
+              const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
+              usuarioEncontrado = { ...rowEsp, sillon: sillonFmt, rol: 'Odontologo' };
             }
           }
         }

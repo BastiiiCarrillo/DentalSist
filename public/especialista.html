@@ -52,23 +52,31 @@
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
 
-  <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-2.5 sm:gap-3">
+  <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
       <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center shadow-md shadow-cyan-500/20 shrink-0">
         <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
         </svg>
       </div>
-      <div>
+      <div class="min-w-0">
         <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 dark:from-cyan-400 dark:to-teal-300 bg-clip-text text-transparent">DentalSis</span>
-        <span id="subtituloPortalMedico" class="text-xs hidden sm:block text-slate-500 dark:text-slate-400">Portal Médico Especialista</span>
+        <span id="subtituloPortalMedico" class="text-xs block text-slate-500 dark:text-slate-400 truncate">Portal Médico Especialista</span>
       </div>
     </div>
 
-    <div class="flex items-center gap-2 sm:gap-3">
-      <div id="badgeTurnoActivo" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div id="pillPerfilMedicoNav" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <div id="avatarMedicoNav" class="w-6 h-6 rounded-lg bg-gradient-to-tr from-teal-600 to-cyan-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">DR</div>
+        <div class="leading-tight min-w-0">
+          <span id="nombreMedicoNav" class="block text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px] sm:max-w-[180px]">Especialista</span>
+          <span id="especialidadMedicoNav" class="hidden sm:block text-[10px] text-teal-600 dark:text-teal-400 font-semibold truncate">Turno 09:00 - 18:00</span>
+        </div>
+      </div>
+
+      <div id="badgeTurnoActivo" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="textoTurnoNavbar">Turno Activo</span>
+        <span id="textoTurnoNavbar">Turno 09:00 - 18:00</span>
       </div>
 
       <button onclick="alternarModoColor()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cambiar modo claro/oscuro">
@@ -93,12 +101,15 @@
 
     <div class="bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border border-teal-500/20 rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Módulo de Atención y Ficha Clínica</h1>
-        <p class="text-slate-600 dark:text-slate-300 text-sm">Gestiona el historial de consultas del paciente, actualiza diagnósticos protegidos y emite recetas médicas firmadas digitalmente.</p>
+        <span id="saludoEspecialista" class="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 block mb-1">Portal Médico DentalSis</span>
+        <h1 id="tituloNombreMedico" class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Módulo de Atención y Ficha Clínica</h1>
+        <p id="subtituloEspecialidadMedico" class="text-slate-600 dark:text-slate-300 text-sm">Gestiona tu agenda diaria, consulta historiales protegidos y emite recetas médicas firmadas digitalmente.</p>
       </div>
-      <div class="flex items-center gap-2">
-        <span id="badgeRolMedico" class="text-xs px-3 py-1.5 rounded-xl bg-cyan-600 text-white font-bold shadow">Cirujano Dentista</span>
-        <span class="text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">Reg. SIS #589.211</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="badgeRolMedico" class="text-xs px-3 py-1.5 rounded-xl bg-cyan-600 text-white font-bold shadow">Especialista</span>
+        <span id="badgeBoxMedico" class="text-xs px-3 py-1.5 rounded-xl bg-teal-500/15 text-teal-700 dark:text-teal-300 font-bold border border-teal-500/30">Box 1</span>
+        <span id="badgeRegistroSis" class="text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold border border-slate-200 dark:border-slate-700">Reg. SIS</span>
+        <span class="text-xs px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/20">Jornada 09:00 - 18:00</span>
       </div>
     </div>
 
@@ -109,9 +120,9 @@
             <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            Consultar Historial Clínico de Paciente
+            Buscar Paciente en DentalSis
           </h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Consulta el historial de cualquier paciente firmando con tu contraseña de especialista</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Busca por nombre o RUT y selecciona un paciente atendido o agendado para firmar el acceso a su ficha</p>
         </div>
         <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-500/20">
           Acceso Firmado y Auditado
@@ -119,7 +130,8 @@
       </div>
       <div class="flex flex-col sm:flex-row gap-2.5">
         <div class="flex-1 relative">
-          <input type="text" id="inputRutBusquedaHistorial" placeholder="Ingresa RUT de paciente... ej: 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500" onkeydown="if(event.key==='Enter') buscarPacientePorRutConFirma()">
+          <input type="text" id="inputRutBusquedaHistorial" oninput="filtrarPacientesDentalSis(this.value)" onfocus="abrirDirectorioPacientes()" autocomplete="off" placeholder="Buscar por nombre o RUT... ej: Camilo Vega o 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500" onkeydown="if(event.key==='Enter') buscarPacientePorRutConFirma()">
+          <div id="dropdownPacientesBusqueda" class="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-30 hidden max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800"></div>
         </div>
         <button onclick="buscarPacientePorRutConFirma()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,28 +140,68 @@
           Firmar y Consultar Historial
         </button>
       </div>
+      <div class="pt-1 flex flex-wrap items-center gap-2">
+        <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Pacientes registrados en DentalSis:</span>
+        <div id="barraPacientesDentalSis" class="flex flex-wrap items-center gap-1.5">
+          <span class="text-[11px] text-slate-400">Cargando pacientes...</span>
+        </div>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <div class="space-y-6">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
           <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900 dark:text-white">Agenda de Pacientes</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Pacientes programados</p>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Calendario y Agenda</h2>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Horario clínico 09:00 a 18:00 hrs</p>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="abrirModalTurno()" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow transition flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Turno
+            <button onclick="cargarAgendaMedico()" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition flex items-center gap-1" title="Actualizar agenda">
+              <span>↻</span>
+              <span>Actualizar</span>
+            </button>
+          </div>
+
+          <div class="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <button onclick="cambiarMesAgenda(-1)" class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-teal-500 flex items-center justify-center text-slate-600 dark:text-slate-300 text-xs font-bold transition">‹</button>
+                <span id="tituloMesAgenda" class="text-xs font-bold text-slate-800 dark:text-white min-w-[115px] text-center">Noviembre 2026</span>
+                <button onclick="cambiarMesAgenda(1)" class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-teal-500 flex items-center justify-center text-slate-600 dark:text-slate-300 text-xs font-bold transition">›</button>
+              </div>
+              <button onclick="irAHoyAgenda()" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20 hover:bg-teal-500/20 transition">
+                Hoy
               </button>
-              <span id="fechaAgendaHoy" class="text-xs font-bold text-teal-600 dark:text-teal-400">Hoy</span>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
+              <span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span>
+            </div>
+
+            <div id="grillaCalendarioAgenda" class="grid grid-cols-7 gap-1 text-center"></div>
+
+            <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800">
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block"></span> Días con citas</span>
+              <span id="resumenTotalAgenda" class="font-semibold text-teal-600 dark:text-teal-400">0 citas activas</span>
             </div>
           </div>
 
-          <div id="contenedorAgendaCitas" class="space-y-3">
-            <div class="p-4 text-center text-xs text-slate-400">Cargando agenda médica...</div>
+          <div class="space-y-3 pt-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <h3 id="tituloDiaAgenda" class="text-xs font-bold text-slate-900 dark:text-white">Citas de Hoy</h3>
+                <span id="contadorCitasDia" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">0</span>
+              </div>
+              <div class="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 text-[10px]">
+                <button id="btnVistaDia" onclick="cambiarVistaAgenda('dia')" class="px-2 py-1 rounded-md font-bold bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm transition">Día</button>
+                <button id="btnVistaTodas" onclick="cambiarVistaAgenda('todas')" class="px-2 py-1 rounded-md font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition">Todas</button>
+              </div>
+            </div>
+
+            <div id="contenedorAgendaCitas" class="space-y-2.5 max-h-[420px] overflow-y-auto pr-0.5">
+              <div class="p-4 text-center text-xs text-slate-400">Cargando agenda médica...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -439,50 +491,6 @@
       <div class="flex gap-2 pt-1">
         <button onclick="cerrarModalClaveFirmaReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
         <button onclick="validarYFirmarReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20">Firmar y Emitir</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalTurnoMedico" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mx-auto">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-        </svg>
-      </div>
-      <div class="text-center">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Definir Turno de Especialista</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Registra tu bloque de atención clínica y box asignado.</p>
-      </div>
-      <div id="errorTurnoMedico" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center"></div>
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Fecha del Turno</label>
-          <input type="date" id="inputFechaTurno" value="2026-11-24" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Hora Inicio</label>
-            <input type="text" id="inputHoraInicioTurno" value="09:00" placeholder="09:00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
-          </div>
-          <div>
-            <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Hora Fin</label>
-            <input type="text" id="inputHoraFinTurno" value="14:00" placeholder="14:00" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold mb-1 text-slate-600 dark:text-slate-300">Box Asignado</label>
-          <select id="selectSillonTurno" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
-            <option value="Box 1">Box 1 (Quirúrgico)</option>
-            <option value="Box 2">Box 2 (General)</option>
-            <option value="Box 3">Box 3 (Endodoncia)</option>
-            <option value="Box 4">Box 4 (Ortodoncia)</option>
-          </select>
-        </div>
-      </div>
-      <div class="flex gap-2 pt-1">
-        <button onclick="cerrarModalTurno()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
-        <button onclick="guardarTurnoMedico()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Registrar Turno</button>
       </div>
     </div>
   </div>
@@ -813,6 +821,11 @@
       dropdown.classList.remove('hidden');
     }
 
+    function cerrarDropdown() {
+      const dropdown = document.getElementById('dropdownMedicamentos');
+      if (dropdown) dropdown.classList.add('hidden');
+    }
+
     function agregarMedicamento(id) {
       if (datosRecetaMeds.has(id)) {
         cerrarDropdown();
@@ -1141,6 +1154,66 @@
     let pacienteSeleccionadoNombre = null;
     let recetaAutenticada = false;
 
+    const NOMBRES_MESES_AGENDA = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const ahoraAgenda = new Date();
+    const hoyISODefault = `${ahoraAgenda.getFullYear()}-${String(ahoraAgenda.getMonth() + 1).padStart(2, '0')}-${String(ahoraAgenda.getDate()).padStart(2, '0')}`;
+    let mesAgendaVisualizado = ahoraAgenda.getMonth();
+    let anoAgendaVisualizado = ahoraAgenda.getFullYear();
+    let fechaAgendaSeleccionada = hoyISODefault;
+    let modoVistaAgenda = 'dia';
+    let citasMedicoCache = [];
+    let pacientesDentalSisCache = [];
+
+    function actualizarCabeceraMedico(u) {
+      if (!u) return;
+      const nombre = u.nombre || 'Especialista DentalSis';
+      const esp = u.especialidad || ((u.rol || '').toLowerCase() === 'superadmin' ? 'Supervisión Clínica' : 'Odontología Especializada');
+      const box = u.sillon ? (String(u.sillon).toLowerCase().includes('box') ? u.sillon : `Box ${u.sillon}`) : 'Box 1';
+      const regSis = u.registroSis || 'MED-SIS-2026-081';
+
+      const iniciales = nombre
+        .replace(/^(dr\.?|dra\.?)\s+/i, '')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(p => p[0] || '')
+        .join('')
+        .toUpperCase() || 'DR';
+
+      const elSub = document.getElementById('subtituloPortalMedico');
+      if (elSub) elSub.textContent = `Portal Médico · ${nombre}`;
+
+      const elAv = document.getElementById('avatarMedicoNav');
+      if (elAv) elAv.textContent = iniciales;
+
+      const elNomNav = document.getElementById('nombreMedicoNav');
+      if (elNomNav) elNomNav.textContent = nombre;
+
+      const elEspNav = document.getElementById('especialidadMedicoNav');
+      if (elEspNav) elEspNav.textContent = `${esp} · ${box}`;
+
+      const elSaludo = document.getElementById('saludoEspecialista');
+      if (elSaludo) elSaludo.textContent = `Sesión iniciada como especialista`;
+
+      const elTitulo = document.getElementById('tituloNombreMedico');
+      if (elTitulo) elTitulo.textContent = `Bienvenido/a, ${nombre}`;
+
+      const elSubEsp = document.getElementById('subtituloEspecialidadMedico');
+      if (elSubEsp) elSubEsp.textContent = `Módulo de Atención y Ficha Clínica · Horario establecido de atención: 09:00 a 18:00 hrs.`;
+
+      const elBadgeRol = document.getElementById('badgeRolMedico');
+      if (elBadgeRol) elBadgeRol.textContent = esp;
+
+      const elBadgeBox = document.getElementById('badgeBoxMedico');
+      if (elBadgeBox) elBadgeBox.textContent = box;
+
+      const elBadgeSis = document.getElementById('badgeRegistroSis');
+      if (elBadgeSis) elBadgeSis.textContent = `Reg. SIS ${regSis}`;
+
+      const elTxtTurno = document.getElementById('textoTurnoNavbar');
+      if (elTxtTurno) elTxtTurno.textContent = 'Turno 09:00 - 18:00';
+    }
+
     function verificarSesionEspecialista() {
       const token = sessionStorage.getItem('dentalsis_token');
       const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
@@ -1156,10 +1229,7 @@
           return null;
         }
         medicoActual = u;
-        const subtitulo = document.getElementById('subtituloPortalMedico');
-        if (subtitulo && u.nombre) subtitulo.textContent = `Portal Médico Especialista · ${u.nombre}`;
-        const badgeTurno = document.getElementById('badgeTurnoActivo');
-        if (badgeTurno) badgeTurno.classList.remove('hidden');
+        actualizarCabeceraMedico(u);
         return u;
       } catch (e) {
         window.location.href = '/login';
@@ -1174,7 +1244,217 @@
       window.location.href = '/login';
     }
 
-    async function cargarAgendaMedico() {
+    function formatearFechaLegibleAgenda(fechaISO) {
+      if (!fechaISO) return 'Hoy';
+      const partes = fechaISO.split('-').map(Number);
+      if (partes.length !== 3) return fechaISO;
+      const d = partes[2];
+      const m = NOMBRES_MESES_AGENDA[(partes[1] || 1) - 1] || '';
+      const esHoy = fechaISO === hoyISODefault;
+      return esHoy ? `Hoy · ${d} ${m.slice(0, 3)}` : `${d} de ${m}`;
+    }
+
+    function cambiarMesAgenda(delta) {
+      mesAgendaVisualizado += delta;
+      if (mesAgendaVisualizado < 0) {
+        mesAgendaVisualizado = 11;
+        anoAgendaVisualizado -= 1;
+      } else if (mesAgendaVisualizado > 11) {
+        mesAgendaVisualizado = 0;
+        anoAgendaVisualizado += 1;
+      }
+      renderizarCalendarioAgenda();
+    }
+
+    function irAHoyAgenda() {
+      const hoy = new Date();
+      mesAgendaVisualizado = hoy.getMonth();
+      anoAgendaVisualizado = hoy.getFullYear();
+      fechaAgendaSeleccionada = `${anoAgendaVisualizado}-${String(mesAgendaVisualizado + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+      modoVistaAgenda = 'dia';
+      renderizarCalendarioAgenda();
+      renderizarListaAgendaCitas();
+    }
+
+    function seleccionarDiaAgenda(fechaISO) {
+      fechaAgendaSeleccionada = fechaISO;
+      const partes = fechaISO.split('-').map(Number);
+      if (partes.length === 3) {
+        anoAgendaVisualizado = partes[0];
+        mesAgendaVisualizado = partes[1] - 1;
+      }
+      modoVistaAgenda = 'dia';
+      renderizarCalendarioAgenda();
+      renderizarListaAgendaCitas();
+    }
+
+    function cambiarVistaAgenda(modo) {
+      modoVistaAgenda = modo === 'todas' ? 'todas' : 'dia';
+      renderizarListaAgendaCitas();
+    }
+
+    function renderizarCalendarioAgenda() {
+      const titulo = document.getElementById('tituloMesAgenda');
+      const grilla = document.getElementById('grillaCalendarioAgenda');
+      if (titulo) titulo.textContent = `${NOMBRES_MESES_AGENDA[mesAgendaVisualizado]} ${anoAgendaVisualizado}`;
+      if (!grilla) return;
+
+      const conteoPorFecha = new Map();
+      citasMedicoCache.forEach(c => {
+        if (c.estado !== 'CANCELADA' && c.fecha) {
+          conteoPorFecha.set(c.fecha, (conteoPorFecha.get(c.fecha) || 0) + 1);
+        }
+      });
+
+      const resumenTotal = document.getElementById('resumenTotalAgenda');
+      const totalActivas = citasMedicoCache.filter(c => c.estado !== 'CANCELADA').length;
+      if (resumenTotal) resumenTotal.textContent = `${totalActivas} cita${totalActivas === 1 ? '' : 's'} activa${totalActivas === 1 ? '' : 's'}`;
+
+      const primerDiaSemana = new Date(anoAgendaVisualizado, mesAgendaVisualizado, 1).getDay();
+      const totalDiasMes = new Date(anoAgendaVisualizado, mesAgendaVisualizado + 1, 0).getDate();
+
+      let html = '';
+      for (let i = 0; i < primerDiaSemana; i++) {
+        html += '<div></div>';
+      }
+
+      for (let d = 1; d <= totalDiasMes; d++) {
+        const fechaISO = `${anoAgendaVisualizado}-${String(mesAgendaVisualizado + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const esSeleccionado = fechaISO === fechaAgendaSeleccionada && modoVistaAgenda === 'dia';
+        const esHoy = fechaISO === hoyISODefault;
+        const cantidadCitas = conteoPorFecha.get(fechaISO) || 0;
+
+        let clases = 'relative py-1.5 rounded-xl text-[11px] font-semibold transition flex flex-col items-center justify-center ';
+        if (esSeleccionado) {
+          clases += 'bg-teal-600 text-white font-bold shadow-md shadow-teal-600/30 ';
+        } else if (esHoy) {
+          clases += 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/40 font-bold hover:bg-teal-500/20 ';
+        } else if (cantidadCitas > 0) {
+          clases += 'bg-cyan-50/70 dark:bg-cyan-950/30 text-slate-900 dark:text-white hover:border-teal-500 border border-cyan-500/20 ';
+        } else {
+          clases += 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-transparent ';
+        }
+
+        const indicador = cantidadCitas > 0
+          ? `<span class="w-1.5 h-1.5 rounded-full mt-0.5 ${esSeleccionado ? 'bg-white' : 'bg-teal-500'}"></span>`
+          : '<span class="w-1.5 h-1.5 mt-0.5 opacity-0">.</span>';
+
+        const tituloDia = cantidadCitas > 0 ? `${cantidadCitas} cita(s) programada(s)` : 'Sin citas';
+        html += `<button type="button" onclick="seleccionarDiaAgenda('${fechaISO}')" title="${tituloDia}" class="${clases}"><span>${d}</span>${indicador}</button>`;
+      }
+
+      grilla.innerHTML = html;
+    }
+
+    function renderizarListaAgendaCitas() {
+      const contenedor = document.getElementById('contenedorAgendaCitas');
+      const tituloDia = document.getElementById('tituloDiaAgenda');
+      const contadorDia = document.getElementById('contadorCitasDia');
+      const btnDia = document.getElementById('btnVistaDia');
+      const btnTodas = document.getElementById('btnVistaTodas');
+      if (!contenedor) return;
+
+      if (btnDia && btnTodas) {
+        if (modoVistaAgenda === 'todas') {
+          btnTodas.className = 'px-2 py-1 rounded-md font-bold bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm transition';
+          btnDia.className = 'px-2 py-1 rounded-md font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition';
+        } else {
+          btnDia.className = 'px-2 py-1 rounded-md font-bold bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-sm transition';
+          btnTodas.className = 'px-2 py-1 rounded-md font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition';
+        }
+      }
+
+      const listaFiltrada = modoVistaAgenda === 'todas'
+        ? [...citasMedicoCache]
+        : citasMedicoCache.filter(c => c.fecha === fechaAgendaSeleccionada);
+
+      if (tituloDia) {
+        tituloDia.textContent = modoVistaAgenda === 'todas'
+          ? 'Todas tus citas'
+          : `Citas de ${formatearFechaLegibleAgenda(fechaAgendaSeleccionada)}`;
+      }
+      if (contadorDia) {
+        contadorDia.textContent = String(listaFiltrada.length);
+      }
+
+      if (listaFiltrada.length === 0) {
+        const otrasCitas = citasMedicoCache.filter(c => c.estado !== 'CANCELADA');
+        const proxima = otrasCitas.find(c => c.fecha >= hoyISODefault) || otrasCitas[0];
+        let accionExtra = '';
+        if (modoVistaAgenda === 'dia' && proxima) {
+          accionExtra = `
+            <button type="button" onclick="seleccionarDiaAgenda('${proxima.fecha}')" class="mt-2.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-teal-500/10 hover:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/20 transition">
+              Ir a cita del ${formatearFechaLegibleAgenda(proxima.fecha)} (${proxima.hora} hrs)
+            </button>
+          `;
+        }
+        contenedor.innerHTML = `
+          <div class="p-4 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800">
+            <p>${modoVistaAgenda === 'todas' ? 'No hay citas registradas en tu agenda.' : 'No tienes citas programadas para este día.'}</p>
+            ${accionExtra}
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      listaFiltrada.forEach(c => {
+        let claseBadge = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
+        if (c.estado === 'PENDIENTE') claseBadge = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+        else if (c.estado === 'CONFIRMADA') claseBadge = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+        else if (c.estado === 'EN_ATENCION') claseBadge = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
+        else if (c.estado === 'ATENDIDA') claseBadge = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+        else if (c.estado === 'CANCELADA') claseBadge = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
+
+        let botonesAccion = '';
+        if (c.estado === 'PENDIENTE') {
+          botonesAccion = `
+            <div class="flex gap-1.5 pt-1">
+              <button onclick="cambiarEstadoCita('${c.id}', 'CONFIRMADA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white shadow">Confirmar</button>
+              <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
+            </div>
+          `;
+        } else if (c.estado === 'CONFIRMADA') {
+          botonesAccion = `
+            <div class="flex gap-1.5 pt-1">
+              <button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar Atención</button>
+              <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
+            </div>
+          `;
+        } else if (c.estado === 'EN_ATENCION') {
+          botonesAccion = `
+            <div class="flex gap-1.5 pt-1">
+              <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Finalizar Atención</button>
+            </div>
+          `;
+        }
+
+        const rutClean = String(c.rutPaciente || '').replace(/[^0-9kK]/g, '').toUpperCase();
+        const esSeleccionado = rutClean && rutClean === rutPacienteActual;
+        const nombreSafe = String(c.nombrePaciente || 'Paciente').replace(/'/g, '');
+        const etiquetaFecha = modoVistaAgenda === 'todas' ? `${c.fecha} · ` : '';
+        html += `
+          <div class="p-3.5 rounded-2xl border ${esSeleccionado ? 'border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'} space-y-2.5 transition">
+            <div class="flex items-start justify-between cursor-pointer gap-2" onclick="solicitarFirmaAccesoHistorial('${rutClean || c.rutPaciente}', '${nombreSafe}')">
+              <div class="min-w-0">
+                <span class="text-xs font-bold text-teal-600 dark:text-teal-400 block">${etiquetaFecha}${c.hora} hrs · ${c.sillon || 'Box 1'}</span>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${c.nombrePaciente || 'Paciente'}</h4>
+                <p class="text-[11px] text-slate-500 font-mono">${c.rutFormateado || formatearRutClinico(c.rutPaciente)}</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${claseBadge}">${c.estado}</span>
+            </div>
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+              <span class="text-slate-600 dark:text-slate-300 font-medium truncate">${c.especialidad || 'Consulta'}</span>
+              ${botonesAccion}
+            </div>
+          </div>
+        `;
+      });
+
+      contenedor.innerHTML = html;
+    }
+
+    async function cargarAgendaMedico(silencioso = false) {
       const token = sessionStorage.getItem('dentalsis_token');
       if (!medicoActual || !token) return;
 
@@ -1186,73 +1466,141 @@
           headers: { 'Authorization': 'Bearer ' + token }
         });
         if (!res.ok) {
-          contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error al cargar citas de la agenda.</div>';
+          if (!silencioso) {
+            contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error al cargar citas de la agenda.</div>';
+          }
           return;
         }
 
         const datos = await res.json();
-        const citas = datos.citas || [];
-
-        if (citas.length === 0) {
-          contenedor.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No hay citas registradas en tu agenda.</div>';
-          return;
+        if (datos.medico) {
+          medicoActual = { ...medicoActual, ...datos.medico };
+          actualizarCabeceraMedico(medicoActual);
         }
-
-        let html = '';
-        citas.forEach(c => {
-          let claseBadge = 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700';
-          if (c.estado === 'PENDIENTE') claseBadge = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-          else if (c.estado === 'CONFIRMADA') claseBadge = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-          else if (c.estado === 'EN_ATENCION') claseBadge = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
-          else if (c.estado === 'ATENDIDA') claseBadge = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-          else if (c.estado === 'CANCELADA') claseBadge = 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20';
-
-          let botonesAccion = '';
-          if (c.estado === 'PENDIENTE') {
-            botonesAccion = `
-              <div class="flex gap-1.5 pt-1">
-                <button onclick="cambiarEstadoCita('${c.id}', 'CONFIRMADA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-500 text-white shadow">Confirmar</button>
-                <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
-              </div>
-            `;
-          } else if (c.estado === 'CONFIRMADA') {
-            botonesAccion = `
-              <div class="flex gap-1.5 pt-1">
-                <button onclick="cambiarEstadoCita('${c.id}', 'EN_ATENCION')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow">Iniciar Atención</button>
-                <button onclick="cambiarEstadoCita('${c.id}', 'CANCELADA')" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-red-500">Cancelar</button>
-              </div>
-            `;
-          } else if (c.estado === 'EN_ATENCION') {
-            botonesAccion = `
-              <div class="flex gap-1.5 pt-1">
-                <button onclick="cambiarEstadoCita('${c.id}', 'ATENDIDA')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow">Finalizar Atención</button>
-              </div>
-            `;
-          }
-
-          const esSeleccionado = c.rutPaciente === rutPacienteActual;
-          html += `
-            <div class="p-3.5 rounded-2xl border ${esSeleccionado ? 'border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'} space-y-2.5 transition">
-              <div class="flex items-start justify-between cursor-pointer" onclick="solicitarFirmaAccesoHistorial('${c.rutPaciente}', '${c.nombrePaciente}')">
-                <div>
-                  <span class="text-xs font-bold text-teal-600 dark:text-teal-400">${c.hora} hrs · ${c.sillon}</span>
-                  <h4 class="text-sm font-bold text-slate-900 dark:text-white">${c.nombrePaciente}</h4>
-                  <p class="text-[11px] text-slate-500 font-mono">${c.rutFormateado || c.rutPaciente}</p>
-                </div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${claseBadge}">${c.estado}</span>
-              </div>
-              <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-600 dark:text-slate-300 font-medium">${c.especialidad}</span>
-                ${botonesAccion}
-              </div>
-            </div>
-          `;
-        });
-
-        contenedor.innerHTML = html;
+        citasMedicoCache = datos.citas || [];
+        renderizarCalendarioAgenda();
+        renderizarListaAgendaCitas();
       } catch (e) {
-        contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error de conexión al cargar agenda.</div>';
+        if (!silencioso) {
+          contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error de conexión al cargar agenda.</div>';
+        }
       }
+    }
+
+    async function cargarPacientesDentalSis(query = '') {
+      const token = sessionStorage.getItem('dentalsis_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/especialistas/pacientes?q=' + encodeURIComponent(query || ''), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const datos = await res.json();
+        if (!query) {
+          pacientesDentalSisCache = datos.pacientes || [];
+          renderizarChipsPacientesDentalSis();
+        } else {
+          renderizarDropdownPacientes(datos.pacientes || []);
+        }
+      } catch (e) {}
+    }
+
+    function renderizarChipsPacientesDentalSis() {
+      const barra = document.getElementById('barraPacientesDentalSis');
+      if (!barra) return;
+      if (!pacientesDentalSisCache || pacientesDentalSisCache.length === 0) {
+        barra.innerHTML = '<span class="text-[11px] text-slate-400">Sin pacientes registrados aún.</span>';
+        return;
+      }
+      const visibles = pacientesDentalSisCache.slice(0, 6);
+      barra.innerHTML = visibles.map(p => {
+        const nombreSafe = String(p.nombrePaciente || 'Paciente').replace(/'/g, '');
+        const badgeAt = p.atendido
+          ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" title="Atendido en DentalSis"></span>'
+          : '<span class="w-1.5 h-1.5 rounded-full bg-cyan-500 inline-block" title="Registrado/Agendado"></span>';
+        return `
+          <button type="button" onclick="seleccionarPacienteDesdeDirectorio('${p.rutPaciente}', '${nombreSafe}')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/40 text-slate-700 dark:text-slate-200 hover:text-teal-700 dark:hover:text-teal-300 border border-slate-200 dark:border-slate-700 hover:border-teal-500/40 transition flex items-center gap-1.5">
+            ${badgeAt}
+            <span>${p.nombrePaciente}</span>
+            <span class="text-[10px] text-slate-400 font-mono">${p.rutFormateado}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function seleccionarPacienteDesdeDirectorio(rut, nombre) {
+      const dd = document.getElementById('dropdownPacientesBusqueda');
+      if (dd) dd.classList.add('hidden');
+      const inp = document.getElementById('inputRutBusquedaHistorial');
+      if (inp) inp.value = formatearRutClinico(rut);
+      solicitarFirmaAccesoHistorial(rut, nombre);
+    }
+
+    function renderizarDropdownPacientes(lista) {
+      const dd = document.getElementById('dropdownPacientesBusqueda');
+      if (!dd) return;
+      if (!lista || lista.length === 0) {
+        dd.innerHTML = '<div class="px-4 py-3 text-xs text-slate-400">No se encontraron pacientes en DentalSis con ese nombre o RUT.</div>';
+        dd.classList.remove('hidden');
+        return;
+      }
+      dd.innerHTML = lista.slice(0, 20).map(p => {
+        const nombreSafe = String(p.nombrePaciente || 'Paciente').replace(/'/g, '');
+        const estadoBadge = p.atendido
+          ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Atendido</span>'
+          : (p.totalCitas > 0
+            ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">Con cita</span>'
+            : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">Registrado</span>');
+        return `
+          <div onmousedown="seleccionarPacienteDesdeDirectorio('${p.rutPaciente}', '${nombreSafe}')" class="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/80 cursor-pointer flex items-center justify-between gap-3 transition">
+            <div class="min-w-0">
+              <span class="block text-xs font-bold text-slate-900 dark:text-white truncate">${p.nombrePaciente}</span>
+              <span class="block text-[11px] text-slate-500 font-mono">${p.rutFormateado}${p.ultimaFecha ? ' · Última cita: ' + p.ultimaFecha : ''}</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              ${estadoBadge}
+              <span class="text-[10px] font-bold text-teal-600 dark:text-teal-400">Firmar →</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+      dd.classList.remove('hidden');
+    }
+
+    function abrirDirectorioPacientes() {
+      const inp = document.getElementById('inputRutBusquedaHistorial');
+      const val = inp ? inp.value.trim() : '';
+      if (!val) {
+        if (pacientesDentalSisCache.length > 0) {
+          renderizarDropdownPacientes(pacientesDentalSisCache);
+        } else {
+          cargarPacientesDentalSis('').then(() => {
+            if (pacientesDentalSisCache.length > 0) {
+              renderizarDropdownPacientes(pacientesDentalSisCache);
+            }
+          });
+        }
+      } else {
+        filtrarPacientesDentalSis(val);
+      }
+    }
+
+    function filtrarPacientesDentalSis(val) {
+      const qRaw = (val || '').trim();
+      if (!qRaw) {
+        renderizarDropdownPacientes(pacientesDentalSisCache);
+        return;
+      }
+      const qNorm = normalizarTexto(qRaw);
+      const qRut = qRaw.replace(/[^0-9kK]/g, '').toUpperCase();
+      const locales = pacientesDentalSisCache.filter(p => {
+        const nom = normalizarTexto(p.nombrePaciente);
+        const rut = (p.rutPaciente || '').toUpperCase();
+        const fmt = (p.rutFormateado || '').toUpperCase();
+        return nom.includes(qNorm) || (qRut && rut.includes(qRut)) || fmt.includes(qRaw.toUpperCase());
+      });
+      renderizarDropdownPacientes(locales);
+      cargarPacientesDentalSis(qRaw);
     }
 
     async function cambiarEstadoCita(idCita, nuevoEstado) {
@@ -1272,6 +1620,7 @@
           return;
         }
         cargarAgendaMedico();
+        cargarPacientesDentalSis();
       } catch (e) {
         mostrarAlertaClinica('Error de conexión con el servidor.');
       }
@@ -1300,16 +1649,33 @@
 
     function buscarPacientePorRutConFirma() {
       const inp = document.getElementById('inputRutBusquedaHistorial');
-      if (!inp || !inp.value.trim()) {
-        mostrarAlertaClinica('Por favor ingresa un RUT de paciente válido.');
+      const valor = inp ? inp.value.trim() : '';
+      if (!valor) {
+        abrirDirectorioPacientes();
+        mostrarAlertaClinica('Ingresa el nombre o RUT del paciente, o selecciona uno del listado de DentalSis.');
         return;
       }
-      const rutLimpio = inp.value.replace(/[^0-9kK]/g, '').toUpperCase();
-      if (rutLimpio.length < 8) {
-        mostrarAlertaClinica('El RUT ingresado no es válido. Debe tener al menos 8 dígitos.');
+      const qNorm = normalizarTexto(valor);
+      const qRut = valor.replace(/[^0-9kK]/g, '').toUpperCase();
+      const tieneLetrasNoDv = /[a-zA-Z]/.test(valor.replace(/[^a-zA-Z]/g, '').replace(/^k$/i, ''));
+
+      if (tieneLetrasNoDv) {
+        const matches = pacientesDentalSisCache.filter(p => normalizarTexto(p.nombrePaciente).includes(qNorm));
+        if (matches.length >= 1) {
+          const elegido = matches[0];
+          seleccionarPacienteDesdeDirectorio(elegido.rutPaciente, elegido.nombrePaciente);
+          return;
+        }
+        mostrarAlertaClinica('No se encontró ningún paciente con ese nombre en DentalSis. Intenta con otro nombre o ingresa el RUT.');
         return;
       }
-      solicitarFirmaAccesoHistorial(inp.value.trim(), 'Paciente Consultado');
+
+      if (qRut.length < 7) {
+        mostrarAlertaClinica('El RUT ingresado no es válido o está incompleto.');
+        return;
+      }
+      const matchRut = pacientesDentalSisCache.find(p => p.rutPaciente === qRut);
+      solicitarFirmaAccesoHistorial(valor, matchRut ? matchRut.nombrePaciente : 'Paciente Consultado');
     }
 
     function solicitarFirmaAccesoHistorial(rut, nombre) {
@@ -1417,7 +1783,7 @@
       }
 
       if (ficha.historialConsultas && ficha.historialConsultas.length > 0) {
-        const ult = ficha.historialConsultas[ficha.historialConsultas.length - 1];
+        const ult = ficha.historialConsultas[0];
         document.getElementById('campoConsulta').value = ult.tipoAtencion || 'Consulta Odontológica';
         document.getElementById('campoDiagnostico').value = ult.diagnostico || '';
         document.getElementById('campoTratamiento').value = ult.tratamiento || '';
@@ -1480,6 +1846,7 @@
         const datos = await res.json();
         const ficha = datos.ficha;
         if (!ficha) return;
+        fichaActualCargada = ficha;
 
         const subtitulo = document.getElementById('subtituloFichaPaciente');
         if (subtitulo) {
@@ -1487,7 +1854,7 @@
         }
 
         if (ficha.historialConsultas && ficha.historialConsultas.length > 0) {
-          const ult = ficha.historialConsultas[ficha.historialConsultas.length - 1];
+          const ult = ficha.historialConsultas[0];
           document.getElementById('campoConsulta').value = ult.tipoAtencion || 'Consulta Odontológica';
           document.getElementById('campoDiagnostico').value = ult.diagnostico || '';
           document.getElementById('campoTratamiento').value = ult.tratamiento || '';
@@ -1533,61 +1900,6 @@
       } catch (e) {}
     }
 
-    function abrirModalTurno() {
-      document.getElementById('modalTurnoMedico').classList.remove('hidden');
-      document.getElementById('errorTurnoMedico').classList.add('hidden');
-    }
-
-    function cerrarModalTurno() {
-      document.getElementById('modalTurnoMedico').classList.add('hidden');
-      document.getElementById('errorTurnoMedico').classList.add('hidden');
-    }
-
-    async function guardarTurnoMedico() {
-      const token = sessionStorage.getItem('dentalsis_token');
-      const fecha = document.getElementById('inputFechaTurno').value;
-      const horaInicio = document.getElementById('inputHoraInicioTurno').value.trim();
-      const horaFin = document.getElementById('inputHoraFinTurno').value.trim();
-      const sillon = document.getElementById('selectSillonTurno').value;
-      const err = document.getElementById('errorTurnoMedico');
-
-      if (!fecha || !horaInicio || !horaFin) {
-        err.textContent = 'Todos los campos son requeridos.';
-        err.classList.remove('hidden');
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/especialistas/turnos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({
-            idMedico: medicoActual ? medicoActual.id : 'DOC-1',
-            fecha,
-            horaInicio,
-            horaFin,
-            sillon
-          })
-        });
-
-        const datos = await res.json();
-        if (!res.ok) {
-          err.textContent = datos.error || 'Error al registrar turno.';
-          err.classList.remove('hidden');
-          return;
-        }
-
-        cerrarModalTurno();
-        mostrarAlertaClinica('¡Turno registrado exitosamente en DentalSis!');
-      } catch (e) {
-        err.textContent = 'Error al comunicarse con el servidor.';
-        err.classList.remove('hidden');
-      }
-    }
-
     function solicitarClaveFirmaReceta() {
       if (!rutPacienteActual || !firmaAccesoActual) {
         mostrarAlertaClinica('Primero debes seleccionar un paciente de tu agenda o búsqueda y autenticar el acceso clínico a su historial.', 'Paciente No Seleccionado');
@@ -1626,11 +1938,20 @@
 
       const listaMeds = [];
       datosRecetaMeds.forEach((reg) => {
+        const numCant = parseInt((String(reg.cantidad || '').match(/\d+/) || [1])[0], 10) || 1;
+        const numFrec = parseInt((String(reg.frecuencia || '').match(/\d+/) || [8])[0], 10) || 8;
+        const numDias = parseInt((String(reg.dias || '').match(/\d+/) || [5])[0], 10) || 1;
+        const tomas = (numFrec > 0 && numFrec <= 24) ? Math.max(1, Math.round(24 / numFrec)) : 1;
         listaMeds.push({
           id: reg.med.id,
+          medicamentoId: reg.med.id,
           nombre: reg.med.nombre,
           dosis: reg.med.dosis,
           presentacion: reg.med.presentacion,
+          cantidad: reg.cantidad,
+          frecuencia: reg.frecuencia,
+          dias: reg.dias,
+          totalUnidades: numCant * tomas * numDias,
           posologia: `${reg.cantidad} ${reg.frecuencia} ${reg.dias}`
         });
       });
@@ -1912,6 +2233,7 @@
         cerrarModalClave();
         mostrarAlertaClinica('¡Ficha clínica actualizada y protegida con éxito!');
         cargarFichaPaciente(rutPacienteActual);
+        cargarPacientesDentalSis();
       } catch (e) {
         err.textContent = 'Error al comunicarse con el servidor clínico.';
         err.classList.remove('hidden');
@@ -1938,11 +2260,23 @@
       if (dd && buscador && !buscador.contains(e.target) && !dd.contains(e.target)) {
         dd.classList.add('hidden');
       }
+      const buscPac = document.getElementById('inputRutBusquedaHistorial');
+      const ddPac = document.getElementById('dropdownPacientesBusqueda');
+      if (ddPac && buscPac && !buscPac.contains(e.target) && !ddPac.contains(e.target)) {
+        ddPac.classList.add('hidden');
+      }
     });
 
     agregarMedicamento('KETO-10');
     verificarSesionEspecialista();
+    renderizarCalendarioAgenda();
     cargarAgendaMedico();
+    cargarPacientesDentalSis();
+    setInterval(() => {
+      if (!document.hidden && medicoActual) {
+        cargarAgendaMedico(true);
+      }
+    }, 15000);
   </script>
 
   <div id="modalAlertaClinica" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

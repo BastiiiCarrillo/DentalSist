@@ -8,6 +8,8 @@ const medicosSemilla = [
     nombre: 'Dr. Álvaro Soto M.',
     especialidad: 'Cirugía Bucal',
     sillon: 'Box 1',
+    registroSis: 'MED-SIS-2026-081',
+    registroColegio: 'COL-ODONT-4491',
     email: 'alvaro.soto@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('SotoCirugia2026!Clinica', 10),
@@ -20,6 +22,8 @@ const medicosSemilla = [
     nombre: 'Dr. Ignacio Valenzuela R.',
     especialidad: 'Cirugía Bucal',
     sillon: 'Box 2',
+    registroSis: 'MED-SIS-2026-301',
+    registroColegio: 'COL-ODONT-8210',
     email: 'ignacio.valenzuela@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Valenzuela2026!Dental', 10),
@@ -32,6 +36,8 @@ const medicosSemilla = [
     nombre: 'Dra. Fernanda Ríos',
     especialidad: 'Odontología General',
     sillon: 'Box 1',
+    registroSis: 'MED-SIS-2026-104',
+    registroColegio: 'COL-ODONT-5102',
     email: 'fernanda.rios@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('RiosOdonto2026!Clinica', 10),
@@ -44,6 +50,8 @@ const medicosSemilla = [
     nombre: 'Dr. Camilo Morales P.',
     especialidad: 'Odontología General',
     sillon: 'Box 2',
+    registroSis: 'MED-SIS-2026-302',
+    registroColegio: 'COL-ODONT-8211',
     email: 'camilo.morales@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Morales2026!Dental', 10),
@@ -56,6 +64,8 @@ const medicosSemilla = [
     nombre: 'Dra. Valentina Castro T.',
     especialidad: 'Odontología General',
     sillon: 'Box 3',
+    registroSis: 'MED-SIS-2026-303',
+    registroColegio: 'COL-ODONT-8212',
     email: 'valentina.castro@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Castro2026!Dental', 10),
@@ -68,6 +78,8 @@ const medicosSemilla = [
     nombre: 'Dra. Marcela Lagos',
     especialidad: 'Ortodoncia',
     sillon: 'Box 4',
+    registroSis: 'MED-SIS-2026-215',
+    registroColegio: 'COL-ODONT-7801',
     email: 'marcela.lagos@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('LagosOdonto2026!Dental', 10),
@@ -80,6 +92,8 @@ const medicosSemilla = [
     nombre: 'Dr. Felipe Bravo M.',
     especialidad: 'Ortodoncia',
     sillon: 'Box 1',
+    registroSis: 'MED-SIS-2026-304',
+    registroColegio: 'COL-ODONT-8213',
     email: 'felipe.bravo@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Bravo2026!Dental', 10),
@@ -92,6 +106,8 @@ const medicosSemilla = [
     nombre: 'Dr. Matías Silva',
     especialidad: 'Endodoncia',
     sillon: 'Box 3',
+    registroSis: 'MED-SIS-2026-192',
+    registroColegio: 'COL-ODONT-6391',
     email: 'matias.silva@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('SilvaEndo2026!Clinica', 10),
@@ -104,6 +120,8 @@ const medicosSemilla = [
     nombre: 'Dra. Constanza Herrera S.',
     especialidad: 'Endodoncia',
     sillon: 'Box 2',
+    registroSis: 'MED-SIS-2026-305',
+    registroColegio: 'COL-ODONT-8214',
     email: 'constanza.herrera@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Herrera2026!Dental', 10),
@@ -116,6 +134,8 @@ const medicosSemilla = [
     nombre: 'Dr. Rodrigo Fuentes L.',
     especialidad: 'Periodoncia',
     sillon: 'Box 3',
+    registroSis: 'MED-SIS-2026-306',
+    registroColegio: 'COL-ODONT-8215',
     email: 'rodrigo.fuentes@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Fuentes2026!Dental', 10),
@@ -128,6 +148,8 @@ const medicosSemilla = [
     nombre: 'Dra. Camila Paz Aedo',
     especialidad: 'Odontopediatría',
     sillon: 'Box 4',
+    registroSis: 'MED-SIS-2026-307',
+    registroColegio: 'COL-ODONT-8216',
     email: 'camila.aedo@dentalsis.cl',
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Aedo2026!Dental', 10),
@@ -662,11 +684,66 @@ function obtenerTodasLasCitas() {
   return citas;
 }
 
+function listarPacientesSistema() {
+  const mapa = new Map();
+  const agregar = (rut, nombre, email, telefono, fecha, atendido) => {
+    if (!rut) return;
+    const rutLimpio = limpiarRut(rut);
+    if (!rutLimpio || rutLimpio.length < 7) return;
+    const existente = mapa.get(rutLimpio);
+    if (!existente) {
+      mapa.set(rutLimpio, {
+        rutPaciente: rutLimpio,
+        rutFormateado: formatearRut(rutLimpio),
+        nombrePaciente: (nombre && nombre.trim()) || 'Paciente DentalSis',
+        email: email || '',
+        telefono: telefono || '',
+        ultimaFecha: fecha || '',
+        totalCitas: fecha ? 1 : 0,
+        atendido: Boolean(atendido)
+      });
+    } else {
+      if (nombre && nombre.trim() && (existente.nombrePaciente === 'Paciente DentalSis' || existente.nombrePaciente === 'Paciente')) {
+        existente.nombrePaciente = nombre.trim();
+      }
+      if (email && !existente.email) existente.email = email;
+      if (telefono && !existente.telefono) existente.telefono = telefono;
+      if (fecha) {
+        existente.totalCitas += 1;
+        if (!existente.ultimaFecha || fecha > existente.ultimaFecha) {
+          existente.ultimaFecha = fecha;
+        }
+      }
+      if (atendido) existente.atendido = true;
+    }
+  };
+
+  usuarios.forEach(u => {
+    const rol = (u.rol || '').toUpperCase();
+    if (rol === 'PACIENTE') {
+      agregar(u.rut, u.nombre, u.email, u.telefono, '', false);
+    }
+  });
+
+  fichasClinicas.forEach(f => {
+    const tieneConsultas = Array.isArray(f.historialConsultas) && f.historialConsultas.length > 0;
+    const ultima = tieneConsultas ? f.historialConsultas[0].fecha : '';
+    agregar(f.rutPaciente, f.nombrePaciente, f.email, f.telefono, ultima, tieneConsultas);
+  });
+
+  citas.forEach(c => {
+    agregar(c.rutPaciente, c.nombrePaciente, c.emailPaciente, c.telefonoPaciente, c.fecha, c.estado === 'ATENDIDA' || c.estado === 'EN_ATENCION');
+  });
+
+  return Array.from(mapa.values());
+}
+
 module.exports = {
   get citas() {
     return citas;
   },
   obtenerTodasLasCitas,
+  listarPacientesSistema,
   limpiarRut,
   formatearRut,
   validarRutChileno,

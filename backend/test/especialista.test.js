@@ -13,7 +13,9 @@ const {
   actualizarFichaConReautenticacion,
   autorizarAccesoHistorial,
   emitirReceta,
-  verificarRecetaPublica
+  verificarRecetaPublica,
+  obtenerAgenda,
+  buscarPacientes
 } = require('../src/controllers/especialista');
 
 describe('Modulo de Especialista, Fichas Clinicas y Recetas', () => {
@@ -276,6 +278,81 @@ describe('Modulo de Especialista, Fichas Clinicas y Recetas', () => {
     verificarRecetaPublica(reqVerificarFalsa, resMock);
     assert.strictEqual(statusCapturado, 400);
     assert.strictEqual(jsonCapturado.valida, false);
+  });
+
+  test('Consulta de agenda medica retorna identidad completa del especialista y citas agendadas', async () => {
+    crearCita({
+      rutPaciente: '19.876.543-0',
+      nombrePaciente: 'Francisca Morales',
+      emailPaciente: 'francisca@correo.cl',
+      telefonoPaciente: '+56911223344',
+      idMedico: 'DOC-5',
+      fecha: '2026-11-28',
+      hora: '16:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+
+    let statusCapturado = null;
+    let jsonCapturado = null;
+    const resMock = {
+      status: (code) => {
+        statusCapturado = code;
+        return {
+          json: (data) => {
+            jsonCapturado = data;
+          }
+        };
+      }
+    };
+
+    const reqAgenda = {
+      params: { idMedico: 'DOC-5' },
+      query: {},
+      usuario: { id: 'DOC-5', rol: 'Odontologo' }
+    };
+
+    await obtenerAgenda(reqAgenda, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.strictEqual(jsonCapturado.medico.nombre, 'Dr. Ignacio Valenzuela R.');
+    assert.strictEqual(jsonCapturado.medico.sillon, 'Box 2');
+    assert.strictEqual(jsonCapturado.medico.registroSis, 'MED-SIS-2026-301');
+    assert.ok(jsonCapturado.citas.some(c => c.nombrePaciente === 'Francisca Morales' && c.fecha === '2026-11-28'));
+  });
+
+  test('Directorio y busqueda de pacientes por nombre y por RUT', async () => {
+    crearCita({
+      rutPaciente: '19.876.543-0',
+      nombrePaciente: 'Francisca Morales',
+      emailPaciente: 'francisca@correo.cl',
+      telefonoPaciente: '+56911223344',
+      idMedico: 'DOC-1',
+      fecha: '2026-11-28',
+      hora: '10:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+
+    let statusCapturado = null;
+    let jsonCapturado = null;
+    const resMock = {
+      status: (code) => {
+        statusCapturado = code;
+        return {
+          json: (data) => {
+            jsonCapturado = data;
+          }
+        };
+      }
+    };
+
+    await buscarPacientes({ query: { q: 'Francisca' } }, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.ok(jsonCapturado.pacientes.some(p => p.rutPaciente === '198765430'));
+
+    await buscarPacientes({ query: { q: '18.234' } }, resMock);
+    assert.strictEqual(statusCapturado, 200);
+    assert.ok(jsonCapturado.pacientes.some(p => p.nombrePaciente === 'Camilo Vega Ortiz' && p.atendido === true));
   });
 
 });

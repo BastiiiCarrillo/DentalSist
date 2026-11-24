@@ -175,11 +175,24 @@ async function reservarCita(req, res) {
         const partes = req.body.nombre.trim().split(' ');
         const nom = partes[0] || 'Paciente';
         const ape = partes.slice(1).join(' ') || 'Registrado';
-        const resPac = await db.query(
-          'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = EXCLUDED.telefono, email = EXCLUDED.email RETURNING id;',
-          [cita.rutFormateado, nom, ape, '2000-01-01', req.body.telefono.trim(), req.body.email.trim().toLowerCase()]
+        const rutSinFormato = cita.rutPaciente;
+        const rPacExistente = await db.query(
+          'SELECT id FROM pacientes WHERE REPLACE(REPLACE(rut, $1, $2), $3, $4) = $5 LIMIT 1;',
+          ['.', '', '-', '', rutSinFormato]
         );
-        let pacId = (resPac && resPac.rows && resPac.rows[0]) ? resPac.rows[0].id : null;
+        let pacId = (rPacExistente.rows && rPacExistente.rows.length > 0) ? rPacExistente.rows[0].id : null;
+        if (pacId) {
+          await db.query(
+            'UPDATE pacientes SET telefono = $1, email = $2 WHERE id = $3;',
+            [req.body.telefono.trim(), req.body.email.trim().toLowerCase(), pacId]
+          );
+        } else {
+          const resPac = await db.query(
+            'INSERT INTO pacientes (rut, nombre, apellido, fecha_nacimiento, telefono, email) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (rut) DO UPDATE SET telefono = EXCLUDED.telefono, email = EXCLUDED.email RETURNING id;',
+            [cita.rutFormateado, nom, ape, '2000-01-01', req.body.telefono.trim(), req.body.email.trim().toLowerCase()]
+          );
+          pacId = (resPac && resPac.rows && resPac.rows[0]) ? resPac.rows[0].id : null;
+        }
         if (!pacId) {
           const rBusq = await db.query('SELECT id FROM pacientes WHERE rut = $1;', [cita.rutFormateado]);
           if (rBusq.rows.length > 0) pacId = rBusq.rows[0].id;
@@ -197,6 +210,9 @@ async function reservarCita(req, res) {
             [pacId, cita.fecha, horaInicio]
           );
           if (rCheckPacPostgres.rows && rCheckPacPostgres.rows.length > 0) {
+            const { citas } = require('../models/dataStore');
+            const idxCita = citas.findIndex(item => item.id === cita.id);
+            if (idxCita !== -1) citas.splice(idxCita, 1);
             return res.status(409).json({ error: 'Ya cuentas con una cita médica agendada en este mismo horario. No es posible agendar dos citas simultáneas.' });
           }
 
@@ -205,12 +221,20 @@ async function reservarCita(req, res) {
             [pacId, espUuid, sillon, cita.fecha, horaInicio, horaFin, cita.especialidad || 'Consulta Odontologica', 'CONFIRMADA']
           );
           if (!rIns || !rIns.rows || rIns.rows.length === 0) {
+            const { citas } = require('../models/dataStore');
+            const idxCita = citas.findIndex(item => item.id === cita.id);
+            if (idxCita !== -1) citas.splice(idxCita, 1);
             return res.status(409).json({ error: 'El horario seleccionado ya no se encuentra disponible.' });
           }
+          cita.id = rIns.rows[0].id;
+          cita.estado = 'CONFIRMADA';
         }
       }
     } catch (eDb) {
       if (eDb && (eDb.code === '23505' || (eDb.message && eDb.message.includes('unique')))) {
+        const { citas } = require('../models/dataStore');
+        const idxCita = citas.findIndex(item => item.id === cita.id);
+        if (idxCita !== -1) citas.splice(idxCita, 1);
         return res.status(409).json({ error: 'El horario seleccionado ya se encuentra reservado en la clínica.' });
       }
     }
@@ -357,7 +381,7 @@ async function consultarMisCitas(req, res) {
     const db = require('../models/db');
     if (db.obtenerPool()) {
       const rDb = await db.query(
-        'SELECT c.id, c.fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
+        'SELECT c.id, TO_CHAR(c.fecha, \'YYYY-MM-DD\') as fecha, c.hora_inicio as hora, c.tipo_consulta as especialidad, c.estado, c.sillon_numero as sillon, e.nombre as "nombreMedico" FROM citas c JOIN pacientes p ON c.paciente_id = p.id LEFT JOIN especialistas e ON c.especialista_id = e.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY c.fecha DESC, c.hora_inicio DESC;',
         ['.', '', '-', '', rutLimpio]
       );
       if (rDb.rows && rDb.rows.length > 0) {
