@@ -34,10 +34,11 @@ async function login(req, res) {
     } else {
       usuarioEncontrado = buscarMedicoPorRut(identificador);
     }
-    if (!usuarioEncontrado && identificador.includes('@')) {
-      usuarioEncontrado = buscarUsuarioPorEmail(identificador);
-    } else if (!usuarioEncontrado) {
-      usuarioEncontrado = buscarUsuarioPorRut(identificador);
+    if (!usuarioEncontrado) {
+      const uMem = identificador.includes('@') ? buscarUsuarioPorEmail(identificador) : buscarUsuarioPorRut(identificador);
+      if (uMem && (uMem.rol === 'SUPERADMIN' || uMem.rol === 'ADMIN' || uMem.rol === 'ODONTOLOGO')) {
+        usuarioEncontrado = uMem;
+      }
     }
     if (!usuarioEncontrado) {
       try {
@@ -46,7 +47,7 @@ async function login(req, res) {
           const idLimpio = identificador.trim().toLowerCase();
           const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
           const rEsp = await db.query(
-            'SELECT id, nombre, email, rut, especialidad, password_hash as "passwordHash", sillon_numero as sillon, activo FROM especialistas WHERE LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+            'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
             [idLimpio, '.', '', '-', '', rutLimpio]
           );
           if (rEsp.rows && rEsp.rows.length > 0) {
@@ -58,14 +59,6 @@ async function login(req, res) {
             );
             if (rDb.rows && rDb.rows.length > 0) {
               usuarioEncontrado = rDb.rows[0];
-            } else {
-              const rGen = await db.query(
-                'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
-                [idLimpio, '.', '', '-', '', rutLimpio]
-              );
-              if (rGen.rows && rGen.rows.length > 0) {
-                usuarioEncontrado = rGen.rows[0];
-              }
             }
           }
         }
@@ -74,7 +67,7 @@ async function login(req, res) {
     }
     if (!usuarioEncontrado) {
       registrarFalloLogin(ip, identificador);
-      return res.status(401).json({ error: 'No se encontro una cuenta con estas credenciales.' });
+      return res.status(401).json({ error: 'No se encontro una cuenta de especialista con estas credenciales.' });
     }
   } else {
     if (identificador.includes('@')) {
@@ -102,7 +95,7 @@ async function login(req, res) {
             usuarioEncontrado = rDb.rows[0];
           } else {
             const rEsp = await db.query(
-              'SELECT id, nombre, email, rut, especialidad, password_hash as "passwordHash", sillon_numero as sillon, activo FROM especialistas WHERE LOWER(email) = $1 OR REPLACE(REPLACE(rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+              'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
               [idLimpio, '.', '', '-', '', rutLimpio]
             );
             if (rEsp.rows && rEsp.rows.length > 0) {
@@ -131,12 +124,17 @@ async function login(req, res) {
   const rolUpper = (usuarioEncontrado.rol || '').toUpperCase();
   if (rolUpper === 'ADMIN' || rolUpper === 'SUPERADMIN' || usuarioEncontrado.rol === 'SuperAdmin') {
     rolAsignado = ROLES.SUPER_ADMIN;
-  } else if (rolUpper === 'ODONTOLOGO' || tipoUsuario === 'especialista' || usuarioEncontrado.especialidad) {
+  } else if (rolUpper === 'ODONTOLOGO' || usuarioEncontrado.especialidad) {
     rolAsignado = ROLES.ODONTOLOGO;
   } else if (rolUpper === 'RECEPCIONISTA') {
     rolAsignado = ROLES.RECEPCIONISTA;
   } else if (rolUpper === 'ADMINFINANCIERO' || rolUpper === 'ADMIN_FINANCIERO') {
     rolAsignado = ROLES.ADMIN_FINANCIERO;
+  }
+
+  if ((tipoUsuario === 'especialista' || tipoUsuario === 'medico' || tipoUsuario === 'odontologo') && rolAsignado !== ROLES.ODONTOLOGO && rolAsignado !== ROLES.SUPER_ADMIN) {
+    registrarFalloLogin(ip, identificador);
+    return res.status(403).json({ error: 'Acceso denegado: Esta cuenta no posee permisos de especialista dental.' });
   }
 
   const payload = {

@@ -23,6 +23,26 @@
       }
     }
   </script>
+  <script>
+    (function() {
+      const token = sessionStorage.getItem('dentalsis_token');
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
+      if (!token || !usuarioRaw) {
+        window.location.replace('/login');
+        return;
+      }
+      try {
+        const u = JSON.parse(usuarioRaw);
+        const rol = (u.rol || '').toLowerCase();
+        if (rol !== 'odontologo' && rol !== 'odontólogo' && rol !== 'superadmin' && rol !== 'admin') {
+          window.location.replace('/paciente');
+          return;
+        }
+      } catch (e) {
+        window.location.replace('/login');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -362,7 +382,7 @@
 
       <div class="space-y-1.5">
         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Contraseña de Especialista:</label>
-        <input type="password" id="inputClaveFirmaAcceso" onkeydown="if(event.key==='Enter') ejecutarFirmaAccesoHistorial()" placeholder="Ingresa tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        <input type="password" id="inputClaveFirmaAcceso" onkeydown="if(event.key===' '||event.code==='Space'){event.preventDefault();return false;}if(event.key==='Enter') ejecutarFirmaAccesoHistorial()" oninput="this.value = this.value.replace(/\s/g, '')" placeholder="Ingresa tu contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
       </div>
 
       <div class="flex gap-2 pt-1">
@@ -390,7 +410,7 @@
       <div id="errorClaveMedico" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center">
         Contraseña incorrecta. Re-autenticación denegada.
       </div>
-      <input type="password" id="inputClaveMedico" onkeydown="if(event.key==='Enter') guardarFichaConReautenticacion()" placeholder="Ingresa tu contraseña de médico..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+      <input type="password" id="inputClaveMedico" onkeydown="if(event.key===' '||event.code==='Space'){event.preventDefault();return false;}if(event.key==='Enter') guardarFichaConReautenticacion()" oninput="this.value = this.value.replace(/\s/g, '')" placeholder="Ingresa tu contraseña de médico..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500">
       <div class="flex gap-2 pt-1">
         <button onclick="cerrarModalClave()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
         <button onclick="guardarFichaConReautenticacion()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950">Validar y Guardar</button>
@@ -412,7 +432,7 @@
       <div id="errorClaveFirmaReceta" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-500 font-semibold text-center">
         Contraseña incorrecta. Intento bloqueado y registrado en auditoría.
       </div>
-      <input type="password" id="inputClaveFirmaReceta" onkeydown="if(event.key==='Enter') validarYFirmarReceta()" placeholder="Ingresa tu contraseña de especialista..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
+      <input type="password" id="inputClaveFirmaReceta" onkeydown="if(event.key===' '||event.code==='Space'){event.preventDefault();return false;}if(event.key==='Enter') validarYFirmarReceta()" oninput="this.value = this.value.replace(/\s/g, '')" placeholder="Ingresa tu contraseña de especialista..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-500">
       <div class="flex gap-2 pt-1">
         <button onclick="cerrarModalClaveFirmaReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200">Cancelar</button>
         <button onclick="validarYFirmarReceta()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20">Firmar y Emitir</button>
@@ -555,7 +575,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold">Ficha Clínica Odontológica DentalSis</h3>
-            <p class="text-xs text-cyan-300">Registro Clínico Oficial · Folio #FICHA-182349011</p>
+            <p id="folioFichaModal" class="text-xs text-cyan-300">Registro Clínico Oficial</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -571,62 +591,35 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Nombre del Paciente</span>
-            <span class="font-bold text-slate-900 dark:text-white text-sm">Camilo Vega Ortiz</span>
+            <span id="nombrePacienteFichaModal" class="font-bold text-slate-900 dark:text-white text-sm">--</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">RUT</span>
-            <span class="font-bold text-slate-900 dark:text-white text-sm">18.234.901-1</span>
+            <span id="rutPacienteFichaModal" class="font-bold text-slate-900 dark:text-white text-sm">--</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Edad / Nacimiento</span>
-            <span class="font-semibold text-slate-700 dark:text-slate-300">28 años · 14/08/1998</span>
+            <span id="edadPacienteFichaModal" class="font-semibold text-slate-700 dark:text-slate-300">--</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Teléfono de Contacto</span>
-            <span class="font-semibold text-slate-700 dark:text-slate-300">+56 9 8765 4321</span>
+            <span id="telefonoPacienteFichaModal" class="font-semibold text-slate-700 dark:text-slate-300">--</span>
           </div>
         </div>
 
-        <div class="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-center gap-3">
+        <div id="contenedorAlertaAlergiasModal" class="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl flex items-center gap-3">
           <div class="w-7 h-7 rounded-lg bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-xs flex-shrink-0">
             ⚠
           </div>
           <div>
             <span class="font-bold text-red-700 dark:text-red-300 block text-xs">Alerta Médica de Alergias:</span>
-            <span class="text-[11px] text-red-600 dark:text-red-400">Paciente diagnosticado con ALERGIA SEVERA A PENICILINA. Prohibida la prescripción de Amoxicilina o derivados betalactámicos.</span>
+            <span id="alertaAlergiasFichaModal" class="text-[11px] text-red-600 dark:text-red-400">Sin alergias registradas</span>
           </div>
         </div>
 
         <div>
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2.5">Historial Cronológico de Consultas y Procedimientos</h4>
-          <div class="space-y-3">
-            <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">24 de Noviembre de 2026 · 11:00 hrs</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">Cirugía Bucal</span>
-              </div>
-              <p class="text-xs text-slate-700 dark:text-slate-300">
-                <strong>Procedimiento Realizado:</strong> Extracción quirúrgica simple de tercer molar retenido inferior izquierdo (pieza 38). Se utilizó técnica de odontosección con fresa Zekrya y colgajo mucoperióstico. Cierre con 2 puntos simples sutura de seda 3-0.
-              </p>
-              <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-                <span>Especialista: Dr. Álvaro Soto M. (Cirugía Bucal)</span>
-                <span class="font-semibold text-emerald-600 dark:text-emerald-400">Atención Finalizada</span>
-              </div>
-            </div>
-
-            <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-slate-500 text-xs">10 de Octubre de 2026 · 15:30 hrs</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Odontología General</span>
-              </div>
-              <p class="text-xs text-slate-700 dark:text-slate-300">
-                <strong>Procedimiento Realizado:</strong> Destartraje supragingival con ultrasonido y profilaxis coronaria completa con pasta abrasiva fluorada. Se entrega educación de higiene y uso de hilo dental.
-              </p>
-              <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-                <span>Especialista: Dra. Marcela Lagos V.</span>
-                <span class="font-semibold text-slate-500">Atención Completada</span>
-              </div>
-            </div>
+          <div id="contenedorConsultasFichaModal" class="space-y-3">
           </div>
         </div>
 
@@ -1283,6 +1276,7 @@
     let rutObjetivoFirma = '';
     let nombreObjetivoFirma = '';
     let firmaAccesoActual = null;
+    let fichaActualCargada = null;
 
     function formatearRutClinico(rut) {
       if (!rut) return '';
@@ -1398,6 +1392,7 @@
 
     function renderizarFichaConFirma(ficha, firma) {
       if (!ficha) return;
+      fichaActualCargada = ficha;
       const subtitulo = document.getElementById('subtituloFichaPaciente');
       if (subtitulo) {
         subtitulo.textContent = `${ficha.nombrePaciente || 'Paciente'} · RUT: ${ficha.rutFormateado || formatearRutClinico(rutPacienteActual)}`;
@@ -1760,6 +1755,52 @@
         mostrarAlertaClinica('Debe seleccionar un paciente de su agenda o ingresar su RUT arriba y firmar con su clave para consultar la ficha clínica.');
         return;
       }
+      const ficha = fichaActualCargada || {};
+      const elFolio = document.getElementById('folioFichaModal');
+      const elNom = document.getElementById('nombrePacienteFichaModal');
+      const elRut = document.getElementById('rutPacienteFichaModal');
+      const elEdad = document.getElementById('edadPacienteFichaModal');
+      const elTel = document.getElementById('telefonoPacienteFichaModal');
+      const elAlergias = document.getElementById('alertaAlergiasFichaModal');
+      const elContConsultas = document.getElementById('contenedorConsultasFichaModal');
+
+      if (elFolio) elFolio.textContent = `Registro Clínico Oficial · Folio #${ficha.id || ('FICHA-' + rutPacienteActual)}`;
+      if (elNom) elNom.textContent = ficha.nombrePaciente || 'Paciente Registrado';
+      if (elRut) elRut.textContent = ficha.rutFormateado || formatearRutClinico(rutPacienteActual);
+      if (elEdad) elEdad.textContent = ficha.edad ? `${ficha.edad} años` : 'Registrado en sistema';
+      if (elTel) elTel.textContent = ficha.telefono || 'Sin teléfono registrado';
+      if (elAlergias) elAlergias.textContent = ficha.alergias || 'Sin alergias registradas';
+
+      if (elContConsultas) {
+        const consultas = (ficha.citasPrevias && ficha.citasPrevias.length > 0)
+          ? ficha.citasPrevias
+          : (ficha.historialConsultas || []);
+
+        if (consultas.length === 0) {
+          elContConsultas.innerHTML = '<div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">Este paciente no registra atenciones o procedimientos previos en su historial clínico.</div>';
+        } else {
+          let html = '';
+          consultas.forEach(c => {
+            html += `
+              <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">${c.fecha || ''} · ${c.hora || ''} hrs</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${c.especialidad || 'Atención Odontológica'}</span>
+                </div>
+                <p class="text-xs text-slate-700 dark:text-slate-300">
+                  <strong>Procedimiento / Diagnóstico:</strong> ${c.diagnostico || c.procedimiento || c.tratamiento || 'Control de atención clínica.'}
+                </p>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+                  <span>Especialista: ${c.nombreMedico || 'Dr./Dra. Especialista Dental'} · ${c.sillon || 'Box Clínico'}</span>
+                  <span class="font-semibold text-emerald-600 dark:text-emerald-400">${c.estado || 'Atención Completada'}</span>
+                </div>
+              </div>
+            `;
+          });
+          elContConsultas.innerHTML = html;
+        }
+      }
+
       document.getElementById('modalFichaClinica').classList.remove('hidden');
     }
 
