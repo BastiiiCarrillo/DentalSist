@@ -161,14 +161,9 @@
 
           <div class="space-y-3">
             <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">Horarios para el <span id="textoFechaHorario" class="text-cyan-600 dark:text-cyan-400 font-bold">24 de Noviembre de 2026</span></label>
-            <div id="contenedorHoras" class="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              <button onclick="seleccionarHora('09:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">09:00</button>
-              <button onclick="seleccionarHora('10:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">10:00</button>
-              <button onclick="seleccionarHora('11:00', this)" class="btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold">11:00</button>
-              <button onclick="seleccionarHora('12:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">12:00</button>
-              <button onclick="seleccionarHora('15:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">15:00</button>
-              <button onclick="seleccionarHora('16:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">16:00</button>
-              <button onclick="seleccionarHora('17:00', this)" class="btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500">17:00</button>
+            <div id="contenedorHoras" class="grid grid-cols-4 sm:grid-cols-7 gap-2"></div>
+            <div id="avisoSinHorariosHoy" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-semibold text-center">
+              No hay horarios disponibles para hoy debido a que los bloques de atención ya han pasado. Por favor selecciona el siguiente día hábil en el calendario.
             </div>
           </div>
 
@@ -307,6 +302,8 @@
   </div>
 
   <script>
+    const BLOQUES_HORARIOS = ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00'];
+
     const hoyReal = new Date();
     hoyReal.setHours(0, 0, 0, 0);
 
@@ -314,8 +311,32 @@
     let mesSeleccionado = hoyReal.getMonth();
     let anoSeleccionado = hoyReal.getFullYear();
 
-    if (new Date(anoSeleccionado, mesSeleccionado, diaSeleccionado).getDay() === 0) {
-      diaSeleccionado++;
+    function esHoraPasada(horaStr, dia, mes, ano) {
+      const ahora = new Date();
+      const fCheck = new Date(ano, mes, dia);
+      fCheck.setHours(0, 0, 0, 0);
+      const hoyCero = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+      if (fCheck < hoyCero) return true;
+      if (fCheck > hoyCero) return false;
+      const [hStr, mStr] = (horaStr || '').split(':');
+      const h = parseInt(hStr, 10);
+      const m = parseInt(mStr || '0', 10);
+      const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
+      const minutosHora = h * 60 + m;
+      return minutosHora <= minutosAhora;
+    }
+
+    const hayHorasHoy = BLOQUES_HORARIOS.some(h => !esHoraPasada(h, diaSeleccionado, mesSeleccionado, anoSeleccionado));
+    const esDomingoHoy = new Date(anoSeleccionado, mesSeleccionado, diaSeleccionado).getDay() === 0;
+
+    if (!hayHorasHoy || esDomingoHoy) {
+      const manana = new Date(anoSeleccionado, mesSeleccionado, diaSeleccionado + 1);
+      if (manana.getDay() === 0) {
+        manana.setDate(manana.getDate() + 1);
+      }
+      diaSeleccionado = manana.getDate();
+      mesSeleccionado = manana.getMonth();
+      anoSeleccionado = manana.getFullYear();
     }
 
     let mesVisualizado = mesSeleccionado;
@@ -323,7 +344,7 @@
 
     const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     let fechaSeleccionada = `${diaSeleccionado} de ${nombresMeses[mesSeleccionado]} de ${anoSeleccionado}`;
-    let horaSeleccionada = '11:00';
+    let horaSeleccionada = '';
     let medicoSeleccionado = 'Dr. Álvaro Soto M.';
     let especialidadSeleccionada = 'Cirugía Bucal';
 
@@ -363,9 +384,64 @@
       mesSeleccionado = mes;
       anoSeleccionado = ano;
       fechaSeleccionada = `${dia} de ${nombresMeses[mes]} de ${ano}`;
-      document.getElementById('textoFechaHorario').textContent = fechaSeleccionada;
-      document.getElementById('resumenFechaHoraSidebar').textContent = `${dia} ${nombresMeses[mes].substring(0,3)} ${ano} · ${horaSeleccionada} hrs`;
       renderizarMesCompleto();
+      renderizarHorarios();
+    }
+
+    function renderizarHorarios() {
+      const contenedor = document.getElementById('contenedorHoras');
+      if (!contenedor) return;
+      contenedor.innerHTML = '';
+
+      const horasValidas = BLOQUES_HORARIOS.filter(h => !esHoraPasada(h, diaSeleccionado, mesSeleccionado, anoSeleccionado));
+
+      if (!horasValidas.includes(horaSeleccionada)) {
+        horaSeleccionada = horasValidas.length > 0 ? horasValidas[0] : '';
+      }
+
+      BLOQUES_HORARIOS.forEach(h => {
+        const btn = document.createElement('button');
+        const pasada = esHoraPasada(h, diaSeleccionado, mesSeleccionado, anoSeleccionado);
+
+        if (pasada) {
+          btn.disabled = true;
+          btn.className = 'btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-300 dark:text-slate-700 bg-slate-50 dark:bg-slate-950/40 cursor-not-allowed opacity-30 select-none line-through';
+          btn.textContent = h;
+        } else {
+          btn.disabled = false;
+          if (h === horaSeleccionada) {
+            btn.className = 'btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold shadow-sm';
+          } else {
+            btn.className = 'btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500 text-slate-700 dark:text-slate-300 transition';
+          }
+          btn.textContent = h;
+          btn.onclick = () => seleccionarHora(h, btn);
+        }
+        contenedor.appendChild(btn);
+      });
+
+      const resSidebar = document.getElementById('resumenFechaHoraSidebar');
+      if (resSidebar) {
+        if (horaSeleccionada) {
+          resSidebar.textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · ${horaSeleccionada} hrs`;
+        } else {
+          resSidebar.textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · Sin horario disponible`;
+        }
+      }
+
+      const txtFecha = document.getElementById('textoFechaHorario');
+      if (txtFecha) {
+        txtFecha.textContent = fechaSeleccionada;
+      }
+
+      const aviso = document.getElementById('avisoSinHorariosHoy');
+      if (aviso) {
+        if (horasValidas.length === 0) {
+          aviso.classList.remove('hidden');
+        } else {
+          aviso.classList.add('hidden');
+        }
+      }
     }
 
     function renderizarMesCompleto() {
@@ -412,11 +488,14 @@
     }
 
     function seleccionarHora(h, btn) {
+      if (esHoraPasada(h, diaSeleccionado, mesSeleccionado, anoSeleccionado)) return;
       horaSeleccionada = h;
       document.querySelectorAll('.btn-hora').forEach(b => {
-        b.className = 'btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500';
+        if (!b.disabled) {
+          b.className = 'btn-hora py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-cyan-500 text-slate-700 dark:text-slate-300 transition';
+        }
       });
-      btn.className = 'btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold';
+      btn.className = 'btn-hora py-2 rounded-xl border border-cyan-500 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-bold shadow-sm';
       document.getElementById('resumenFechaHoraSidebar').textContent = `${diaSeleccionado} ${nombresMeses[mesSeleccionado].substring(0,3)} ${anoSeleccionado} · ${horaSeleccionada} hrs`;
     }
 
@@ -602,6 +681,11 @@
 
       const telefono = '+56 ' + telRaw;
 
+      if (!horaSeleccionada || esHoraPasada(horaSeleccionada, diaSeleccionado, mesSeleccionado, anoSeleccionado)) {
+        mostrarAlertaClinica('Por favor selecciona un bloque horario válido y futuro para tu cita.');
+        return;
+      }
+
       const mesPadded = String(mesSeleccionado + 1).padStart(2, '0');
       const diaPadded = String(diaSeleccionado).padStart(2, '0');
       const fechaISO = `${anoSeleccionado}-${mesPadded}-${diaPadded}`;
@@ -764,6 +848,7 @@
     }
 
     renderizarMesCompleto();
+    renderizarHorarios();
     inicializarEstadoPaciente();
   </script>
 

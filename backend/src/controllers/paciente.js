@@ -35,11 +35,29 @@ function validarDatosReserva(body) {
     return 'Debe seleccionar una fecha y bloque horario validos.';
   }
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const fRes = new Date(fecha + 'T00:00:00');
-  if (isNaN(fRes.getTime()) || fRes < hoy) {
+  const ahora = new Date();
+  const hoy0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const partesFecha = (fecha || '').split('-').map(Number);
+  if (partesFecha.length !== 3 || partesFecha.some(isNaN)) {
+    return 'Debe seleccionar una fecha valida.';
+  }
+  const fRes = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]);
+  if (isNaN(fRes.getTime()) || fRes < hoy0) {
     return 'No es posible agendar citas en fechas pasadas.';
+  }
+
+  if (fRes.getTime() === hoy0.getTime()) {
+    const [hStr, mStr] = (hora || '').split(':');
+    const hNum = parseInt(hStr, 10);
+    const mNum = parseInt(mStr || '0', 10);
+    if (isNaN(hNum)) {
+      return 'Debe seleccionar un bloque horario valido.';
+    }
+    const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+    const citaMinutos = hNum * 60 + mNum;
+    if (citaMinutos <= ahoraMinutos) {
+      return 'No es posible agendar citas en horarios pasados.';
+    }
   }
 
   return null;

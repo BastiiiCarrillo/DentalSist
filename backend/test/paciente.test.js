@@ -41,6 +41,16 @@ describe('Modulo de Pacientes y Agendamiento', () => {
 
     const cuerpoEmailMalo = { ...cuerpoValido, email: 'correo-sin-arroba' };
     assert.ok(validarDatosReserva(cuerpoEmailMalo).includes('correo'));
+
+    const dHoy = new Date();
+    const fechaHoyStr = dHoy.getFullYear() + '-' + String(dHoy.getMonth() + 1).padStart(2, '0') + '-' + String(dHoy.getDate()).padStart(2, '0');
+    const cuerpoHoraPasada = { ...cuerpoValido, fecha: fechaHoyStr, hora: '08:00' };
+    if (dHoy.getHours() >= 8) {
+      assert.ok(validarDatosReserva(cuerpoHoraPasada).includes('horarios pasados'));
+    }
+
+    const cuerpoFechaPasada = { ...cuerpoValido, fecha: '2020-01-01', hora: '10:00' };
+    assert.ok(validarDatosReserva(cuerpoFechaPasada).includes('fechas pasadas'));
   });
 
   test('Agendamiento exitoso de cita para paciente invitado', () => {
