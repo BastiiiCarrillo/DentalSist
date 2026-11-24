@@ -2,7 +2,9 @@ const {
   validarRutChileno,
   obtenerMedicosDisponibles,
   crearCita,
-  obtenerCitasPorPaciente
+  obtenerCitasPorPaciente,
+  obtenerFichaClinica,
+  obtenerRecetasPorPaciente
 } = require('../models/dataStore');
 const { registrarEvento } = require('../services/logger');
 
@@ -187,6 +189,21 @@ async function consultarMisCitas(req, res) {
 
   const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
   let citas = obtenerCitasPorPaciente(rut);
+  const fichaLocal = obtenerFichaClinica(rut);
+  const recetasLocales = obtenerRecetasPorPaciente(rut);
+
+  citas = citas.map((c, idx) => {
+    const consulta = (fichaLocal && fichaLocal.historialConsultas) ? (fichaLocal.historialConsultas.find(hc => hc.fecha === c.fecha) || fichaLocal.historialConsultas[idx]) : null;
+    const rec = recetasLocales.find(r => r.fechaEmision && r.fechaEmision.startsWith(c.fecha)) || recetasLocales[idx] || null;
+    return {
+      ...c,
+      indicaciones: (rec && rec.indicaciones) || (consulta && consulta.observaciones) || null,
+      medicamentos: (rec && rec.medicamentos) || [],
+      diagnostico: consulta ? consulta.diagnostico : null,
+      tratamiento: consulta ? consulta.tratamiento : null,
+      observaciones: consulta ? consulta.observaciones : null
+    };
+  });
 
   try {
     const db = require('../models/db');
@@ -196,15 +213,58 @@ async function consultarMisCitas(req, res) {
         ['.', '', '-', '', rutLimpio]
       );
       if (rDb.rows && rDb.rows.length > 0) {
-        citas = rDb.rows.map(r => ({
-          id: r.id,
-          fecha: r.fecha instanceof Date ? r.fecha.toISOString().split('T')[0] : String(r.fecha).substring(0, 10),
-          hora: String(r.hora).substring(0, 5),
-          especialidad: r.especialidad,
-          estado: r.estado,
-          sillon: 'Sillón ' + r.sillon,
-          nombreMedico: r.nombreMedico || 'Especialista Dental'
-        }));
+        let fichasDb = [];
+        let recetasDb = [];
+        try {
+          const rFichas = await db.query(
+            'SELECT fc.cita_id, fc.tipo_consulta, fc.diagnostico_cifrado, fc.tratamiento_realizado, fc.observaciones, fc.created_at FROM fichas_clinicas fc JOIN pacientes p ON fc.paciente_id = p.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY fc.created_at DESC;',
+            ['.', '', '-', '', rutLimpio]
+          );
+          if (rFichas && rFichas.rows) fichasDb = rFichas.rows;
+        } catch (eF) {}
+
+        try {
+          const rRecetas = await db.query(
+            'SELECT r.id, r.cita_id, r.indicaciones_generales, r.created_at FROM recetas r JOIN pacientes p ON r.paciente_id = p.id WHERE REPLACE(REPLACE(p.rut, $1, $2), $3, $4) = $5 ORDER BY r.created_at DESC;',
+            ['.', '', '-', '', rutLimpio]
+          );
+          if (rRecetas && rRecetas.rows) {
+            for (const rec of rRecetas.rows) {
+              const rItems = await db.query(
+                'SELECT nombre, dosis, presentacion, cantidad, frecuencia, dias, posologia FROM receta_items WHERE receta_id = $1;',
+                [rec.id]
+              );
+              rec.medicamentos = (rItems && rItems.rows) ? rItems.rows : [];
+            }
+            recetasDb = rRecetas.rows;
+          }
+        } catch (eR) {}
+
+        citas = rDb.rows.map((r, idx) => {
+          const fechaStr = r.fecha instanceof Date ? r.fecha.toISOString().split('T')[0] : String(r.fecha).substring(0, 10);
+          const fMatch = fichasDb.find(f => f.cita_id === r.id || (f.created_at && f.created_at.toISOString && f.created_at.toISOString().startsWith(fechaStr))) || fichasDb[idx] || null;
+          const rMatch = recetasDb.find(rc => rc.cita_id === r.id || (rc.created_at && rc.created_at.toISOString && rc.created_at.toISOString().startsWith(fechaStr))) || recetasDb[idx] || null;
+
+          let diagLimpio = null;
+          if (fMatch && fMatch.diagnostico_cifrado) {
+            diagLimpio = fMatch.diagnostico_cifrado.replace(/^AES256GCM:[^:]*:/, '');
+          }
+
+          return {
+            id: r.id,
+            fecha: fechaStr,
+            hora: String(r.hora).substring(0, 5),
+            especialidad: r.especialidad,
+            estado: r.estado,
+            sillon: 'Sillón ' + r.sillon,
+            nombreMedico: r.nombreMedico || 'Especialista Dental',
+            diagnostico: diagLimpio,
+            tratamiento: fMatch ? fMatch.tratamiento_realizado : null,
+            observaciones: fMatch ? fMatch.observaciones : null,
+            indicaciones: (rMatch && rMatch.indicaciones_generales) || (fMatch && fMatch.observaciones) || null,
+            medicamentos: (rMatch && rMatch.medicamentos) ? rMatch.medicamentos : []
+          };
+        });
       }
     }
   } catch (eDb) {
