@@ -39,7 +39,7 @@ function peticionJson(puerto, ruta, metodo = 'GET', token = null, headersExtra =
       res.on('end', () => {
         let data = {};
         try { data = JSON.parse(raw); } catch (e) { data = { raw }; }
-        resolve({ status: res.statusCode, data });
+        resolve({ status: res.statusCode, headers: res.headers, data });
       });
     });
 
@@ -221,5 +221,79 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
     const ocurrencias = logsAudit.filter(l => l.tipo === 'LOGIN_EXITOSO' && l.detalle === 'Autenticacion correcta para admin@dentalsis.cl');
     assert.strictEqual(ocurrencias.length, 1);
     assert.strictEqual(ocurrencias[0].hashInmutable, entrada.hashInmutable);
+  });
+
+  test('Seguridad BOLA: pacientes no ven citas ajenas, medicos no ven ni modifican citas de otros colegas y API envia Cache-Control no-store', async () => {
+    const resReg = await peticionJson(puerto, '/api/auth/registro', 'POST', null, {}, {
+      rut: '19.876.543-0',
+      nombre: 'Francisca Auditoria',
+      email: 'francisca.bola@correo.cl',
+      telefono: '+56 9 1122 3344',
+      password: 'PasswordSegura2026!'
+    });
+    assert.strictEqual(resReg.status, 201);
+    assert.strictEqual(resReg.headers['cache-control'], 'no-store');
+    const tokenPacNuevo = resReg.data.token;
+
+    const resPropio = await peticionJson(puerto, '/api/pacientes/citas/19.876.543-0', 'GET', tokenPacNuevo);
+    assert.strictEqual(resPropio.status, 200);
+
+    const resAjeno = await peticionJson(puerto, '/api/pacientes/citas/18.234.901-1', 'GET', tokenPacNuevo);
+    assert.strictEqual(resAjeno.status, 403);
+
+    const resCambioPassAjeno = await peticionJson(puerto, '/api/auth/cambiar-password', 'POST', tokenPacNuevo, {}, {
+      identificador: 'alvaro.soto@dentalsis.cl',
+      passwordActual: 'SotoCirugia2026!Clinica',
+      nuevaPassword: 'OtraPassword2026!'
+    });
+    assert.strictEqual(resCambioPassAjeno.status, 403);
+
+    const resAgendaAjena = await peticionJson(puerto, '/api/especialistas/agenda/DOC-1', 'GET', tokenOdontologo);
+    assert.strictEqual(resAgendaAjena.status, 200);
+
+    const tokenOtroMed = jwt.sign(
+      { id: 'DOC-2', nombre: 'Dra. Fernanda Ríos', email: 'fernanda.rios@dentalsis.cl', rut: '16.781.423-5', rol: 'Odontologo' },
+      JWT_SECRET
+    );
+    const resAgendaBloqueada = await peticionJson(puerto, '/api/especialistas/agenda/DOC-1', 'GET', tokenOtroMed);
+    assert.strictEqual(resAgendaBloqueada.status, 403);
+
+    const hoyChile = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
+    const citaDoc1 = crearCita({
+      rutPaciente: '18.234.901-1',
+      nombrePaciente: 'Camilo Vega Ortiz',
+      emailPaciente: 'camilo@correo.cl',
+      telefonoPaciente: '+56987654321',
+      idMedico: 'DOC-1',
+      fecha: hoyChile,
+      hora: '11:00',
+      especialidad: 'Cirugía Bucal',
+      esInvitado: false
+    });
+    const resEstadoAjeno = await peticionJson(puerto, `/api/especialistas/citas/${citaDoc1.id}/estado`, 'PATCH', tokenOtroMed, {}, {
+      nuevoEstado: 'EN_ATENCION'
+    });
+    assert.strictEqual(resEstadoAjeno.status, 403);
+  });
+
+  test('Cuentas de auditoria (cliente y especialista) autentican correctamente via Bcrypt', async () => {
+    const resLoginPac = await peticionJson(puerto, '/api/auth/login', 'POST', null, { 'X-Forwarded-For': '190.5.49.10' }, {
+      identificador: '20.048.043-0',
+      password: 'AuditPac2026!Dental',
+      rol: 'paciente'
+    });
+    assert.strictEqual(resLoginPac.status, 200);
+    assert.strictEqual(resLoginPac.data.usuario.email, 'luciano.palma@audit-dentalsis.cl');
+    assert.strictEqual(resLoginPac.data.usuario.rol, 'Paciente');
+
+    const resLoginMed = await peticionJson(puerto, '/api/auth/login', 'POST', null, { 'X-Forwarded-For': '190.5.49.11' }, {
+      identificador: 'gabriel.navarro@dentalsis.cl',
+      password: 'AuditMed2026!Clinica',
+      rol: 'especialista'
+    });
+    assert.strictEqual(resLoginMed.status, 200);
+    assert.strictEqual(resLoginMed.data.usuario.id, 'DOC-12');
+    assert.strictEqual(resLoginMed.data.usuario.rut, '18.275.622-9');
+    assert.strictEqual(resLoginMed.data.usuario.rol, 'Odontologo');
   });
 });

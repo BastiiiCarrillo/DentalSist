@@ -85,7 +85,8 @@ async function mapearEspecialista(idMedico, especialidad, nombre) {
     'DOC-8': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8', sillon: 1 },
     'DOC-9': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9', sillon: 2 },
     'DOC-10': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10', sillon: 3 },
-    'DOC-11': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', sillon: 4 }
+    'DOC-11': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', sillon: 4 },
+    'DOC-12': { espUuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12', sillon: 4 }
   };
   if (idMedico && MAPA[idMedico]) {
     return MAPA[idMedico];
@@ -361,10 +362,10 @@ async function consultarMisCitas(req, res) {
   if (req.usuario) {
     const rol = (req.usuario.rol || '').toUpperCase();
     const esPersonalClinico = rol === 'ADMIN' || rol === 'SUPERADMIN' || rol === 'ODONTOLOGO' || rol === 'RECEPCIONISTA';
-    if (!esPersonalClinico && req.usuario.rut) {
-      const rutToken = req.usuario.rut.replace(/[^0-9kK]/g, '').toUpperCase();
+    if (!esPersonalClinico) {
+      const rutToken = (req.usuario.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
       const rutParam = rut.replace(/[^0-9kK]/g, '').toUpperCase();
-      if (rutToken !== rutParam) {
+      if (!rutToken || rutToken !== rutParam) {
         return res.status(403).json({ error: 'Acceso denegado: No tiene autorizacion para consultar citas de otro paciente.' });
       }
     }
@@ -553,7 +554,7 @@ async function cancelarCitaPaciente(req, res) {
   }
 
   const rutPropietario = (citaObjetivo.rutPaciente || '').replace(/[^0-9kK]/g, '').toUpperCase();
-  if (!esAdmin && rutSolicitante && rutPropietario && rutSolicitante !== rutPropietario) {
+  if (!esAdmin && (!rutSolicitante || !rutPropietario || rutSolicitante !== rutPropietario)) {
     registrarEvento('CANCELACION_NO_AUTORIZADA', `Intento de cancelar cita ajena ${idCita}`, ip, rutSolicitante, 'PELIGRO');
     return res.status(403).json({ error: 'No tienes autorizacion para cancelar una cita de otro paciente.' });
   }

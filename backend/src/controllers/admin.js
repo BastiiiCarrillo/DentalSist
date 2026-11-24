@@ -26,7 +26,8 @@ const MAPA_UUID_DOC = {
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8': 'DOC-8',
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9': 'DOC-9',
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10': 'DOC-10',
-  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11'
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12': 'DOC-12'
 };
 
 function resolverFechaChileHoy() {

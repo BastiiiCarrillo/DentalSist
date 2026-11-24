@@ -87,7 +87,8 @@ async function sincronizarEspecialistasEnDb(p) {
       ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8', '16.483.210-9', 'Dr. Felipe Bravo M.', 'felipe.bravo@dentalsis.cl', '$2b$10$nl/vq/ZGIag04IukLAEdEeZ9fjOlZl.v5axCNi2WKSi3H8XOI7KUm', 4, 'MED-SIS-2026-304', 'COL-ODONT-8213', 1],
       ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9', '17.519.203-K', 'Dra. Constanza Herrera S.', 'constanza.herrera@dentalsis.cl', '$2b$10$glX1C6Y51khURsyfzivi8.Yq2/TpJbtH0T4dCABr6OA3zrtfqO9IW', 3, 'MED-SIS-2026-305', 'COL-ODONT-8214', 2],
       ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10', '15.340.892-4', 'Dr. Rodrigo Fuentes L.', 'rodrigo.fuentes@dentalsis.cl', '$2b$10$fzXclstmtK.i0ymUz2Nv9eoY7Q0Bq9K6pM74MgQxfK9dDVeeHJ5eK', 5, 'MED-SIS-2026-306', 'COL-ODONT-8215', 3],
-      ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', '18.391.029-7', 'Dra. Camila Paz Aedo', 'camila.aedo@dentalsis.cl', '$2b$10$UJK/QBILd3tr4FcwNW8xKexV9avbCd.CCsW75t4VSTdK3ymrA1mM6', 6, 'MED-SIS-2026-307', 'COL-ODONT-8216', 4]
+      ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11', '18.391.029-7', 'Dra. Camila Paz Aedo', 'camila.aedo@dentalsis.cl', '$2b$10$UJK/QBILd3tr4FcwNW8xKexV9avbCd.CCsW75t4VSTdK3ymrA1mM6', 6, 'MED-SIS-2026-307', 'COL-ODONT-8216', 4],
+      ['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12', '18.275.622-9', 'Dr. Gabriel Navarro V.', 'gabriel.navarro@dentalsis.cl', '$2b$10$rQDqrJA9O9rL2MmaYPQdteErEJYKd32fzC7rzx3uRjw9sUdDoKWxW', 2, 'MED-SIS-2026-308', 'COL-ODONT-8217', 4]
     ];
 
     for (const esp of especialistasDatos) {
@@ -101,6 +102,32 @@ async function sincronizarEspecialistasEnDb(p) {
           sillon_habitual = EXCLUDED.sillon_habitual;
       `, esp);
     }
+
+    await p.query(`
+      INSERT INTO usuarios (id, rut, nombre, email, password_hash, rol, estado)
+      VALUES ($1, $2, $3, $4, $5, 'PACIENTE', 'ACTIVO')
+      ON CONFLICT (email) DO NOTHING;
+    `, [
+      '44444444-4444-4444-4444-444444444442',
+      '20.048.043-0',
+      'Luciano Palma Cortés',
+      'luciano.palma@audit-dentalsis.cl',
+      '$2b$10$IbKhW./QVxBXuiDhWU1GFuST4OHINT0wW14SOH3wN4amacjfTx.5S'
+    ]).catch(() => {});
+
+    await p.query(`
+      INSERT INTO pacientes (id, rut, nombre, apellido, fecha_nacimiento, telefono, email)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (rut) DO NOTHING;
+    `, [
+      '55555555-5555-5555-5555-555555555552',
+      '20.048.043-0',
+      'Luciano',
+      'Palma Cortés',
+      '1998-05-18',
+      '+56 9 6482 1930',
+      'luciano.palma@audit-dentalsis.cl'
+    ]).catch(() => {});
 
     await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT;`).catch(() => {});
     await p.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelada_por VARCHAR(30);`).catch(() => {});

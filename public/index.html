@@ -636,7 +636,9 @@
         }
 
         const rolUsuario = (datos.usuario && datos.usuario.rol) ? datos.usuario.rol.toLowerCase() : '';
-        if (rolUsuario === 'odontologo' || rolUsuario === 'odontólogo' || rolUsuario === 'medico' || rolUsuario === 'especialista' || rolUsuario === 'superadmin' || rolUsuario === 'admin') {
+        if (rolUsuario === 'superadmin' || rolUsuario === 'admin') {
+          window.location.href = '/admin';
+        } else if (rolUsuario === 'odontologo' || rolUsuario === 'odontólogo' || rolUsuario === 'medico' || rolUsuario === 'especialista') {
           window.location.href = '/especialista';
         } else {
           window.location.href = '/paciente';

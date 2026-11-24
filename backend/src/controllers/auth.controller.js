@@ -7,6 +7,7 @@ const {
   buscarUsuarioPorEmail,
   crearUsuario,
   cambiarPassword,
+  validarPasswordSegura,
   limpiarRut
 } = require('../models/dataStore');
 const { registrarFalloLogin, limpiarFallosLogin } = require('../middleware/seguridad');
@@ -126,27 +127,6 @@ async function login(req, res) {
     } catch (e) {}
   }
   if (!claveCorrecta) {
-    const credencialesPredefinidas = {
-      'alvaro.soto@dentalsis.cl': 'SotoCirugia2026!Clinica',
-      'fernanda.rios@dentalsis.cl': 'RiosOdonto2026!Clinica',
-      'matias.silva@dentalsis.cl': 'SilvaEndo2026!Clinica',
-      'marcela.lagos@dentalsis.cl': 'LagosOdonto2026!Dental',
-      'ignacio.valenzuela@dentalsis.cl': 'Valenzuela2026!Dental',
-      'camilo.morales@dentalsis.cl': 'Morales2026!Dental',
-      'valentina.castro@dentalsis.cl': 'Castro2026!Dental',
-      'felipe.bravo@dentalsis.cl': 'Bravo2026!Dental',
-      'constanza.herrera@dentalsis.cl': 'Herrera2026!Dental',
-      'rodrigo.fuentes@dentalsis.cl': 'Fuentes2026!Dental',
-      'camila.aedo@dentalsis.cl': 'Aedo2026!Dental'
-    };
-    const correo = (usuarioEncontrado.email || '').toLowerCase();
-    if (credencialesPredefinidas[correo] && credencialesPredefinidas[correo] === password) {
-      claveCorrecta = true;
-    } else if ((usuarioEncontrado.rut && usuarioEncontrado.rut.includes('14.892.341')) && password === 'SotoCirugia2026!Clinica') {
-      claveCorrecta = true;
-    }
-  }
-  if (!claveCorrecta) {
     registrarFalloLogin(ip, identificador);
     return res.status(401).json({ error: 'Credenciales de acceso invalidas.' });
   }
@@ -260,7 +240,7 @@ async function registro(req, res) {
     });
 
     const token = jwt.sign(
-      { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rol: 'Paciente' },
+      { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rut: nuevoUsuario.rutFormateado, rol: 'Paciente' },
       JWT_SECRET,
       { expiresIn: '4h' }
     );
@@ -280,12 +260,30 @@ function actualizarPassword(req, res) {
   const ip = obtenerIpCliente(req);
   const { identificador, passwordActual, nuevaPassword } = req.body;
 
-  if (!passwordActual) {
-    return res.status(400).json({ error: 'Debe ingresar la contrasena actual para cambiar su clave.' });
+  if (!identificador || !passwordActual) {
+    return res.status(400).json({ error: 'Debe ingresar identificador y contrasena actual para cambiar su clave.' });
   }
 
-  if (!nuevaPassword || nuevaPassword.length < 8) {
-    return res.status(400).json({ error: 'La nueva contrasena debe tener al menos 8 caracteres.' });
+  if (req.usuario) {
+    const rolTok = (req.usuario.rol || '').toUpperCase();
+    const esAdminTok = rolTok === 'SUPERADMIN' || rolTok === 'ADMIN';
+    if (!esAdminTok) {
+      const idStr = String(identificador).trim().toLowerCase();
+      const emailTok = String(req.usuario.email || '').trim().toLowerCase();
+      const rutId = limpiarRut(identificador);
+      const rutTok = limpiarRut(req.usuario.rut || '');
+      const coincideEmail = emailTok && idStr === emailTok;
+      const coincideRut = rutTok && rutId && rutTok === rutId;
+      if (!coincideEmail && !coincideRut) {
+        registrarEvento('CAMBIO_PASSWORD_NO_AUTORIZADO', `Intento de cambiar clave de ${identificador} desde otra cuenta`, ip, req.usuario.id, 'PELIGRO');
+        return res.status(403).json({ error: 'No tiene autorizacion para modificar la contrasena de otra cuenta.' });
+      }
+    }
+  }
+
+  const errComplejidad = validarPasswordSegura(nuevaPassword);
+  if (errComplejidad) {
+    return res.status(400).json({ error: errComplejidad });
   }
 
   try {
@@ -295,22 +293,23 @@ function actualizarPassword(req, res) {
       const db = require('../models/db');
       if (db.obtenerPool()) {
         const nuevoHash = bcrypt.hashSync(nuevaPassword, 10);
+        const rutClean = limpiarRut(identificador);
         db.query(
-          'UPDATE usuarios SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2) OR rut = $2;',
-          [nuevoHash, identificador.trim()]
+          'UPDATE usuarios SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3;',
+          [nuevoHash, identificador.trim(), rutClean]
         ).catch(() => {});
         db.query(
-          'UPDATE especialistas SET password_hash = $1 WHERE LOWER(email) = LOWER($2) OR rut = $2;',
-          [nuevoHash, identificador.trim()]
+          'UPDATE especialistas SET password_hash = $1 WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3;',
+          [nuevoHash, identificador.trim(), rutClean]
         ).catch(() => {});
       }
     } catch (eDb) {
     }
 
-    registrarEvento('CAMBIO_PASSWORD_EXITOSO', `Actualizacion de clave exitosa para ${identificador}`, ip, null, 'INFO');
+    registrarEvento('CAMBIO_PASSWORD_EXITOSO', `Actualizacion de clave exitosa para ${identificador}`, ip, (req.usuario && req.usuario.id) || null, 'INFO');
     return res.status(200).json({ mensaje: 'Contrasena actualizada exitosamente y hasheada con Bcrypt.' });
   } catch (error) {
-    registrarEvento('CAMBIO_PASSWORD_FALLIDO', `Intento de cambio de clave fallido para ${identificador}: ${error.message}`, ip, null, 'ALERTA');
+    registrarEvento('CAMBIO_PASSWORD_FALLIDO', `Intento de cambio de clave fallido para ${identificador}: ${error.message}`, ip, (req.usuario && req.usuario.id) || null, 'ALERTA');
     return res.status(400).json({ error: error.message });
   }
 }

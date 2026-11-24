@@ -154,6 +154,20 @@ const medicosSemilla = [
     rol: 'ODONTOLOGO',
     passwordHash: bcrypt.hashSync('Aedo2026!Dental', 10),
     horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
+  },
+  {
+    id: 'DOC-12',
+    uuid: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12',
+    rut: '18.275.622-9',
+    nombre: 'Dr. Gabriel Navarro V.',
+    especialidad: 'Odontología General',
+    sillon: 'Box 4',
+    registroSis: 'MED-SIS-2026-308',
+    registroColegio: 'COL-ODONT-8217',
+    email: 'gabriel.navarro@dentalsis.cl',
+    rol: 'ODONTOLOGO',
+    passwordHash: bcrypt.hashSync('AuditMed2026!Clinica', 10),
+    horariosBase: ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00']
   }
 ];
 
@@ -187,6 +201,16 @@ const usuariosSemilla = [
     telefono: '+56 9 8765 4321',
     rol: 'PACIENTE',
     passwordHash: bcrypt.hashSync('CamiloVega2026!Dental', 10)
+  },
+  {
+    id: 'USR-PAC-AUDIT-1',
+    rut: '20048043-0',
+    rutFormateado: '20.048.043-0',
+    nombre: 'Luciano Palma Cortés',
+    email: 'luciano.palma@audit-dentalsis.cl',
+    telefono: '+56 9 6482 1930',
+    rol: 'PACIENTE',
+    passwordHash: bcrypt.hashSync('AuditPac2026!Dental', 10)
   }
 ];
 
@@ -277,7 +301,8 @@ function buscarMedicoPorId(idMedico) {
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8': 'DOC-8',
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9': 'DOC-9',
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10': 'DOC-10',
-    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11'
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12': 'DOC-12'
   };
   const targetId = MAPA_UUID[idMedico] || idMedico;
   return medicos.find(m => m.id === targetId || m.uuid === idMedico) || null;
@@ -520,7 +545,8 @@ function obtenerCitasPorMedico(idMedico, fecha = null) {
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8': 'DOC-8',
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9': 'DOC-9',
     'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10': 'DOC-10',
-    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11'
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11': 'DOC-11',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12': 'DOC-12'
   };
   const targetId = MAPA_UUID[idMedico] || idMedico;
   return citas.filter(c => {

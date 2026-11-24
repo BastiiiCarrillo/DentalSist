@@ -31,7 +31,8 @@ const MAPA_UUIDS_ESP = {
   'DOC-8': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8',
   'DOC-9': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9',
   'DOC-10': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10',
-  'DOC-11': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11'
+  'DOC-11': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb11',
+  'DOC-12': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb12'
 };
 
 const TRANSICIONES_ESTADO = {
@@ -190,6 +191,22 @@ async function obtenerAgenda(req, res) {
     return res.status(404).json({ error: 'Medico especialista no encontrado.' });
   }
 
+  if (!esAdmin && req.usuario) {
+    const idTok = String(req.usuario.id || '');
+    const rutTok = (req.usuario.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
+    const emailTok = (req.usuario.email || '').toLowerCase();
+    const medRut = (medico.rut || '').replace(/[^0-9kK]/g, '').toUpperCase();
+    const coincideMedico = idTok === String(medico.id)
+      || idTok === String(medico.uuid || '')
+      || idTok === String(idMedico)
+      || (rutTok && medRut && rutTok === medRut)
+      || (emailTok && medico.email && emailTok === medico.email.toLowerCase());
+    if (!coincideMedico) {
+      registrarEvento('ACCESO_AGENDA_NO_AUTORIZADO', `Especialista intento acceder a agenda de ${medico.id}`, obtenerIpCliente(req), idTok, 'PELIGRO');
+      return res.status(403).json({ error: 'Acceso denegado: Solo puedes consultar tu propia agenda medica.' });
+    }
+  }
+
   const citasMemoria = esAdmin
     ? (fecha ? obtenerTodasLasCitas().filter(c => c.fecha === fecha) : [...obtenerTodasLasCitas()])
     : obtenerCitasPorMedico(medico.id, fecha);
@@ -337,6 +354,31 @@ async function cambiarEstado(req, res) {
   const citaObjetivo = citaDb || citaMemoria;
   if (!citaObjetivo) {
     return res.status(404).json({ error: 'Cita no encontrada.' });
+  }
+
+  if (req.usuario) {
+    const rolTokenUp = (req.usuario.rol || '').toUpperCase();
+    const esAdminEstado = rolTokenUp === 'SUPERADMIN' || rolTokenUp === 'ADMIN';
+    if (!esAdminEstado) {
+      let medicoSolicitante = req.usuario.id ? buscarMedicoPorId(req.usuario.id) : null;
+      if (!medicoSolicitante && req.usuario.rut) medicoSolicitante = buscarMedicoPorRut(req.usuario.rut);
+      if (!medicoSolicitante && req.usuario.email) medicoSolicitante = buscarMedicoPorEmail(req.usuario.email);
+      const idsPropios = new Set(
+        [
+          req.usuario.id,
+          medicoSolicitante && medicoSolicitante.id,
+          medicoSolicitante && medicoSolicitante.uuid,
+          medicoSolicitante && MAPA_UUIDS_ESP[medicoSolicitante.id]
+        ].filter(Boolean).map(String)
+      );
+      const idDuenoCita = citaDb
+        ? String(citaDb.especialista_id || '')
+        : String(citaMemoria.idMedico || '');
+      if (idDuenoCita && !idsPropios.has(idDuenoCita)) {
+        registrarEvento('CAMBIO_ESTADO_NO_AUTORIZADO', `Intento no autorizado de modificar cita ${idCita}`, ip, req.usuario.id, 'PELIGRO');
+        return res.status(403).json({ error: 'Acceso denegado: No puedes modificar citas asignadas a otro especialista.' });
+      }
+    }
   }
 
   const fechaCita = String(citaObjetivo.fecha || '').substring(0, 10);

@@ -1491,15 +1491,15 @@
             ? `<span class="block text-[10px] text-slate-400 font-medium mt-0.5">Solo iniciable el ${formatearFechaDDMMAAAA(c.fecha)}</span>`
             : '');
         const bloqueMotivo = (c.estado === 'CANCELADA' && c.motivoCancelacion)
-          ? `<div class="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/70 dark:border-red-900/40 text-red-700 dark:text-red-300"><span class="font-bold">Motivo:</span> ${c.motivoCancelacion}</div>`
+          ? `<div class="text-[11px] px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/70 dark:border-red-900/40 text-red-700 dark:text-red-300"><span class="font-bold">Motivo:</span> ${escHtml(c.motivoCancelacion)}</div>`
           : '';
         html += `
           <div class="p-3.5 rounded-2xl border ${esSeleccionado ? 'border-2 border-teal-500 bg-teal-50/50 dark:bg-teal-950/30' : 'border-slate-200 dark:border-slate-800'} space-y-2.5 transition">
-            <div class="flex items-start justify-between cursor-pointer gap-2" onclick="solicitarFirmaAccesoHistorial('${rutClean || c.rutPaciente}', '${nombreSafe}')">
+            <div class="flex items-start justify-between cursor-pointer gap-2" onclick="solicitarFirmaAccesoHistorial('${escHtml(rutClean || c.rutPaciente)}', '${escHtml(nombreSafe)}')">
               <div class="min-w-0">
-                <span class="text-xs font-bold text-teal-600 dark:text-teal-400 block">${etiquetaFecha}${c.hora} hrs · ${c.sillon || 'Box 1'}</span>
-                <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${c.nombrePaciente || 'Paciente'}</h4>
-                <p class="text-[11px] text-slate-500 font-mono">${c.rutFormateado || formatearRutClinico(c.rutPaciente)}</p>
+                <span class="text-xs font-bold text-teal-600 dark:text-teal-400 block">${escHtml(etiquetaFecha)}${escHtml(c.hora)} hrs · ${escHtml(c.sillon || 'Box 1')}</span>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">${escHtml(c.nombrePaciente || 'Paciente')}</h4>
+                <p class="text-[11px] text-slate-500 font-mono">${escHtml(c.rutFormateado || formatearRutClinico(c.rutPaciente))}</p>
                 ${avisoAsistencia}
               </div>
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${infoEstado.clase}">${infoEstado.label}</span>
@@ -1706,6 +1706,15 @@
     let firmaAccesoActual = null;
     let fichaActualCargada = null;
 
+    function escHtml(valor) {
+      return String(valor == null ? '' : valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function formatearRutClinico(rut) {
       if (!rut) return '';
       const limpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -1908,13 +1917,13 @@
       citas.forEach(c => {
         const infoEstado = obtenerInfoEstadoCita(c);
         const motivoHtml = (c.estado === 'CANCELADA' && c.motivoCancelacion)
-          ? `<span class="block text-[10px] text-red-600 dark:text-red-400 mt-0.5">Motivo: ${c.motivoCancelacion}</span>`
+          ? `<span class="block text-[10px] text-red-600 dark:text-red-400 mt-0.5">Motivo: ${escHtml(c.motivoCancelacion)}</span>`
           : '';
         h += `
           <div class="p-2.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
             <div class="min-w-0">
-              <span class="font-bold text-slate-900 dark:text-white block">${formatearFechaDDMMAAAA(c.fecha)} · ${c.hora} hrs</span>
-              <span class="text-[11px] text-slate-500 dark:text-slate-400 block">${c.especialidad} · ${c.nombreMedico || 'Especialista'} · ${c.sillon || 'Box 1'}</span>
+              <span class="font-bold text-slate-900 dark:text-white block">${escHtml(formatearFechaDDMMAAAA(c.fecha))} · ${escHtml(c.hora)} hrs</span>
+              <span class="text-[11px] text-slate-500 dark:text-slate-400 block">${escHtml(c.especialidad)} · ${escHtml(c.nombreMedico || 'Especialista')} · ${escHtml(c.sillon || 'Box 1')}</span>
               ${motivoHtml}
             </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${infoEstado.clase}">${infoEstado.label}</span>
@@ -2250,20 +2259,20 @@
           consultas.forEach(c => {
             const infoEst = obtenerInfoEstadoCita(c);
             const motivoHtml = (c.estado === 'CANCELADA' && c.motivoCancelacion)
-              ? `<p class="text-[11px] text-red-600 dark:text-red-400"><strong>Motivo de cancelación:</strong> ${c.motivoCancelacion}</p>`
+              ? `<p class="text-[11px] text-red-600 dark:text-red-400"><strong>Motivo de cancelación:</strong> ${escHtml(c.motivoCancelacion)}</p>`
               : '';
             html += `
               <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
                 <div class="flex items-center justify-between">
-                  <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">${c.fecha ? formatearFechaDDMMAAAA(c.fecha) : ''} · ${c.hora || ''} hrs</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${c.especialidad || c.tipoAtencion || 'Atención Odontológica'}</span>
+                  <span class="font-bold text-cyan-600 dark:text-cyan-400 text-xs">${escHtml(c.fecha ? formatearFechaDDMMAAAA(c.fecha) : '')} · ${escHtml(c.hora || '')} hrs</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">${escHtml(c.especialidad || c.tipoAtencion || 'Atención Odontológica')}</span>
                 </div>
                 <p class="text-xs text-slate-700 dark:text-slate-300">
-                  <strong>Procedimiento / Diagnóstico:</strong> ${c.diagnostico || c.procedimiento || c.tratamiento || 'Control de atención clínica.'}
+                  <strong>Procedimiento / Diagnóstico:</strong> ${escHtml(c.diagnostico || c.procedimiento || c.tratamiento || 'Control de atención clínica.')}
                 </p>
                 ${motivoHtml}
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-                  <span>Especialista: ${c.nombreMedico || 'Dr./Dra. Especialista Dental'} · ${c.sillon || 'Box Clínico'}</span>
+                  <span>Especialista: ${escHtml(c.nombreMedico || 'Dr./Dra. Especialista Dental')} · ${escHtml(c.sillon || 'Box Clínico')}</span>
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${infoEst.clase}">${infoEst.label}</span>
                 </div>
               </div>

@@ -38,6 +38,11 @@ app.use(limiteGlobal);
 app.use(rechazarPayloadsXml);
 app.use(express.json({ limit: '10kb' }));
 app.use(sanitizarEntradas);
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  next();
+});
 
 const rutaPublica = fs.existsSync(path.join(__dirname, '../../public'))
   ? path.join(__dirname, '../../public')

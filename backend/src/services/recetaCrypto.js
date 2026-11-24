@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-const LLAVE_SECRETA_RECETAS = process.env.RECETA_SECRET_KEY || 'dentalsis_receta_secreta_segura_2026_hmac_key';
+const LLAVE_SECRETA_RECETAS = process.env.RECETA_SECRET_KEY || process.env.SECRET_HMAC_RECETAS || 'dentalsis_receta_secreta_segura_2026_hmac_key';
 
 function serializarDatosReceta(datos) {
   const campos = [

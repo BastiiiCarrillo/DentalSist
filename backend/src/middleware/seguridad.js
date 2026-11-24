@@ -81,7 +81,10 @@ function sanitizarCadena(str) {
 function sanitizarObjeto(obj) {
   if (!obj || typeof obj !== 'object') return obj;
   for (const clave of Object.keys(obj)) {
-    if (clave === 'password' || clave === 'passwordActual' || clave === 'nuevaPassword' || clave === 'confirmPass') {
+    if (clave === '__proto__' || clave === 'constructor' || clave === 'prototype') {
+      continue;
+    }
+    if (clave === 'password' || clave === 'passwordActual' || clave === 'nuevaPassword' || clave === 'confirmPass' || clave === 'passwordConfirmacion' || clave === 'clave') {
       continue;
     }
     if (typeof obj[clave] === 'string') {

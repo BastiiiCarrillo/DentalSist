@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
 const ALGORITMO = 'aes-256-gcm';
-const CLAVE_SECRETA = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY || 'DentalSisClaveMaestraClinica2026!').digest();
+const CLAVE_SECRETA = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY || process.env.AES_SECRET_KEY || 'DentalSisClaveMaestraClinica2026!').digest();
 
 function cifrarDatoSensible(textoPlano) {
   if (!textoPlano) return textoPlano;
