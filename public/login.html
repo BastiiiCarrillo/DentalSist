@@ -241,6 +241,51 @@
     DentalSis Centro Odontológico Especializado · Sistema de Gestión Clínica Segura (SGCD)
   </footer>
 
+  <div id="modalCambioPasswordTemporal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/75 backdrop-blur-sm p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="space-y-1.5">
+        <span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">CAMBIO OBLIGATORIO DE CONTRASEÑA</span>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Crea tu Nueva Contraseña</h3>
+        <p id="tempPwdBannerMensaje" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+          Ingresaste con una contraseña temporal. Por favor introduce una nueva contraseña definitiva para continuar.
+        </p>
+      </div>
+
+      <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <div id="tempPwdUsuarioNombre" class="font-bold text-slate-900 dark:text-white truncate">-</div>
+          <div id="tempPwdUsuarioCorreo" class="text-slate-500 dark:text-slate-400 truncate">-</div>
+        </div>
+        <span id="tempPwdUsuarioRol" class="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30">-</span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="space-y-1">
+          <label for="inputNuevaPasswordTemporal" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Nueva Contraseña</label>
+          <input type="password" id="inputNuevaPasswordTemporal" oninput="actualizarChecklistPasswordTemporal()" placeholder="Mínimo 8 caracteres..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        </div>
+        <div class="space-y-1">
+          <label for="inputConfirmarPasswordTemporal" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Confirmar Nueva Contraseña</label>
+          <input type="password" id="inputConfirmarPasswordTemporal" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarCambioPasswordTemporal();}" placeholder="Repite la nueva contraseña..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        </div>
+        <div id="checklistPwdTemporal" class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5">
+          <span id="chkPwdLen">• Mínimo 8 caracteres</span>
+          <span id="chkPwdMay">• 1 mayúscula (A-Z)</span>
+          <span id="chkPwdMin">• 1 minúscula (a-z)</span>
+          <span id="chkPwdNum">• 1 número (0-9)</span>
+          <span id="chkPwdEsp" class="col-span-2">• 1 carácter especial (!@#$%...) sin espacios</span>
+        </div>
+      </div>
+
+      <div id="errorCambioPasswordTemporal" class="hidden p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-700 dark:text-red-300 font-medium"></div>
+
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button type="button" onclick="cerrarModalCambioPasswordTemporal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancelar</button>
+        <button type="button" id="btnGuardarPasswordTemporal" onclick="confirmarCambioPasswordTemporal()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition">Guardar Nueva Contraseña</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     if (window.location.pathname.endsWith('.html')) {
       const rutaLimpia = window.location.pathname.replace(/\.html$/, '') || '/';
@@ -631,6 +676,10 @@
           return;
         }
 
+        if (datos.requiereCambioPassword && datos.tempToken) {
+          abrirModalCambioPasswordTemporal(datos.tempToken, datos.usuario, datos.mensaje);
+          return;
+        }
         sessionStorage.setItem('dentalsis_token', datos.token);
         sessionStorage.setItem('dentalsis_usuario', JSON.stringify(datos.usuario));
         sessionStorage.setItem('dentalsis_login_timestamp', Date.now());
@@ -687,5 +736,133 @@
       </button>
     </div>
   </div>
+  <script>
+    let tokenCambioTemporalActivo = null;
+
+    function abrirModalCambioPasswordTemporal(tempToken, usuario, mensaje) {
+      tokenCambioTemporalActivo = tempToken;
+      const modal = document.getElementById('modalCambioPasswordTemporal');
+      if (!modal) return;
+      document.getElementById('tempPwdBannerMensaje').textContent = mensaje || 'Ingresaste con una contraseña temporal. Por favor introduce una nueva contraseña para continuar.';
+      document.getElementById('tempPwdUsuarioNombre').textContent = (usuario && usuario.nombre) || 'Usuario DentalSis';
+      document.getElementById('tempPwdUsuarioCorreo').textContent = (usuario && (usuario.email || usuario.rut)) || '';
+      document.getElementById('tempPwdUsuarioRol').textContent = (usuario && usuario.rol) || 'Usuario';
+      const inp1 = document.getElementById('inputNuevaPasswordTemporal');
+      const inp2 = document.getElementById('inputConfirmarPasswordTemporal');
+      const errBox = document.getElementById('errorCambioPasswordTemporal');
+      if (inp1) inp1.value = '';
+      if (inp2) inp2.value = '';
+      if (errBox) {
+        errBox.textContent = '';
+        errBox.classList.add('hidden');
+      }
+      actualizarChecklistPasswordTemporal();
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      if (inp1) setTimeout(() => inp1.focus(), 60);
+    }
+
+    function cerrarModalCambioPasswordTemporal() {
+      tokenCambioTemporalActivo = null;
+      const modal = document.getElementById('modalCambioPasswordTemporal');
+      if (modal) modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    function actualizarChecklistPasswordTemporal() {
+      const val = document.getElementById('inputNuevaPasswordTemporal')?.value || '';
+      const marcar = (id, ok) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = id === 'chkPwdEsp'
+          ? `col-span-2 ${ok ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`
+          : (ok ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-500 dark:text-slate-400');
+      };
+      marcar('chkPwdLen', val.length >= 8);
+      marcar('chkPwdMay', /[A-Z]/.test(val));
+      marcar('chkPwdMin', /[a-z]/.test(val));
+      marcar('chkPwdNum', /[0-9]/.test(val));
+      marcar('chkPwdEsp', /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val) && !/\s/.test(val));
+    }
+
+    async function confirmarCambioPasswordTemporal() {
+      const passwordNueva = document.getElementById('inputNuevaPasswordTemporal')?.value || '';
+      const confirmarPassword = document.getElementById('inputConfirmarPasswordTemporal')?.value || '';
+      const errBox = document.getElementById('errorCambioPasswordTemporal');
+      const btn = document.getElementById('btnGuardarPasswordTemporal');
+
+      const mostrarError = (msg) => {
+        if (errBox) {
+          errBox.textContent = msg;
+          errBox.classList.remove('hidden');
+        }
+      };
+
+      if (!tokenCambioTemporalActivo) {
+        mostrarError('Tu sesión temporal expiró. Inicia sesión nuevamente.');
+        return;
+      }
+      if (!passwordNueva || passwordNueva.length < 8) {
+        mostrarError('La nueva contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      if (/\s/.test(passwordNueva)) {
+        mostrarError('La contraseña no debe contener espacios en blanco.');
+        return;
+      }
+      if (!/[A-Z]/.test(passwordNueva) || !/[a-z]/.test(passwordNueva) || !/[0-9]/.test(passwordNueva) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passwordNueva)) {
+        mostrarError('La nueva contraseña debe incluir mayúscula, minúscula, número y carácter especial.');
+        return;
+      }
+      if (passwordNueva !== confirmarPassword) {
+        mostrarError('Las contraseñas nuevas no coinciden.');
+        return;
+      }
+
+      if (errBox) errBox.classList.add('hidden');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+      }
+
+      try {
+        const res = await fetch('/api/auth/completar-password-temporal', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenCambioTemporalActivo}`
+          },
+          body: JSON.stringify({ passwordNueva, confirmarPassword })
+        });
+        const datos = await res.json();
+        if (!res.ok) {
+          mostrarError(datos.error || 'No se pudo actualizar tu contraseña.');
+          return;
+        }
+
+        tokenCambioTemporalActivo = null;
+        sessionStorage.setItem('dentalsis_token', datos.token);
+        sessionStorage.setItem('dentalsis_usuario', JSON.stringify(datos.usuario));
+        sessionStorage.setItem('dentalsis_login_timestamp', Date.now());
+        document.body.classList.remove('overflow-hidden');
+
+        const rolUsuario = (datos.usuario && datos.usuario.rol || '').toLowerCase();
+        if (rolUsuario === 'superadmin' || rolUsuario === 'admin') {
+          window.location.href = '/admin';
+        } else if (rolUsuario === 'odontologo' || rolUsuario === 'odontólogo' || rolUsuario === 'medico' || rolUsuario === 'especialista') {
+          window.location.href = '/especialista';
+        } else {
+          window.location.href = '/paciente';
+        }
+      } catch (e) {
+        mostrarError('Error de conexión con el servidor.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Guardar Nueva Contraseña';
+        }
+      }
+    }
+  </script>
 </body>
 </html>

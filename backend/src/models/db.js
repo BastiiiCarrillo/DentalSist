@@ -138,6 +138,29 @@ async function sincronizarEspecialistasEnDb(p) {
     await p.query(`ALTER TABLE citas DROP CONSTRAINT IF EXISTS uq_especialista_horario;`).catch(() => {});
     await p.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_sillon_horario_activo ON citas (sillon_numero, fecha, hora_inicio) WHERE estado != 'CANCELADA';`).catch(() => {});
     await p.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_especialista_horario_activo ON citas (especialista_id, fecha, hora_inicio) WHERE estado != 'CANCELADA';`).catch(() => {});
+    await p.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE;`).catch(() => {});
+    await p.query(`ALTER TABLE especialistas ADD COLUMN IF NOT EXISTS debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE;`).catch(() => {});
+    await p.query(`
+      CREATE OR REPLACE FUNCTION funcion_auditar_cambio_inmutable()
+      RETURNS TRIGGER AS $$
+      DECLARE
+        v_payload TEXT;
+        v_hash VARCHAR(64);
+      BEGIN
+        v_payload := CONCAT(TG_TABLE_NAME, '|', TG_OP, '|', CURRENT_TIMESTAMP, '|', COALESCE(NEW.id::TEXT, OLD.id::TEXT));
+        v_hash := encode(digest(v_payload, 'sha256'), 'hex');
+        INSERT INTO auditoria_seguridad (evento, ip_origen, severidad, detalle, hash_inmutable)
+        VALUES (
+          CONCAT('AUDIT_', TG_TABLE_NAME, '_', TG_OP),
+          '127.0.0.1',
+          CASE WHEN TG_OP IN ('DELETE', 'UPDATE') THEN 'ALERTA' ELSE 'INFO' END,
+          json_build_object('tabla', TG_TABLE_NAME, 'operacion', TG_OP, 'id', COALESCE(NEW.id::TEXT, OLD.id::TEXT)),
+          v_hash
+        );
+        RETURN COALESCE(NEW, OLD);
+      END;
+      $$ LANGUAGE plpgsql SECURITY DEFINER;
+    `).catch(() => {});
   } catch (errSync) {}
 }
 

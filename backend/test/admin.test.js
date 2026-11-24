@@ -296,4 +296,218 @@ describe('Modulo de Administracion, IP Real y Logs Enriquecidos', () => {
     assert.strictEqual(resLoginMed.data.usuario.rut, '18.275.622-9');
     assert.strictEqual(resLoginMed.data.usuario.rol, 'Odontologo');
   });
+
+  test('Logs de triggers AUDIT DELETE y UPDATE se muestran como ALERTA mientras creaciones e historial quedan INFO', async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const db = require('../src/models/db');
+    const origPool = db.obtenerPool;
+    const origQuery = db.query;
+    db.obtenerPool = () => null;
+    db.query = async () => ({ rows: [] });
+
+    try {
+      registrarEvento('AUDIT_recetas_DELETE', 'Operacion DELETE en tabla recetas (id-1)', '127.0.0.1', null, 'INFO');
+      registrarEvento('AUDIT_fichas_clinicas_UPDATE', 'Operacion UPDATE en tabla fichas_clinicas (id-2)', '127.0.0.1', null, 'INFO');
+      registrarEvento('AUDIT_recetas_INSERT', 'Operacion INSERT en tabla recetas (id-3)', '127.0.0.1', null, 'INFO');
+      registrarEvento('RECETA_FIRMADA_EMITIDA', 'Receta firmada normalmente por especialista', '198.51.100.20', 'DOC-1', 'INFO');
+
+      const resLogs = await peticionJson(puerto, '/api/admin/logs', 'GET', tokenAdmin);
+      assert.strictEqual(resLogs.status, 200);
+
+      const logDel = resLogs.data.logs.find(l => l.tipo === 'AUDIT_recetas_DELETE');
+      const logUpd = resLogs.data.logs.find(l => l.tipo === 'AUDIT_fichas_clinicas_UPDATE');
+      const logIns = resLogs.data.logs.find(l => l.tipo === 'AUDIT_recetas_INSERT');
+      const logRec = resLogs.data.logs.find(l => l.tipo === 'RECETA_FIRMADA_EMITIDA');
+
+      assert.ok(logDel);
+      assert.strictEqual(logDel.nivel, 'ALERTA');
+      assert.ok(logUpd);
+      assert.strictEqual(logUpd.nivel, 'ALERTA');
+      assert.ok(logIns);
+      assert.strictEqual(logIns.nivel, 'INFO');
+      assert.ok(logRec);
+      assert.strictEqual(logRec.nivel, 'INFO');
+
+      const schemaSql = fs.readFileSync(path.join(__dirname, '..', 'src', 'models', 'schema.sql'), 'utf8');
+      const dbJs = fs.readFileSync(path.join(__dirname, '..', 'src', 'models', 'db.js'), 'utf8');
+      assert.match(schemaSql, /TG_OP IN \('DELETE', 'UPDATE'\) THEN 'ALERTA'/);
+      assert.match(dbJs, /TG_OP IN \('DELETE', 'UPDATE'\) THEN 'ALERTA'/);
+    } finally {
+      db.obtenerPool = origPool;
+      db.query = origQuery;
+    }
+  });
+
+  test('Admin restablece contrasena con autorizacion y fuerza cambio temporal al iniciar sesion (paciente y especialista)', async () => {
+    const db = require('../src/models/db');
+    const origPool = db.obtenerPool;
+    const origQuery = db.query;
+    db.obtenerPool = () => null;
+    db.query = async () => ({ rows: [] });
+
+    try {
+      const resNoAdminList = await peticionJson(puerto, '/api/admin/usuarios', 'GET', tokenOdontologo);
+      assert.strictEqual(resNoAdminList.status, 403);
+
+      const resLista = await peticionJson(puerto, '/api/admin/usuarios', 'GET', tokenAdmin);
+      assert.strictEqual(resLista.status, 200);
+      assert.ok(Array.isArray(resLista.data.usuarios));
+      assert.ok(resLista.data.usuarios.length >= 2);
+      assert.ok(!resLista.data.usuarios.some(u => u.rol === 'SuperAdmin'));
+      assert.ok(!resLista.data.usuarios.some(u => Object.prototype.hasOwnProperty.call(u, 'passwordHash')));
+
+      const resSinClave = await peticionJson(
+        puerto,
+        '/api/admin/usuarios/restablecer-password',
+        'POST',
+        tokenAdmin,
+        { 'X-Forwarded-For': '198.51.100.31' },
+        { tipo: 'usuario', identificador: 'luciano.palma@audit-dentalsis.cl' }
+      );
+      assert.strictEqual(resSinClave.status, 400);
+
+      const resClaveMala = await peticionJson(
+        puerto,
+        '/api/admin/usuarios/restablecer-password',
+        'POST',
+        tokenAdmin,
+        { 'X-Forwarded-For': '198.51.100.32' },
+        { tipo: 'usuario', identificador: 'luciano.palma@audit-dentalsis.cl', passwordAdmin: 'Incorrecta99!' }
+      );
+      assert.strictEqual(resClaveMala.status, 403);
+
+      const resResetPac = await peticionJson(
+        puerto,
+        '/api/admin/usuarios/restablecer-password',
+        'POST',
+        tokenAdmin,
+        { 'X-Forwarded-For': '198.51.100.33' },
+        { tipo: 'usuario', identificador: 'luciano.palma@audit-dentalsis.cl', passwordAdmin: '86244212351532Aa_' }
+      );
+      assert.strictEqual(resResetPac.status, 200);
+      assert.ok(resResetPac.data.passwordTemporal);
+      assert.strictEqual(resResetPac.data.usuario.debeCambiarPassword, true);
+
+      const pwdTempPac = resResetPac.data.passwordTemporal;
+
+      const logsTrasReset = await obtenerLogsAuditoria();
+      const logReset = logsTrasReset.find(l => l.tipo === 'ADMIN_RESET_PASSWORD' && l.detalle.includes('luciano.palma@audit-dentalsis.cl'));
+      assert.ok(logReset);
+      assert.strictEqual(logReset.nivel, 'ALERTA');
+      assert.ok(!logReset.detalle.includes(pwdTempPac));
+
+      const resLoginTempPac = await peticionJson(
+        puerto,
+        '/api/auth/login',
+        'POST',
+        null,
+        { 'X-Forwarded-For': '198.51.100.34' },
+        { identificador: 'luciano.palma@audit-dentalsis.cl', password: pwdTempPac, rol: 'paciente' }
+      );
+      assert.strictEqual(resLoginTempPac.status, 200);
+      assert.strictEqual(resLoginTempPac.data.requiereCambioPassword, true);
+      assert.ok(resLoginTempPac.data.tempToken);
+
+      const resPortalBloqueado = await peticionJson(
+        puerto,
+        '/api/pacientes/citas/20.048.043-0',
+        'GET',
+        resLoginTempPac.data.tempToken
+      );
+      assert.strictEqual(resPortalBloqueado.status, 403);
+      assert.strictEqual(resPortalBloqueado.data.requiereCambioPassword, true);
+
+      const resMismaClave = await peticionJson(
+        puerto,
+        '/api/auth/completar-password-temporal',
+        'POST',
+        resLoginTempPac.data.tempToken,
+        { 'X-Forwarded-For': '198.51.100.35' },
+        { passwordNueva: pwdTempPac, confirmarPassword: pwdTempPac }
+      );
+      assert.strictEqual(resMismaClave.status, 400);
+
+      const resDebil = await peticionJson(
+        puerto,
+        '/api/auth/completar-password-temporal',
+        'POST',
+        resLoginTempPac.data.tempToken,
+        { 'X-Forwarded-For': '198.51.100.36' },
+        { passwordNueva: 'debil', confirmarPassword: 'debil' }
+      );
+      assert.strictEqual(resDebil.status, 400);
+
+      const resCompletarPac = await peticionJson(
+        puerto,
+        '/api/auth/completar-password-temporal',
+        'POST',
+        resLoginTempPac.data.tempToken,
+        { 'X-Forwarded-For': '198.51.100.37' },
+        { passwordNueva: 'NuevaPac2026!Seguro', confirmarPassword: 'NuevaPac2026!Seguro' }
+      );
+      assert.strictEqual(resCompletarPac.status, 200);
+      assert.ok(resCompletarPac.data.token);
+      assert.strictEqual(resCompletarPac.data.usuario.debeCambiarPassword, false);
+
+      const resLoginFinalPac = await peticionJson(
+        puerto,
+        '/api/auth/login',
+        'POST',
+        null,
+        { 'X-Forwarded-For': '198.51.100.38' },
+        { identificador: 'luciano.palma@audit-dentalsis.cl', password: 'NuevaPac2026!Seguro', rol: 'paciente' }
+      );
+      assert.strictEqual(resLoginFinalPac.status, 200);
+      assert.ok(resLoginFinalPac.data.token);
+      assert.ok(!resLoginFinalPac.data.requiereCambioPassword);
+
+      const resResetMed = await peticionJson(
+        puerto,
+        '/api/admin/usuarios/restablecer-password',
+        'POST',
+        tokenAdmin,
+        { 'X-Forwarded-For': '198.51.100.39' },
+        { tipo: 'especialista', idUsuario: 'DOC-12', passwordAdmin: '86244212351532Aa_' }
+      );
+      assert.strictEqual(resResetMed.status, 200);
+      const pwdTempMed = resResetMed.data.passwordTemporal;
+
+      const resLoginTempMed = await peticionJson(
+        puerto,
+        '/api/auth/login',
+        'POST',
+        null,
+        { 'X-Forwarded-For': '198.51.100.40' },
+        { identificador: 'gabriel.navarro@dentalsis.cl', password: pwdTempMed, rol: 'especialista' }
+      );
+      assert.strictEqual(resLoginTempMed.status, 200);
+      assert.strictEqual(resLoginTempMed.data.requiereCambioPassword, true);
+
+      const resAgendaBloqueada = await peticionJson(
+        puerto,
+        '/api/especialistas/agenda/DOC-12',
+        'GET',
+        resLoginTempMed.data.tempToken
+      );
+      assert.strictEqual(resAgendaBloqueada.status, 403);
+
+      const resCompletarMed = await peticionJson(
+        puerto,
+        '/api/auth/completar-password-temporal',
+        'POST',
+        resLoginTempMed.data.tempToken,
+        { 'X-Forwarded-For': '198.51.100.41' },
+        { passwordNueva: 'NuevaMed2026!Clinica', confirmarPassword: 'NuevaMed2026!Clinica' }
+      );
+      assert.strictEqual(resCompletarMed.status, 200);
+      assert.ok(resCompletarMed.data.token);
+      assert.strictEqual(resCompletarMed.data.usuario.rol, 'Odontologo');
+    } finally {
+      db.obtenerPool = origPool;
+      db.query = origQuery;
+      reiniciarEstadoParaPruebas();
+      limpiarLogsParaPruebas();
+    }
+  });
 });

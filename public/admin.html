@@ -160,6 +160,10 @@
         <span>Logs de Auditoría</span>
         <span id="countTabLogs" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
       </button>
+      <button type="button" id="tabBtnPasswords" onclick="cambiarPestanaAdmin('passwords')" class="flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">
+        <span>Restablecer Claves</span>
+        <span id="countTabPasswords" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
+      </button>
     </div>
 
     <section id="panelMedicos" class="space-y-4">
@@ -223,6 +227,81 @@
         <div class="p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">Cargando recetas médicas emitidas...</div>
       </div>
     </section>
+
+    <section id="panelPasswords" class="hidden space-y-4">
+      <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs text-amber-800 dark:text-amber-300 flex flex-wrap items-center justify-between gap-2">
+        <span>Restablecimiento de Credenciales: genera una contraseña temporal autorizada con tu clave de Administrador. Al ingresar con ella, el usuario deberá crear obligatoriamente una contraseña nueva.</span>
+        <span class="font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[11px]">AUTORIZACIÓN ADMIN</span>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between shadow-sm">
+        <input type="text" id="filtroBusquedaUsuariosReset" oninput="renderizarUsuariosResetAdmin()" placeholder="Buscar usuario por nombre, RUT, correo o especialidad..." class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        <select id="filtroRolUsuariosReset" onchange="renderizarUsuariosResetAdmin()" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
+          <option value="TODOS">Todos los roles</option>
+          <option value="Odontologo">Especialistas</option>
+          <option value="Paciente">Pacientes</option>
+          <option value="Recepcionista">Recepción / Otros</option>
+          <option value="PENDIENTE_CAMBIO">Con clave temporal pendiente</option>
+        </select>
+      </div>
+
+      <div id="contenedorUsuariosResetAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="col-span-full p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">Cargando usuarios del sistema...</div>
+      </div>
+    </section>
+
+    <div id="modalAutorizarResetAdmin" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+        <div class="space-y-1">
+          <span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">AUTORIZACIÓN REQUERIDA</span>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Restablecer Contraseña</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Se generará una contraseña temporal única para este usuario y quedará registrada en auditoría.</p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+          <div class="flex justify-between gap-2"><span class="text-slate-500">Usuario:</span><strong id="resetTargetNombre" class="text-slate-900 dark:text-white text-right">-</strong></div>
+          <div class="flex justify-between gap-2"><span class="text-slate-500">RUT:</span><span id="resetTargetRut" class="font-mono text-slate-700 dark:text-slate-300">-</span></div>
+          <div class="flex justify-between gap-2"><span class="text-slate-500">Correo:</span><span id="resetTargetEmail" class="text-slate-700 dark:text-slate-300 truncate">-</span></div>
+          <div class="flex justify-between gap-2"><span class="text-slate-500">Rol:</span><span id="resetTargetRol" class="font-semibold text-teal-600 dark:text-teal-400">-</span></div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="inputPasswordAdminReset" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Contraseña de Administrador</label>
+          <input type="password" id="inputPasswordAdminReset" onkeydown="if(event.key==='Enter'){event.preventDefault();ejecutarRestablecimientoAdmin();}" placeholder="Ingresa tu clave actual de Administrador..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div id="errorModalResetAdmin" class="hidden p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-700 dark:text-red-300 font-medium"></div>
+
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button type="button" onclick="cerrarModalAutorizarResetAdmin()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancelar</button>
+          <button type="button" id="btnConfirmarResetAdmin" onclick="ejecutarRestablecimientoAdmin()" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-teal-600 hover:bg-teal-500 shadow-md shadow-teal-600/20 transition">Generar Clave Temporal</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalPasswordTemporalGenerada" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+        <div class="space-y-1">
+          <span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">CONTRASEÑA TEMPORAL GENERADA</span>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Lista para Enviar al Usuario</h3>
+          <p id="resResetUsuarioResumen" class="text-xs text-slate-500 dark:text-slate-400">-</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5 text-center">
+          <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">Contraseña Temporal Asignada</span>
+          <div id="resResetPasswordTemporal" class="text-lg font-mono font-bold text-teal-400 select-all tracking-wide break-all">-</div>
+          <button type="button" id="btnCopiarPwdTemporal" onclick="copiarPasswordTemporalAdmin()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white transition">Copiar Contraseña</button>
+        </div>
+
+        <p class="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-xl p-3">
+          Comparte esta contraseña temporal con el usuario. Al iniciar sesión con ella, el sistema bloqueará el portal y le pedirá definir una nueva contraseña definitiva.
+        </p>
+
+        <div class="flex justify-end">
+          <button type="button" onclick="cerrarModalPasswordTemporalGenerada()" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 dark:bg-teal-600 dark:hover:bg-teal-500 transition">Entendido, Cerrar</button>
+        </div>
+      </div>
+    </div>
 
     <section id="panelLogs" class="hidden space-y-4">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-sm">
@@ -332,7 +411,12 @@
     let fechaHoyChile = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
 
     function actualizarBloqueoScrollFondo() {
-      const idsModales = ['modalDetallePacienteAdmin', 'modalVerRecetaAdmin'];
+      const idsModales = [
+        'modalDetallePacienteAdmin',
+        'modalVerRecetaAdmin',
+        'modalAutorizarResetAdmin',
+        'modalPasswordTemporalGenerada'
+      ];
       const hayAbierto = idsModales.some(id => {
         const el = document.getElementById(id);
         return el && !el.classList.contains('hidden');
@@ -390,9 +474,21 @@
     }
 
     function traducirEventoLog(tipo) {
+      const clave = String(tipo || 'EVENTO');
+      if (/^AUDIT_/.test(clave)) {
+        if (clave.endsWith('_DELETE')) {
+          return `Eliminación en BD (${clave.replace(/^AUDIT_/, '').replace(/_/g, ' ')})`;
+        }
+        if (clave.endsWith('_UPDATE')) {
+          return `Modificación en BD (${clave.replace(/^AUDIT_/, '').replace(/_/g, ' ')})`;
+        }
+        return `Auditoría BD (${clave.replace(/^AUDIT_/, '').replace(/_/g, ' ')})`;
+      }
       const mapa = {
         LOGIN_EXITOSO: 'Inicio de Sesión',
         LOGIN_FALLIDO: 'Fallo de Inicio de Sesión',
+        LOGIN_CON_PASSWORD_TEMPORAL: 'Ingreso con Clave Temporal',
+        PASSWORD_TEMPORAL_ACTUALIZADA: 'Clave Temporal Actualizada',
         REGISTRO_USUARIO_EXITOSO: 'Registro de Paciente',
         REGISTRO_USUARIO_RECHAZADO: 'Registro Rechazado',
         RESERVA_CONFIRMADA: 'Reserva Confirmada',
@@ -416,12 +512,17 @@
         RECETA_VERIFICADA_CORRECTA: 'Verificación de Receta',
         RECETA_ADULTERADA_DETECTADA: 'Receta Adulterada Detectada',
         ADMIN_CONSULTA_PACIENTE: 'Supervisión Admin de Paciente',
+        ADMIN_RESET_PASSWORD: 'Clave Temporal Asignada (Admin)',
+        ADMIN_RESET_PASSWORD_DENEGADO: 'Reset de Clave Denegado',
+        CAMBIO_PASSWORD_EXITOSO: 'Cambio de Contraseña',
+        CAMBIO_PASSWORD_FALLIDO: 'Fallo Cambio de Contraseña',
+        CAMBIO_PASSWORD_NO_AUTORIZADO: 'Cambio de Clave No Autorizado',
         BLOQUEO_TEMPORAL: 'Bloqueo Temporal (Fuerza Bruta)',
         BLOQUEO_CRITICO: 'Bloqueo Crítico (1h)',
         ACCESO_BLOQUEADO: 'Intento Bajo Bloqueo',
         ATAQUE_XML_DETECTADO: 'Payload XML Bloqueado'
       };
-      return mapa[tipo] || String(tipo || 'EVENTO').replace(/_/g, ' ');
+      return mapa[clave] || clave.replace(/_/g, ' ');
     }
 
     function cambiarPestanaAdmin(pestana) {
@@ -430,8 +531,12 @@
         medicos: { panel: 'panelMedicos', btn: 'tabBtnMedicos' },
         pacientes: { panel: 'panelPacientes', btn: 'tabBtnPacientes' },
         recetas: { panel: 'panelRecetas', btn: 'tabBtnRecetas' },
-        logs: { panel: 'panelLogs', btn: 'tabBtnLogs' }
+        logs: { panel: 'panelLogs', btn: 'tabBtnLogs' },
+        passwords: { panel: 'panelPasswords', btn: 'tabBtnPasswords' }
       };
+      if (pestana === 'passwords' && cacheUsuariosReset.length === 0) {
+        cargarUsuariosResetAdmin();
+      }
       Object.keys(paneles).forEach(k => {
         const p = document.getElementById(paneles[k].panel);
         const b = document.getElementById(paneles[k].btn);
@@ -914,7 +1019,7 @@
         if (catFiltro === 'LOGIN' && !/LOGIN|REGISTRO|PASSWORD/.test(tipoUp)) return false;
         if (catFiltro === 'CITAS' && !/CITA|RESERVA|CANCEL|ESTADO_CITA|CONFLICTO/.test(tipoUp)) return false;
         if (catFiltro === 'CLINICO' && !/FICHA|RECETA|HISTORIAL|ADMIN_CONSULTA/.test(tipoUp)) return false;
-        if (catFiltro === 'SEGURIDAD' && !/BLOQUEO|DENEGAD|FALLID|XML|ADULTERAD|NO_AUTORIZADA/.test(tipoUp)) return false;
+        if (catFiltro === 'SEGURIDAD' && !/BLOQUEO|DENEGAD|FALLID|XML|ADULTERAD|NO_AUTORIZAD|RESET_PASSWORD|PASSWORD_TEMPORAL|^AUDIT_.*_(DELETE|UPDATE)$/.test(tipoUp)) return false;
         if (!q) return true;
         const txt = `${l.tipo} ${traducirEventoLog(l.tipo)} ${l.usuarioNombre} ${l.usuarioRol} ${l.ip} ${l.detalle}`
           .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -976,12 +1081,206 @@
       }).join('');
     }
 
+    let cacheUsuariosReset = [];
+    let usuarioObjetivoReset = null;
+
+    async function cargarUsuariosResetAdmin() {
+      const { ok, data } = await fetchAdminJson('/api/admin/usuarios');
+      if (!ok || !data) return;
+      cacheUsuariosReset = Array.isArray(data.usuarios) ? data.usuarios : [];
+      const badge = document.getElementById('countTabPasswords');
+      if (badge) badge.textContent = String(cacheUsuariosReset.length);
+      renderizarUsuariosResetAdmin();
+    }
+
+    function renderizarUsuariosResetAdmin() {
+      const cont = document.getElementById('contenedorUsuariosResetAdmin');
+      if (!cont) return;
+
+      const q = (document.getElementById('filtroBusquedaUsuariosReset')?.value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const rolFiltro = document.getElementById('filtroRolUsuariosReset')?.value || 'TODOS';
+
+      const filtrados = cacheUsuariosReset.filter(u => {
+        if (rolFiltro === 'PENDIENTE_CAMBIO' && !u.debeCambiarPassword) return false;
+        if (rolFiltro !== 'TODOS' && rolFiltro !== 'PENDIENTE_CAMBIO') {
+          if (rolFiltro === 'Recepcionista') {
+            if (u.rol === 'Odontologo' || u.rol === 'Paciente') return false;
+          } else if (u.rol !== rolFiltro) {
+            return false;
+          }
+        }
+        if (!q) return true;
+        const txt = `${u.nombre} ${u.rut} ${u.rutFormateado} ${u.email} ${u.rol} ${u.especialidad || ''}`
+          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return txt.includes(q);
+      });
+
+      if (filtrados.length === 0) {
+        cont.innerHTML = '<div class="col-span-full p-8 text-center text-xs text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">No hay usuarios que coincidan con el filtro.</div>';
+        return;
+      }
+
+      cont.innerHTML = filtrados.map((u, idx) => {
+        const idxReal = cacheUsuariosReset.indexOf(u);
+        const esEsp = u.rol === 'Odontologo';
+        const badgeRol = esEsp
+          ? 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30'
+          : u.rol === 'Paciente'
+            ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
+            : 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30';
+        const badgeEstado = u.debeCambiarPassword
+          ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">Clave Temporal Activa</span>'
+          : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">Clave Activa</span>';
+
+        return `
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col justify-between gap-3">
+            <div class="space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <strong class="text-sm text-slate-900 dark:text-white">${escHtml(u.nombre)}</strong>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${badgeRol}">${escHtml(u.rol)}${u.especialidad ? ' · ' + escHtml(u.especialidad) : ''}</span>
+                  ${badgeEstado}
+                </div>
+              </div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                <div><span class="font-semibold">RUT:</span> <span class="font-mono">${escHtml(u.rutFormateado || u.rut || '-')}</span></div>
+                <div><span class="font-semibold">Correo:</span> ${escHtml(u.email || '-')}</div>
+              </div>
+            </div>
+            <div class="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button type="button" onclick="abrirModalAutorizarResetAdmin(${idxReal >= 0 ? idxReal : idx})" class="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 shadow-sm transition">
+                Restablecer Contraseña
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function abrirModalAutorizarResetAdmin(index) {
+      const usuario = cacheUsuariosReset[index];
+      if (!usuario) return;
+      usuarioObjetivoReset = usuario;
+      document.getElementById('resetTargetNombre').textContent = usuario.nombre || '-';
+      document.getElementById('resetTargetRut').textContent = usuario.rutFormateado || usuario.rut || '-';
+      document.getElementById('resetTargetEmail').textContent = usuario.email || '-';
+      document.getElementById('resetTargetRol').textContent = usuario.especialidad ? `${usuario.rol} (${usuario.especialidad})` : (usuario.rol || '-');
+      const inputPwd = document.getElementById('inputPasswordAdminReset');
+      if (inputPwd) inputPwd.value = '';
+      const errBox = document.getElementById('errorModalResetAdmin');
+      if (errBox) {
+        errBox.textContent = '';
+        errBox.classList.add('hidden');
+      }
+      document.getElementById('modalAutorizarResetAdmin').classList.remove('hidden');
+      if (typeof actualizarBloqueoScrollFondo === 'function') actualizarBloqueoScrollFondo();
+      if (inputPwd) setTimeout(() => inputPwd.focus(), 50);
+    }
+
+    function cerrarModalAutorizarResetAdmin() {
+      const m = document.getElementById('modalAutorizarResetAdmin');
+      if (m) m.classList.add('hidden');
+      usuarioObjetivoReset = null;
+      if (typeof actualizarBloqueoScrollFondo === 'function') actualizarBloqueoScrollFondo();
+    }
+
+    async function ejecutarRestablecimientoAdmin() {
+      if (!usuarioObjetivoReset) return;
+      const inputPwd = document.getElementById('inputPasswordAdminReset');
+      const errBox = document.getElementById('errorModalResetAdmin');
+      const btn = document.getElementById('btnConfirmarResetAdmin');
+      const passwordAdmin = inputPwd ? inputPwd.value : '';
+
+      if (!passwordAdmin) {
+        if (errBox) {
+          errBox.textContent = 'Debe ingresar su contraseña de Administrador para confirmar.';
+          errBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (errBox) errBox.classList.add('hidden');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Generando...';
+      }
+
+      try {
+        const token = sessionStorage.getItem('dentalsis_token');
+        const res = await fetch('/api/admin/usuarios/restablecer-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            tipo: usuarioObjetivoReset.tipo,
+            idUsuario: usuarioObjetivoReset.id,
+            identificador: usuarioObjetivoReset.email || usuarioObjetivoReset.rut,
+            passwordAdmin
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (errBox) {
+            errBox.textContent = data.error || 'No se pudo restablecer la contraseña.';
+            errBox.classList.remove('hidden');
+          }
+          if (res.status === 403 || res.status === 401) cargarLogsAdmin();
+          return;
+        }
+
+        const resumen = `${data.usuario.nombre} (${data.usuario.email || data.usuario.rut}) · ${data.usuario.rol}`;
+        cerrarModalAutorizarResetAdmin();
+        document.getElementById('resResetUsuarioResumen').textContent = resumen;
+        document.getElementById('resResetPasswordTemporal').textContent = data.passwordTemporal;
+        const btnCopiar = document.getElementById('btnCopiarPwdTemporal');
+        if (btnCopiar) btnCopiar.textContent = 'Copiar Contraseña';
+        document.getElementById('modalPasswordTemporalGenerada').classList.remove('hidden');
+        if (typeof actualizarBloqueoScrollFondo === 'function') actualizarBloqueoScrollFondo();
+        await Promise.all([cargarUsuariosResetAdmin(), cargarLogsAdmin()]);
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Error de conexión al servidor.';
+          errBox.classList.remove('hidden');
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Generar Clave Temporal';
+        }
+      }
+    }
+
+    function cerrarModalPasswordTemporalGenerada() {
+      const m = document.getElementById('modalPasswordTemporalGenerada');
+      if (m) m.classList.add('hidden');
+      const box = document.getElementById('resResetPasswordTemporal');
+      if (box) box.textContent = '-';
+      if (typeof actualizarBloqueoScrollFondo === 'function') actualizarBloqueoScrollFondo();
+    }
+
+    async function copiarPasswordTemporalAdmin() {
+      const box = document.getElementById('resResetPasswordTemporal');
+      const btn = document.getElementById('btnCopiarPwdTemporal');
+      const txt = box ? box.textContent : '';
+      if (!txt || txt === '-') return;
+      try {
+        await navigator.clipboard.writeText(txt);
+        if (btn) {
+          btn.textContent = '¡Contraseña Copiada!';
+          setTimeout(() => { btn.textContent = 'Copiar Contraseña'; }, 2200);
+        }
+      } catch (e) {}
+    }
+
     async function recargarDatosPrincipalesAdmin() {
       await Promise.all([
         cargarResumenAdmin(),
         cargarMedicosAdmin(),
         cargarPacientesAdmin(),
-        cargarRecetasAdmin()
+        cargarRecetasAdmin(),
+        cargarUsuariosResetAdmin()
       ]);
     }
 

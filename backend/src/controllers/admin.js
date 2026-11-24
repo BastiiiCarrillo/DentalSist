@@ -1,3 +1,5 @@
+const db = require('../models/db');
+const dataStore = require('../models/dataStore');
 const {
   obtenerMedicos,
   obtenerTodasLasCitas,
@@ -6,7 +8,7 @@ const {
   validarRutChileno,
   formatearRut,
   limpiarRut
-} = require('../models/dataStore');
+} = dataStore;
 const { cargarFichaCompleta } = require('./especialista');
 const {
   registrarEvento,
@@ -552,11 +554,343 @@ async function obtenerLogsAdmin(req, res) {
   });
 }
 
+function generarPasswordTemporalSegura() {
+  const crypto = require('crypto');
+  const mayus = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const minus = 'abcdefghijkmnopqrstuvwxyz';
+  const nums = '23456789';
+  const esps = '!@#$%*?';
+  const todos = mayus + minus + nums + esps;
+  const pick = (charset) => charset[crypto.randomInt(0, charset.length)];
+
+  for (let intento = 0; intento < 10; intento++) {
+    const chars = [
+      pick(mayus), pick(mayus),
+      pick(minus), pick(minus), pick(minus),
+      pick(nums), pick(nums), pick(nums),
+      pick(esps), pick(esps),
+      pick(todos), pick(todos)
+    ];
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = crypto.randomInt(0, i + 1);
+      const tmp = chars[i];
+      chars[i] = chars[j];
+      chars[j] = tmp;
+    }
+    const candidata = chars.join('');
+    if (!dataStore.validarPasswordSegura(candidata)) {
+      return candidata;
+    }
+  }
+  return 'Tmp94!Dental#26';
+}
+
+async function verificarPasswordAdminActual(usuarioReq, passwordAdmin) {
+  const bcrypt = require('bcrypt');
+  const idAdmin = String((usuarioReq && usuarioReq.id) || '');
+  const emailAdmin = String((usuarioReq && usuarioReq.email) || '').trim().toLowerCase();
+  const rutAdmin = String((usuarioReq && usuarioReq.rut) || '').trim();
+
+  if (db.obtenerPool()) {
+    try {
+      const rAdmin = await db.query(
+        'SELECT id, nombre, email, rut, rol, password_hash as "passwordHash" FROM usuarios WHERE id::text = $1 OR LOWER(email) = $2 LIMIT 1;',
+        [idAdmin, emailAdmin]
+      );
+      if (rAdmin.rows && rAdmin.rows.length > 0) {
+        const row = rAdmin.rows[0];
+        const ok = Boolean(row.passwordHash && bcrypt.compareSync(String(passwordAdmin), row.passwordHash));
+        return { encontrado: true, valida: ok, admin: row };
+      }
+    } catch (eDb) {}
+  }
+
+  const local = dataStore.buscarUsuarioPorId(idAdmin)
+    || (emailAdmin ? dataStore.buscarUsuarioPorEmail(emailAdmin) : null)
+    || (rutAdmin ? dataStore.buscarUsuarioPorRut(rutAdmin) : null);
+
+  if (!local) {
+    return { encontrado: false, valida: false, admin: null };
+  }
+  return {
+    encontrado: true,
+    valida: Boolean(local.passwordHash && bcrypt.compareSync(String(passwordAdmin), local.passwordHash)),
+    admin: local
+  };
+}
+
+async function obtenerUsuariosResetAdmin(req, res) {
+  try {
+    let usuarios = [];
+
+    if (db.obtenerPool()) {
+      try {
+        const mapa = new Map();
+        const [rEsp, rUsr] = await Promise.all([
+          db.query(
+            'SELECT e.id, e.nombre, e.rut, e.email, COALESCE(es.nombre, $1) as especialidad, COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id ORDER BY e.nombre ASC;',
+            ['Odontologia']
+          ),
+          db.query(
+            'SELECT id, nombre, rut, email, rol, COALESCE(debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios ORDER BY nombre ASC;'
+          )
+        ]);
+
+        for (const e of (rEsp.rows || [])) {
+          const clave = String(e.email || dataStore.limpiarRut(e.rut || '')).toLowerCase();
+          mapa.set(clave, {
+            id: String(e.id),
+            tipo: 'especialista',
+            nombre: e.nombre,
+            rut: e.rut,
+            rutFormateado: dataStore.formatearRut(e.rut || ''),
+            email: e.email,
+            rol: 'Odontologo',
+            especialidad: e.especialidad || '',
+            debeCambiarPassword: Boolean(e.debeCambiarPassword)
+          });
+        }
+
+        for (const u of (rUsr.rows || [])) {
+          const rolUp = String(u.rol || '').toUpperCase();
+          if (rolUp === 'SUPERADMIN' || u.id === 'USR-ADMIN-1' || String(u.email || '').toLowerCase() === 'admin@dentalsis.cl') continue;
+          const clave = String(u.email || dataStore.limpiarRut(u.rut || '')).toLowerCase();
+          if (mapa.has(clave)) continue;
+          const rolNorm = rolUp === 'RECEPCIONISTA'
+            ? 'Recepcionista'
+            : rolUp === 'ADMIN'
+              ? 'Admin'
+              : rolUp === 'ODONTOLOGO'
+                ? 'Odontologo'
+                : 'Paciente';
+          mapa.set(clave, {
+            id: String(u.id),
+            tipo: 'usuario',
+            nombre: u.nombre,
+            rut: u.rut,
+            rutFormateado: dataStore.formatearRut(u.rut || ''),
+            email: u.email,
+            rol: rolNorm,
+            especialidad: '',
+            debeCambiarPassword: Boolean(u.debeCambiarPassword)
+          });
+        }
+
+        usuarios = Array.from(mapa.values());
+      } catch (eDb) {
+        usuarios = [];
+      }
+    }
+    if (usuarios.length === 0) {
+      usuarios = dataStore.listarUsuariosResetSistema();
+    }
+
+    const emailProp = String((req.usuario && req.usuario.email) || '').toLowerCase();
+    const idProp = String((req.usuario && req.usuario.id) || '');
+    usuarios = usuarios.filter(u =>
+      String(u.rol || '').toUpperCase() !== 'SUPERADMIN'
+      && String(u.id || '') !== idProp
+      && (!emailProp || String(u.email || '').toLowerCase() !== emailProp)
+    );
+
+    const ordenRol = { Odontologo: 1, Recepcionista: 2, Admin: 3, Paciente: 4 };
+    usuarios.sort((a, b) => {
+      const pa = ordenRol[a.rol] || 9;
+      const pb = ordenRol[b.rol] || 9;
+      if (pa !== pb) return pa - pb;
+      return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+    });
+
+    return res.status(200).json({
+      total: usuarios.length,
+      usuarios
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'No se pudo obtener la lista de usuarios.' });
+  }
+}
+
+async function restablecerPasswordUsuarioAdmin(req, res) {
+  const bcrypt = require('bcrypt');
+  const ip = obtenerIpCliente(req);
+  const tipoSolicitado = String(req.body?.tipo || 'usuario').trim().toLowerCase() === 'especialista' ? 'especialista' : 'usuario';
+  const idUsuario = req.body?.idUsuario !== undefined ? String(req.body.idUsuario).trim() : '';
+  const identificador = req.body?.identificador !== undefined ? String(req.body.identificador).trim() : '';
+  const passwordAdmin = String(req.body?.passwordAdmin || '');
+
+  if (!passwordAdmin) {
+    return res.status(400).json({ error: 'Debe ingresar su contrasena de administrador para autorizar el restablecimiento.' });
+  }
+
+  const claveBusqueda = idUsuario || identificador;
+  if (!claveBusqueda) {
+    return res.status(400).json({ error: 'Debe indicar el usuario cuya contrasena desea restablecer.' });
+  }
+
+  try {
+    const verifAdmin = await verificarPasswordAdminActual(req.usuario, passwordAdmin);
+    if (!verifAdmin.encontrado || !verifAdmin.valida) {
+      registrarEvento(
+        'ADMIN_RESET_PASSWORD_DENEGADO',
+        `Intento fallido de restablecer clave para ${claveBusqueda}: contrasena de administrador incorrecta`,
+        ip,
+        req.usuario && req.usuario.id,
+        'PELIGRO',
+        {
+          usuarioNombre: req.usuario && req.usuario.nombre,
+          usuarioRol: req.usuario && req.usuario.rol,
+          objetivoSolicitado: claveBusqueda
+        }
+      );
+      return res.status(403).json({ error: 'Contrasena de administrador incorrecta. Autorizacion denegada.' });
+    }
+
+    const emailAdmin = String((req.usuario && req.usuario.email) || '').trim().toLowerCase();
+    const idAdmin = String((req.usuario && req.usuario.id) || '').trim();
+    const rutAdminClean = dataStore.limpiarRut((req.usuario && req.usuario.rut) || '');
+    const rutBusquedaClean = dataStore.limpiarRut(claveBusqueda);
+    if (
+      claveBusqueda === idAdmin
+      || (emailAdmin && claveBusqueda.toLowerCase() === emailAdmin)
+      || (emailAdmin && identificador.toLowerCase() === emailAdmin)
+      || (rutAdminClean && rutBusquedaClean && rutAdminClean === rutBusquedaClean)
+    ) {
+      return res.status(400).json({ error: 'Por seguridad no puede restablecer su propia cuenta desde este panel.' });
+    }
+
+    const passwordTemporal = generarPasswordTemporalSegura();
+    const nuevoHash = bcrypt.hashSync(passwordTemporal, 10);
+    const idEmailClean = identificador.toLowerCase();
+    const claveEmailClean = claveBusqueda.toLowerCase();
+    let objetivoFinal = null;
+    let tipoFinal = tipoSolicitado;
+
+    if (db.obtenerPool()) {
+      try {
+        const buscarEnEspecialistas = async () => {
+          const qEsp = await db.query(
+            'SELECT e.id, e.nombre, e.rut, e.email, COALESCE(es.nombre, $4) as especialidad FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE e.id::text = $1 OR LOWER(e.email) = $2 OR REPLACE(REPLACE(e.rut, $5, $6), $7, $8) = $3 LIMIT 1;',
+            [claveBusqueda, idEmailClean || claveEmailClean, rutBusquedaClean, 'Odontologia', '.', '', '-', '']
+          );
+          return qEsp.rows && qEsp.rows[0] ? qEsp.rows[0] : null;
+        };
+        const buscarEnUsuarios = async () => {
+          const qUsr = await db.query(
+            'SELECT id, nombre, rut, email, rol FROM usuarios WHERE id::text = $1 OR LOWER(email) = $2 OR REPLACE(REPLACE(rut, $4, $5), $6, $7) = $3 LIMIT 1;',
+            [claveBusqueda, idEmailClean || claveEmailClean, rutBusquedaClean, '.', '', '-', '']
+          );
+          return qUsr.rows && qUsr.rows[0] ? qUsr.rows[0] : null;
+        };
+
+        const rowEsp = tipoSolicitado === 'especialista' ? (await buscarEnEspecialistas()) : null;
+        const rowUsr = tipoSolicitado === 'usuario' ? (await buscarEnUsuarios()) : await buscarEnUsuarios();
+        const rowEspFallback = !rowEsp && !rowUsr ? (await buscarEnEspecialistas()) : rowEsp;
+        const encontradoDb = rowEspFallback || rowUsr;
+
+        if (encontradoDb && String(encontradoDb.rol || '').toUpperCase() === 'SUPERADMIN') {
+          return res.status(403).json({ error: 'Por seguridad, no se puede restablecer la cuenta SuperAdmin desde este panel.' });
+        }
+
+        if (rowEspFallback) {
+          tipoFinal = 'especialista';
+          await db.query(
+            'UPDATE especialistas SET password_hash = $1, debe_cambiar_password = TRUE WHERE id::text = $2;',
+            [nuevoHash, String(rowEspFallback.id)]
+          );
+          const rutEspClean = dataStore.limpiarRut(rowEspFallback.rut || '');
+          await db.query(
+            'UPDATE usuarios SET password_hash = $1, debe_cambiar_password = TRUE, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, $4, $5), $6, $7) = $3;',
+            [nuevoHash, rowEspFallback.email || '', rutEspClean, '.', '', '-', '']
+          );
+          objetivoFinal = {
+            id: String(rowEspFallback.id),
+            tipo: 'especialista',
+            nombre: rowEspFallback.nombre,
+            email: rowEspFallback.email,
+            rut: rowEspFallback.rut,
+            rol: 'Odontologo',
+            especialidad: rowEspFallback.especialidad || '',
+            debeCambiarPassword: true
+          };
+        } else if (rowUsr) {
+          tipoFinal = 'usuario';
+          await db.query(
+            'UPDATE usuarios SET password_hash = $1, debe_cambiar_password = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id::text = $2;',
+            [nuevoHash, String(rowUsr.id)]
+          );
+          objetivoFinal = {
+            id: String(rowUsr.id),
+            tipo: 'usuario',
+            nombre: rowUsr.nombre,
+            email: rowUsr.email,
+            rut: rowUsr.rut,
+            rol: rowUsr.rol || 'Paciente',
+            especialidad: '',
+            debeCambiarPassword: true
+          };
+        }
+      } catch (eDb) {}
+    }
+
+    const resLocal = dataStore.establecerPasswordTemporalUsuario(tipoFinal, claveBusqueda, passwordTemporal)
+      || dataStore.establecerPasswordTemporalUsuario(tipoFinal === 'especialista' ? 'usuario' : 'especialista', claveBusqueda, passwordTemporal)
+      || (identificador ? dataStore.establecerPasswordTemporalUsuario(tipoFinal, identificador, passwordTemporal) : null);
+
+    if (resLocal && String(resLocal.rol || '').toUpperCase() === 'SUPERADMIN') {
+      return res.status(403).json({ error: 'Por seguridad, no se puede restablecer la cuenta SuperAdmin desde este panel.' });
+    }
+
+    if (!objetivoFinal && resLocal) {
+      tipoFinal = resLocal.especialidad ? 'especialista' : (tipoSolicitado === 'especialista' ? 'especialista' : 'usuario');
+      objetivoFinal = {
+        id: String(resLocal.id),
+        tipo: tipoFinal,
+        nombre: resLocal.nombre,
+        email: resLocal.email,
+        rut: resLocal.rut,
+        rol: resLocal.rol || (tipoFinal === 'especialista' ? 'Odontologo' : 'Paciente'),
+        especialidad: resLocal.especialidad || '',
+        debeCambiarPassword: true
+      };
+    }
+
+    if (!objetivoFinal) {
+      return res.status(404).json({ error: 'Usuario no encontrado en el sistema.' });
+    }
+
+    registrarEvento(
+      'ADMIN_RESET_PASSWORD',
+      `Administrador ${req.usuario.nombre || req.usuario.email} genero contrasena temporal para ${objetivoFinal.nombre} (${objetivoFinal.email || objetivoFinal.rut})`,
+      ip,
+      req.usuario.id,
+      'ALERTA',
+      {
+        usuarioNombre: req.usuario.nombre,
+        usuarioRol: req.usuario.rol,
+        objetivoId: objetivoFinal.id,
+        objetivoNombre: objetivoFinal.nombre,
+        objetivoRol: objetivoFinal.rol,
+        requiereCambioPassword: true
+      }
+    );
+
+    return res.status(200).json({
+      mensaje: 'Contrasena temporal generada correctamente. El usuario debera cambiarla al iniciar sesion.',
+      passwordTemporal,
+      usuario: objetivoFinal
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Error al restablecer la contrasena del usuario.' });
+  }
+}
+
 module.exports = {
   obtenerResumenAdmin,
   obtenerMedicosAdmin,
   obtenerPacientesAdmin,
   obtenerDetallePacienteAdmin,
   obtenerRecetasAdmin,
-  obtenerLogsAdmin
+  obtenerLogsAdmin,
+  obtenerUsuariosResetAdmin,
+  restablecerPasswordUsuarioAdmin
 };

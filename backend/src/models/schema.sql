@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   password_hash VARCHAR(255) NOT NULL,
   rol VARCHAR(25) NOT NULL CHECK (rol IN ('ADMIN', 'RECEPCIONISTA', 'PACIENTE')),
   estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO',
+  debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS especialistas (
   registro_sis VARCHAR(30) NOT NULL UNIQUE,
   registro_colegio VARCHAR(30) NOT NULL UNIQUE,
   sillon_habitual INT NOT NULL DEFAULT 1,
+  debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -149,7 +151,7 @@ BEGIN
   VALUES (
     CONCAT('AUDIT_', TG_TABLE_NAME, '_', TG_OP),
     '127.0.0.1',
-    'INFO',
+    CASE WHEN TG_OP IN ('DELETE', 'UPDATE') THEN 'ALERTA' ELSE 'INFO' END,
     json_build_object('tabla', TG_TABLE_NAME, 'operacion', TG_OP, 'id', COALESCE(NEW.id::TEXT, OLD.id::TEXT)),
     v_hash
   );

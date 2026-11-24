@@ -50,7 +50,7 @@ async function login(req, res) {
           const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
           const cuerpoLimpio = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
           const rEsp = await db.query(
-            'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
+            'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio", COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
             [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
           );
           if (rEsp.rows && rEsp.rows.length > 0) {
@@ -59,7 +59,7 @@ async function login(req, res) {
             usuarioEncontrado = { ...rowEsp, sillon: sillonFmt, rol: 'Odontologo' };
           } else {
             const rDb = await db.query(
-              'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE (LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6) AND (UPPER(u.rol) = $7 OR UPPER(u.rol) = $8) LIMIT 1;',
+              'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE (LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6) AND (UPPER(u.rol) = $7 OR UPPER(u.rol) = $8) LIMIT 1;',
               [idLimpio, '.', '', '-', '', rutLimpio, 'ODONTOLOGO', 'SUPERADMIN']
             );
             if (rDb.rows && rDb.rows.length > 0) {
@@ -94,14 +94,14 @@ async function login(req, res) {
           const rutLimpio = identificador.replace(/[^0-9kK]/g, '').toUpperCase();
           const cuerpoLimpio = rutLimpio.length > 1 ? rutLimpio.slice(0, -1) : rutLimpio;
           const rDb = await db.query(
-            'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
+            'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $2, $3), $4, $5) = REPLACE(REPLACE(u.rut, $2, $3), $4, $5) WHERE LOWER(u.email) = $1 OR REPLACE(REPLACE(u.rut, $2, $3), $4, $5) = $6 LIMIT 1;',
             [idLimpio, '.', '', '-', '', rutLimpio]
           );
           if (rDb.rows && rDb.rows.length > 0) {
             usuarioEncontrado = rDb.rows[0];
           } else {
             const rEsp = await db.query(
-              'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
+              'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio", COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE LOWER(e.email) = $1 OR REPLACE(REPLACE(e.rut, $2, $3), $4, $5) = $6 OR SUBSTRING(REPLACE(REPLACE(e.rut, $2, $3), $4, $5) FROM 1 FOR 8) = $7 LIMIT 1;',
               [idLimpio, '.', '', '-', '', rutLimpio, cuerpoLimpio]
             );
             if (rEsp.rows && rEsp.rows.length > 0) {
@@ -158,6 +158,37 @@ async function login(req, res) {
     rol: rolAsignado
   };
 
+  const requiereCambioPassword = Boolean(usuarioEncontrado.debeCambiarPassword || usuarioEncontrado.debe_cambiar_password);
+
+  if (requiereCambioPassword) {
+    const tempToken = jwt.sign(
+      {
+        ...payload,
+        soloCambioPassword: true
+      },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    registrarEvento('LOGIN_CON_PASSWORD_TEMPORAL', `Usuario ${identificador} ingreso con contrasena temporal y debe definir una nueva clave`, ip, usuarioEncontrado.id, 'ALERTA', {
+      usuarioNombre: usuarioEncontrado.nombre,
+      usuarioRol: rolAsignado
+    });
+
+    return res.status(200).json({
+      requiereCambioPassword: true,
+      tempToken,
+      mensaje: 'Ingresaste con una contrasena temporal. Por favor introduce una nueva contrasena para continuar.',
+      usuario: {
+        id: usuarioEncontrado.id,
+        nombre: usuarioEncontrado.nombre,
+        email: usuarioEncontrado.email,
+        rut: usuarioEncontrado.rut,
+        rol: rolAsignado
+      }
+    });
+  }
+
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
 
   registrarEvento('LOGIN_EXITOSO', `Autenticacion correcta para ${identificador}`, ip, usuarioEncontrado.id, 'INFO', {
@@ -184,10 +215,35 @@ function verificarToken(req, res, next) {
   const token = authHeader.split(' ')[1];
   try {
     const decodificado = jwt.verify(token, JWT_SECRET);
+    if (decodificado.soloCambioPassword) {
+      return res.status(403).json({
+        error: 'Debe cambiar su contrasena temporal antes de acceder al portal.',
+        requiereCambioPassword: true
+      });
+    }
     req.usuario = decodificado;
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Token invalido o expirado.' });
+  }
+}
+
+function verificarTokenCambioTemporal(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Acceso no autorizado: Token temporal no proporcionado.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decodificado = jwt.verify(token, JWT_SECRET);
+    if (!decodificado.soloCambioPassword) {
+      return res.status(403).json({ error: 'Token invalido para cambio de contrasena temporal.' });
+    }
+    req.usuario = decodificado;
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'El token temporal expiro o es invalido. Vuelve a iniciar sesion.' });
   }
 }
 
@@ -295,11 +351,11 @@ function actualizarPassword(req, res) {
         const nuevoHash = bcrypt.hashSync(nuevaPassword, 10);
         const rutClean = limpiarRut(identificador);
         db.query(
-          'UPDATE usuarios SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3;',
+          'UPDATE usuarios SET password_hash = $1, debe_cambiar_password = FALSE, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3;',
           [nuevoHash, identificador.trim(), rutClean]
         ).catch(() => {});
         db.query(
-          'UPDATE especialistas SET password_hash = $1 WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3;',
+          'UPDATE especialistas SET password_hash = $1, debe_cambiar_password = FALSE WHERE LOWER(email) = LOWER($2) OR REPLACE(REPLACE(rut, \'.\', \'\'), \'-\', \'\') = $3;',
           [nuevoHash, identificador.trim(), rutClean]
         ).catch(() => {});
       }
@@ -311,6 +367,137 @@ function actualizarPassword(req, res) {
   } catch (error) {
     registrarEvento('CAMBIO_PASSWORD_FALLIDO', `Intento de cambio de clave fallido para ${identificador}: ${error.message}`, ip, (req.usuario && req.usuario.id) || null, 'ALERTA');
     return res.status(400).json({ error: error.message });
+  }
+}
+
+async function completarPasswordTemporal(req, res) {
+  const { obtenerIpCliente } = require('../services/ipClient');
+  const dataStore = require('../models/dataStore');
+  const db = require('../models/db');
+  const ip = obtenerIpCliente(req);
+  const passwordNueva = String(req.body?.passwordNueva || req.body?.nuevaPassword || '');
+  const confirmarPassword = req.body?.confirmarPassword !== undefined ? String(req.body.confirmarPassword) : undefined;
+
+  if (!passwordNueva) {
+    return res.status(400).json({ error: 'Debe ingresar la nueva contrasena.' });
+  }
+  if (confirmarPassword !== undefined && passwordNueva !== confirmarPassword) {
+    return res.status(400).json({ error: 'Las contrasenas nuevas no coinciden.' });
+  }
+
+  const errComplejidad = validarPasswordSegura(passwordNueva);
+  if (errComplejidad) {
+    return res.status(400).json({ error: errComplejidad });
+  }
+
+  const usuarioToken = req.usuario || {};
+  const idUsuario = String(usuarioToken.id || '');
+  const emailUsuario = String(usuarioToken.email || '').trim().toLowerCase();
+  const rutUsuario = String(usuarioToken.rut || '');
+  const rutClean = limpiarRut(rutUsuario);
+  const cuerpoRut = rutClean.length >= 8 ? rutClean.slice(0, 8) : rutClean;
+  const nuevoHash = bcrypt.hashSync(passwordNueva, 10);
+
+  let perfilActualizado = null;
+
+  let dbConectada = false;
+  try {
+    if (db.obtenerPool()) {
+      let rowDb = null;
+      const rUser = await db.query(
+        'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.password_hash as "passwordHash", u.rol, u.estado FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $4, $5), $6, $7) = REPLACE(REPLACE(u.rut, $4, $5), $6, $7) WHERE u.id::text = $1 OR LOWER(u.email) = $2 OR REPLACE(REPLACE(u.rut, $4, $5), $6, $7) = $3 LIMIT 1;',
+        [idUsuario, emailUsuario, rutClean, '.', '', '-', '']
+      );
+      if (rUser.rows && rUser.rows.length > 0) {
+        rowDb = { tabla: 'usuarios', row: rUser.rows[0] };
+      } else {
+        const rEsp = await db.query(
+          'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.password_hash as "passwordHash", e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE e.id::text = $1 OR LOWER(e.email) = $2 OR REPLACE(REPLACE(e.rut, $5, $6), $7, $8) = $3 OR SUBSTRING(REPLACE(REPLACE(e.rut, $5, $6), $7, $8) FROM 1 FOR 8) = $4 LIMIT 1;',
+          [idUsuario, emailUsuario, rutClean, cuerpoRut, '.', '', '-', '']
+        );
+        if (rEsp.rows && rEsp.rows.length > 0) {
+          rowDb = { tabla: 'especialistas', row: rEsp.rows[0] };
+        }
+      }
+
+      if (rowDb) {
+        dbConectada = true;
+        if (rowDb.row.passwordHash && bcrypt.compareSync(passwordNueva, rowDb.row.passwordHash)) {
+          return res.status(400).json({ error: 'La nueva contrasena debe ser distinta a la contrasena temporal.' });
+        }
+        if (rowDb.tabla === 'usuarios') {
+          await db.query(
+            'UPDATE usuarios SET password_hash = $1, debe_cambiar_password = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id::text = $2 OR LOWER(email) = $3 OR REPLACE(REPLACE(rut, $5, $6), $7, $8) = $4;',
+            [nuevoHash, idUsuario, emailUsuario, rutClean, '.', '', '-', '']
+          );
+          perfilActualizado = { ...rowDb.row, rol: usuarioToken.rol || rowDb.row.rol };
+        } else {
+          await db.query(
+            'UPDATE especialistas SET password_hash = $1, debe_cambiar_password = FALSE WHERE id::text = $2 OR LOWER(email) = $3 OR REPLACE(REPLACE(rut, $4, $5), $6, $7) = $8;',
+            [nuevoHash, idUsuario, emailUsuario, '.', '', '-', '', rutClean]
+          );
+          const rowEsp = rowDb.row;
+          const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
+          perfilActualizado = { ...rowEsp, sillon: sillonFmt, rol: 'Odontologo' };
+        }
+      }
+    }
+  } catch (eDb) {
+    dbConectada = false;
+  }
+
+  try {
+    const resLocal = dataStore.completarPasswordTemporalUsuario(
+      idUsuario,
+      emailUsuario || rutUsuario,
+      usuarioToken.rol,
+      passwordNueva,
+      !dbConectada
+    );
+    if (!perfilActualizado && resLocal) {
+      perfilActualizado = resLocal;
+    }
+
+    if (!perfilActualizado) {
+      return res.status(404).json({ error: 'Usuario no encontrado para actualizar su contrasena.' });
+    }
+
+    const rolBruto = String(usuarioToken.rol || perfilActualizado.rol || 'Paciente').trim().toUpperCase();
+    const rolFinal = rolBruto === 'ODONTOLOGO'
+      ? 'Odontologo'
+      : rolBruto === 'SUPERADMIN'
+        ? 'SuperAdmin'
+        : rolBruto === 'ADMIN'
+          ? 'Admin'
+          : rolBruto === 'RECEPCIONISTA'
+            ? 'Recepcionista'
+            : 'Paciente';
+    const payloadSesion = {
+      id: perfilActualizado.id,
+      nombre: perfilActualizado.nombre,
+      email: perfilActualizado.email,
+      rut: perfilActualizado.rut,
+      rol: rolFinal
+    };
+
+    const token = jwt.sign(payloadSesion, JWT_SECRET, { expiresIn: '4h' });
+    const { passwordHash, debeCambiarPassword, debe_cambiar_password, ...perfilSeguro } = perfilActualizado;
+    perfilSeguro.rol = rolFinal;
+    perfilSeguro.debeCambiarPassword = false;
+
+    registrarEvento('PASSWORD_TEMPORAL_ACTUALIZADA', `Usuario ${perfilSeguro.email || perfilSeguro.rut} definio su nueva contrasena definitiva`, ip, perfilSeguro.id, 'INFO', {
+      usuarioNombre: perfilSeguro.nombre,
+      usuarioRol: rolFinal
+    });
+
+    return res.status(200).json({
+      mensaje: 'Contrasena actualizada exitosamente.',
+      token,
+      usuario: perfilSeguro
+    });
+  } catch (error) {
+    registrarEvento('CAMBIO_PASSWORD_FALLIDO', `Error al completar cambio de contrasena temporal para ${emailUsuario || rutUsuario}: ${error.message}`, ip, idUsuario || null, 'ALERTA');
+    return res.status(400).json({ error: error.message || 'No se pudo actualizar la contrasena temporal.' });
   }
 }
 
@@ -332,6 +519,8 @@ module.exports = {
   login,
   registro,
   actualizarPassword,
+  completarPasswordTemporal,
   verificarToken,
+  verificarTokenCambioTemporal,
   verificarRol
 };

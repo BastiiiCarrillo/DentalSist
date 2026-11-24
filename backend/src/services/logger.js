@@ -57,7 +57,16 @@ function resolverActorSistema(usuarioId, extra = {}) {
   return { usuarioNombre: ref, usuarioRol: 'Usuario' };
 }
 
+function normalizarNivelEvento(tipo, nivel) {
+  const esTriggerDestructivo = /^AUDIT_.*_(DELETE|UPDATE)$/i.test(String(tipo || ''));
+  if (esTriggerDestructivo && (!nivel || String(nivel).toUpperCase() === 'INFO')) {
+    return 'ALERTA';
+  }
+  return nivel || 'INFO';
+}
+
 function registrarEvento(tipo, detalle, ip, usuarioId = null, nivel = 'INFO', extra = {}) {
+  const nivelEfectivo = normalizarNivelEvento(tipo, nivel);
   const timestamp = new Date().toISOString();
   const { fechaChile, horaChile } = formatearFechaHoraChile(timestamp);
   const ipLimpia = normalizarIp(ip) || '127.0.0.1';
@@ -84,7 +93,7 @@ function registrarEvento(tipo, detalle, ip, usuarioId = null, nivel = 'INFO', ex
     usuarioId,
     usuarioNombre: actor.usuarioNombre,
     usuarioRol: actor.usuarioRol,
-    nivel,
+    nivel: nivelEfectivo,
     hashInmutable
   };
   logs.push(Object.freeze(entrada));
@@ -95,7 +104,7 @@ function registrarEvento(tipo, detalle, ip, usuarioId = null, nivel = 'INFO', ex
       const uidUuid = (usuarioId && REGEX_UUID.test(String(usuarioId))) ? String(usuarioId) : null;
       db.query(
         'INSERT INTO auditoria_seguridad (evento, usuario_id, ip_origen, severidad, detalle, hash_inmutable) VALUES ($1, $2, $3, $4, $5::jsonb, $6);',
-        [String(tipo).slice(0, 80), uidUuid, String(ipLimpia).slice(0, 45), String(nivel).slice(0, 20), detalleJson, hashInmutable]
+        [String(tipo).slice(0, 80), uidUuid, String(ipLimpia).slice(0, 45), String(nivelEfectivo).slice(0, 20), detalleJson, hashInmutable]
       ).catch(() => {});
     }
   } catch (eDb) {}
@@ -151,6 +160,8 @@ async function obtenerLogsAuditoria() {
           });
           const iso = row.createdAt instanceof Date ? row.createdAt.toISOString() : new Date(row.createdAt || Date.now()).toISOString();
           const { fechaChile, horaChile } = formatearFechaHoraChile(iso);
+          const esTriggerMod = /^AUDIT_.*_(DELETE|UPDATE)$/i.test(String(row.evento || ''));
+          const nivelFinal = (esTriggerMod && (!row.severidad || row.severidad === 'INFO')) ? 'ALERTA' : (row.severidad || 'INFO');
           const item = {
             id: row.id,
             timestamp: iso,
@@ -162,7 +173,7 @@ async function obtenerLogsAuditoria() {
             usuarioId: refUsuario || null,
             usuarioNombre: actorResuelto.usuarioNombre,
             usuarioRol: actorResuelto.usuarioRol,
-            nivel: row.severidad || 'INFO',
+            nivel: nivelFinal,
             hashInmutable: row.hashInmutable || ''
           };
           if (item.hashInmutable) hashesVistos.add(item.hashInmutable);
@@ -185,6 +196,7 @@ async function obtenerLogsAuditoria() {
     const { fechaChile, horaChile } = formatearFechaHoraChile(l.timestamp);
     resultado.push({
       ...l,
+      nivel: normalizarNivelEvento(l.tipo, l.nivel),
       fechaChile: l.fechaChile || fechaChile,
       horaChile: l.horaChile || horaChile
     });

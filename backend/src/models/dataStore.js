@@ -446,8 +446,68 @@ function cambiarPassword(identificador, passwordActual, nuevaPassword) {
   }
 
   usuario.passwordHash = bcrypt.hashSync(nuevaPassword, 10);
+  usuario.debeCambiarPassword = false;
   usuario.actualizadoEn = new Date().toISOString();
   return true;
+}
+
+function establecerPasswordTemporalUsuario(tipo, identificador, nuevaPasswordTemporal) {
+  let objetivo = null;
+  if (tipo === 'especialista') {
+    objetivo = buscarMedicoPorId(identificador)
+      || (String(identificador).includes('@') ? buscarMedicoPorEmail(identificador) : buscarMedicoPorRut(identificador));
+  } else {
+    objetivo = buscarUsuarioPorId(identificador)
+      || (String(identificador).includes('@') ? buscarUsuarioPorEmail(identificador) : buscarUsuarioPorRut(identificador));
+  }
+  if (!objetivo) return null;
+  objetivo.passwordHash = bcrypt.hashSync(nuevaPasswordTemporal, 10);
+  objetivo.debeCambiarPassword = true;
+  objetivo.actualizadoEn = new Date().toISOString();
+  return objetivo;
+}
+
+function listarUsuariosResetSistema() {
+  const medicosLista = medicos.map(m => ({
+    id: m.id,
+    uuid: m.uuid || null,
+    tipo: 'especialista',
+    nombre: m.nombre,
+    rut: m.rut || '',
+    rutFormateado: m.rut || '',
+    email: m.email || '',
+    rol: 'Odontologo',
+    especialidad: m.especialidad || '',
+    debeCambiarPassword: Boolean(m.debeCambiarPassword)
+  }));
+  const usuariosLista = usuarios
+    .filter(u => {
+      const rolUp = String(u.rol || '').toUpperCase();
+      return rolUp !== 'SUPERADMIN' && u.id !== 'USR-ADMIN-1' && String(u.email || '').toLowerCase() !== 'admin@dentalsis.cl';
+    })
+    .map(u => {
+      const rolUp = String(u.rol || 'PACIENTE').toUpperCase();
+      const rolNorm = rolUp === 'RECEPCIONISTA'
+        ? 'Recepcionista'
+        : rolUp === 'ADMIN'
+          ? 'Admin'
+          : rolUp === 'ODONTOLOGO'
+            ? 'Odontologo'
+            : 'Paciente';
+      return {
+        id: u.id,
+        uuid: null,
+        tipo: rolUp === 'ADMIN' ? 'admin' : 'usuario',
+        nombre: u.nombre,
+        rut: u.rutFormateado || u.rut || '',
+        rutFormateado: u.rutFormateado || formatearRut(limpiarRut(u.rut || '')),
+        email: u.email || '',
+        rol: rolNorm,
+        especialidad: '',
+        debeCambiarPassword: Boolean(u.debeCambiarPassword)
+      };
+    });
+  return [...medicosLista, ...usuariosLista];
 }
 
 function verificarColisionCita(idMedico, sillon, fecha, hora, rutPaciente) {
@@ -779,6 +839,38 @@ function listarPacientesSistema() {
   return Array.from(mapa.values());
 }
 
+function completarPasswordTemporalUsuario(idUsuario, identificador, rol, nuevaPassword, validarDistinta = true) {
+  let objetivo = null;
+  const esEsp = String(rol || '').toUpperCase() === 'ODONTOLOGO';
+  if (idUsuario) {
+    objetivo = esEsp
+      ? (buscarMedicoPorId(idUsuario) || buscarUsuarioPorId(idUsuario))
+      : (buscarUsuarioPorId(idUsuario) || buscarMedicoPorId(idUsuario));
+  }
+  if (!objetivo && identificador) {
+    const idStr = String(identificador).trim();
+    if (idStr.includes('@')) {
+      objetivo = esEsp
+        ? (buscarMedicoPorEmail(idStr) || buscarUsuarioPorEmail(idStr))
+        : (buscarUsuarioPorEmail(idStr) || buscarMedicoPorEmail(idStr));
+    } else {
+      objetivo = esEsp
+        ? (buscarMedicoPorRut(idStr) || buscarUsuarioPorRut(idStr))
+        : (buscarUsuarioPorRut(idStr) || buscarMedicoPorRut(idStr));
+    }
+  }
+  if (!objetivo) {
+    return null;
+  }
+  if (validarDistinta && objetivo.passwordHash && bcrypt.compareSync(nuevaPassword, objetivo.passwordHash)) {
+    throw new Error('La nueva contrasena debe ser distinta a la contrasena temporal.');
+  }
+  objetivo.passwordHash = bcrypt.hashSync(nuevaPassword, 10);
+  objetivo.debeCambiarPassword = false;
+  objetivo.actualizadoEn = new Date().toISOString();
+  return { ...objetivo };
+}
+
 module.exports = {
   get citas() {
     return citas;
@@ -797,6 +889,10 @@ module.exports = {
   buscarUsuarioPorEmail,
   crearUsuario,
   cambiarPassword,
+  establecerPasswordTemporalUsuario,
+  completarPasswordTemporalUsuario,
+  listarUsuariosResetSistema,
+  validarPasswordSegura,
   verificarColisionCita,
   obtenerMedicosDisponibles,
   crearCita,
