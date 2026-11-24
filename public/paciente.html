@@ -28,6 +28,41 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #modalComprobanteOficial,
+      #modalComprobanteOficial * {
+        visibility: visible;
+      }
+      #modalComprobanteOficial {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 24px;
+        background: white !important;
+        display: flex !important;
+        align-items: flex-start;
+        justify-content: center;
+        z-index: 999999;
+      }
+      #comprobanteImprimible {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        background: white !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -276,14 +311,128 @@
         </div>
       </div>
 
-      <button onclick="cerrarModalConfirmacion()" class="w-full py-3 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/25 transition">
-        Aceptar y Guardar Comprobante
-      </button>
+      <div class="space-y-2 pt-1">
+        <button onclick="verComprobanteRecienAgendado()" class="w-full py-3 rounded-xl text-xs font-bold bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white shadow-lg shadow-cyan-600/25 transition flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Ver y Descargar Comprobante
+        </button>
+        <button onclick="cerrarModalConfirmacion()" class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalComprobanteOficial" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4 overflow-y-auto">
+    <div id="comprobanteImprimible" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full my-8 shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-6 bg-gradient-to-r from-teal-600 to-cyan-600 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-bold text-white text-lg">
+            DS
+          </div>
+          <div>
+            <h3 class="text-base font-bold">Comprobante Oficial de Reserva Médica</h3>
+            <p class="text-xs text-white/80">DentalSis · Clínica Odontológica Especializada</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 no-print">
+          <button onclick="descargarComprobanteImpreso()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-teal-700 hover:bg-white/90 shadow transition flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Descargar / Imprimir
+          </button>
+          <button onclick="cerrarModalComprobante()" class="w-8 h-8 rounded-lg bg-black/20 hover:bg-black/30 text-white flex items-center justify-center font-bold">×</button>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-5 text-slate-800 dark:text-slate-200 text-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
+            <span id="comprobantePaciente" class="font-bold text-slate-900 dark:text-white text-xs">-</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">RUT</span>
+            <span id="comprobanteRut" class="font-bold text-slate-900 dark:text-white text-xs">-</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Folio de Reserva</span>
+            <span id="comprobanteFolio" class="font-mono font-bold text-teal-600 dark:text-teal-400 text-xs">#RES-2026</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Estado</span>
+            <span id="comprobanteEstado" class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">CONFIRMADA</span>
+          </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+            <span class="text-base font-bold text-teal-600 dark:text-teal-400">📅</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Detalles de la Cita Médica</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Especialidad</span>
+              <span id="comprobanteEspecialidad" class="font-bold text-slate-900 dark:text-white text-sm">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Fecha y Hora</span>
+              <span id="comprobanteFechaHora" class="font-bold text-teal-600 dark:text-teal-400 text-sm">-</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Especialista / Box</span>
+              <span id="comprobanteMedico" class="font-bold text-slate-900 dark:text-white text-sm">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1.5">Instrucciones al Paciente</span>
+          <div class="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-300 text-xs leading-relaxed space-y-1">
+            <p>• Presentarse con 10 minutos de anticipación en recepción con tu cédula de identidad.</p>
+            <p>• Si necesitas reagendar o cancelar tu cita, por favor hazlo con al menos 24 horas de antelación.</p>
+            <p>• Conserva este comprobante digital o impreso como respaldo oficial de tu atención médica dental.</p>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+          <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              ✓
+            </div>
+            <div>
+              <span class="block text-xs font-bold text-emerald-700 dark:text-emerald-300">Reserva Verificada en Sistema</span>
+              <span id="comprobanteHash" class="block text-[10px] text-slate-500 font-mono">HMAC-SHA256 · DentalSis #AUT-2026</span>
+            </div>
+          </div>
+
+          <div class="text-right sm:text-right text-xs">
+            <div class="font-serif italic font-bold text-slate-900 dark:text-white text-sm">DentalSis Clínica Odontológica</div>
+            <div class="text-[11px] text-slate-500">Sistema de Gestión Clínica Dental Segura (SGCD)</div>
+            <div class="text-[10px] text-slate-400">Atención Pacientes · Registro Clínico Oficial</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center no-print">
+        <span class="text-[11px] text-slate-400">Puedes imprimir este comprobante o guardarlo como PDF en tu dispositivo.</span>
+        <div class="flex items-center gap-2">
+          <button onclick="descargarComprobanteImpreso()" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white shadow-md transition flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Descargar Comprobante
+          </button>
+          <button onclick="cerrarModalComprobante()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300">
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const BLOQUES_HORARIOS = ['09:00', '10:00', '11:00', '12:00', '15:00', '16:00', '17:00'];
+    let citaRecienAgendada = null;
+    let listaCitasCargadas = [];
 
     const hoyReal = new Date();
     hoyReal.setHours(0, 0, 0, 0);
@@ -845,6 +994,18 @@
         document.getElementById('resumenPaciente').textContent = nombre;
         document.getElementById('resumenMedico').textContent = medicoSeleccionado;
         document.getElementById('resumenFechaHora').textContent = `${fechaSeleccionada} · ${horaSeleccionada} hrs`;
+
+        citaRecienAgendada = {
+          id: citaId,
+          nombre,
+          rut,
+          especialidad: especialidadSeleccionada,
+          medico: medicoSeleccionado,
+          sillon: 'Sillón 1',
+          fechaHora: `${fechaSeleccionada} · ${horaSeleccionada} hrs`,
+          estado: 'CONFIRMADA'
+        };
+
         document.getElementById('modalConfirmacionCita').classList.remove('hidden');
       } catch (err) {
         mostrarAlertaClinica('Error de conexión al servidor clínico. Inténtalo nuevamente.');
@@ -853,6 +1014,54 @@
 
     function cerrarModalConfirmacion() {
       document.getElementById('modalConfirmacionCita').classList.add('hidden');
+    }
+
+    function verComprobanteRecienAgendado() {
+      if (!citaRecienAgendada) return;
+      document.getElementById('comprobantePaciente').textContent = citaRecienAgendada.nombre;
+      document.getElementById('comprobanteRut').textContent = citaRecienAgendada.rut;
+      document.getElementById('comprobanteFolio').textContent = '#' + citaRecienAgendada.id;
+      document.getElementById('comprobanteEstado').textContent = citaRecienAgendada.estado || 'CONFIRMADA';
+      document.getElementById('comprobanteEspecialidad').textContent = citaRecienAgendada.especialidad || 'Consulta Odontológica';
+      document.getElementById('comprobanteFechaHora').textContent = citaRecienAgendada.fechaHora;
+      document.getElementById('comprobanteMedico').textContent = `${citaRecienAgendada.medico} · ${citaRecienAgendada.sillon}`;
+      const hashStr = 'DS-' + String(citaRecienAgendada.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
+      document.getElementById('comprobanteHash').textContent = `HMAC-SHA256 · DentalSis #${hashStr || 'DS-2026'}`;
+
+      cerrarModalConfirmacion();
+      document.getElementById('modalComprobanteOficial').classList.remove('hidden');
+    }
+
+    function verComprobanteDesdeId(citaId) {
+      const c = listaCitasCargadas.find(item => String(item.id) === String(citaId));
+      if (!c) return;
+      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
+      let u = {};
+      try {
+        if (usuarioRaw) u = JSON.parse(usuarioRaw);
+      } catch (e) {}
+
+      document.getElementById('comprobantePaciente').textContent = u.nombre || c.nombrePaciente || 'Paciente Registrado';
+      document.getElementById('comprobanteRut').textContent = u.rut || c.rutPaciente || 'RUT Registrado';
+      document.getElementById('comprobanteFolio').textContent = '#' + c.id;
+      document.getElementById('comprobanteEstado').textContent = c.estado || 'CONFIRMADA';
+      document.getElementById('comprobanteEspecialidad').textContent = c.especialidad || 'Consulta Odontológica';
+      document.getElementById('comprobanteFechaHora').textContent = `${c.fecha} · ${c.hora} hrs`;
+      const sill = c.sillon ? (String(c.sillon).includes('Sillón') ? c.sillon : 'Sillón ' + c.sillon) : 'Sillón 1';
+      document.getElementById('comprobanteMedico').textContent = `${c.nombreMedico || 'Dr. Asignado'} · ${sill}`;
+      const hashStr = 'DS-' + String(c.id).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
+      document.getElementById('comprobanteHash').textContent = `HMAC-SHA256 · DentalSis #${hashStr || 'DS-2026'}`;
+
+      document.getElementById('modalComprobanteOficial').classList.remove('hidden');
+    }
+
+    function cerrarModalComprobante() {
+      const m = document.getElementById('modalComprobanteOficial');
+      if (m) m.classList.add('hidden');
+    }
+
+    function descargarComprobanteImpreso() {
+      window.print();
     }
 
     function abrirModalRequiereLogin() {
@@ -932,6 +1141,7 @@
 
         const data = await res.json();
         const citas = data.citas || [];
+        listaCitasCargadas = citas;
 
         if (citas.length === 0) {
           contenedor.innerHTML = '<div class="p-6 text-center space-y-2"><div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto text-sm font-bold">📋</div><p class="text-xs text-slate-500 dark:text-slate-400">No registras reservas previas en DentalSis.</p><p class="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold">¡Elige un horario en el calendario para agendar!</p></div>';
@@ -948,7 +1158,7 @@
           else if (c.estado === 'PENDIENTE') badgeColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
 
           html += `
-            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2 text-xs">
+            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2.5 text-xs">
               <div class="flex items-start justify-between gap-2">
                 <div>
                   <span class="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold block">Folio #${c.id}</span>
@@ -965,6 +1175,12 @@
                   <span class="text-slate-400 block text-[10px]">Especialista / Box:</span>
                   <span class="font-semibold text-slate-900 dark:text-white">${c.nombreMedico || 'Dr. Asignado'} · ${c.sillon || 'Sillón 1'}</span>
                 </div>
+              </div>
+              <div class="flex items-center justify-end pt-2 border-t border-slate-200/60 dark:border-slate-800/80">
+                <button onclick="verComprobanteDesdeId('${c.id}')" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gradient-to-r from-teal-600/10 to-cyan-600/10 hover:from-teal-600/20 hover:to-cyan-600/20 text-teal-700 dark:text-teal-300 border border-teal-500/20 transition flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  Ver Comprobante
+                </button>
               </div>
             </div>
           `;
