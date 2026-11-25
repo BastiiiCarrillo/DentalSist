@@ -25,36 +25,10 @@
   </script>
   <script>
     (function() {
-      const token = sessionStorage.getItem('dentalsis_token');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
-      if (!token || !usuarioRaw) {
-        window.location.replace('/login');
-        return;
-      }
-      try {
-        const partesJwt = token.split('.');
-        if (partesJwt.length === 3) {
-          const payloadJwt = JSON.parse(atob(partesJwt[1].replace(/-/g, '+').replace(/_/g, '/')));
-          if (payloadJwt.exp && payloadJwt.exp * 1000 < Date.now()) {
-            sessionStorage.removeItem('dentalsis_token');
-            sessionStorage.removeItem('dentalsis_usuario');
-            window.location.replace('/login');
-            return;
-          }
-        }
-        const u = JSON.parse(usuarioRaw);
-        const rol = (u.rol || '').toLowerCase();
-        if (rol === 'superadmin' || rol === 'admin') {
-          window.location.replace('/admin');
-          return;
-        }
-        if (rol !== 'odontologo' && rol !== 'odontólogo') {
-          window.location.replace('/paciente');
-          return;
-        }
-      } catch (e) {
-        window.location.replace('/login');
-      }
+      ['dentalsis_token', 'dentalsis_usuario', 'dentalsis_login_timestamp'].forEach(k => {
+        try { sessionStorage.removeItem(k); } catch (e) {}
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,7 +38,7 @@
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
+<body class="hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200">
 
   <nav class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2">
     <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -144,7 +118,7 @@
       </div>
       <div class="flex flex-col sm:flex-row gap-2.5">
         <div class="flex-1 relative">
-          <input type="text" id="inputRutBusquedaHistorial" oninput="filtrarPacientesDentalSis(this.value)" onfocus="abrirDirectorioPacientes()" autocomplete="off" placeholder="Buscar por nombre o RUT... ej: Camilo Vega o 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500" onkeydown="if(event.key==='Enter') buscarPacientePorRutConFirma()">
+          <input type="text" id="inputRutBusquedaHistorial" oninput="filtrarPacientesDentalSis(this.value)" onfocus="abrirDirectorioPacientes()" autocomplete="off" placeholder="Buscar paciente por nombre o RUT..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-teal-500" onkeydown="if(event.key==='Enter') buscarPacientePorRutConFirma()">
           <div id="dropdownPacientesBusqueda" class="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-30 hidden max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800"></div>
         </div>
         <button onclick="buscarPacientePorRutConFirma()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap">
@@ -479,19 +453,19 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800">
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Paciente</span>
-            <span id="recPaciente" class="font-bold text-slate-900 dark:text-white text-xs">Camilo Vega Ortiz</span>
+            <span id="recPaciente" class="font-bold text-slate-900 dark:text-white text-xs">Paciente</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">RUT</span>
-            <span id="recRut" class="font-bold text-slate-900 dark:text-white text-xs">18.234.901-1</span>
+            <span id="recRut" class="font-bold text-slate-900 dark:text-white text-xs">--</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Fecha Emisión</span>
-            <span id="recFecha" class="font-semibold text-slate-700 dark:text-slate-300 text-xs">24 Noviembre 2026</span>
+            <span id="recFecha" class="font-semibold text-slate-700 dark:text-slate-300 text-xs">--</span>
           </div>
           <div>
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Médico Tratante</span>
-            <span id="recMedico" class="font-bold text-teal-600 dark:text-teal-400 text-xs">Dr. Álvaro Soto M.</span>
+            <span id="recMedico" class="font-bold text-teal-600 dark:text-teal-400 text-xs">Especialista</span>
           </div>
         </div>
 
@@ -1228,38 +1202,47 @@
       if (elTxtTurno) elTxtTurno.textContent = 'Turno 09:00 - 18:00';
     }
 
-    function verificarSesionEspecialista() {
-      const token = sessionStorage.getItem('dentalsis_token');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario');
-      if (!token || !usuarioRaw) {
-        window.location.href = '/login';
-        return null;
-      }
+    async function verificarSesionEspecialista() {
       try {
-        const u = JSON.parse(usuarioRaw);
-        const rol = (u.rol || '').toLowerCase();
+        const resSes = await fetch('/api/auth/sesion', { credentials: 'same-origin' });
+        if (!resSes.ok) {
+          window.location.replace('/login');
+          return null;
+        }
+        const ses = await resSes.json();
+        if (!ses || !ses.autenticado || !ses.usuario) {
+          window.location.replace('/login');
+          return null;
+        }
+        const u = ses.usuario;
+        const rol = String(u.rol || '').toLowerCase();
         if (rol === 'superadmin' || rol === 'admin') {
           window.location.replace('/admin');
           return null;
         }
-        if (rol !== 'odontologo' && rol !== 'odontólogo') {
-          window.location.href = '/login';
+        if (rol !== 'odontologo' && rol !== 'odontólogo' && rol !== 'especialista') {
+          window.location.replace('/paciente');
           return null;
         }
         medicoActual = u;
         actualizarCabeceraMedico(u);
+        document.body.classList.remove('hidden');
         return u;
       } catch (e) {
-        window.location.href = '/login';
+        window.location.replace('/login');
         return null;
       }
     }
 
-    function cerrarSesionMedico() {
-      sessionStorage.clear();
-      localStorage.removeItem('dentalsis_token');
-      localStorage.removeItem('dentalsis_usuario');
-      window.location.href = '/login';
+    async function cerrarSesionMedico() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch (e) {}
+      ['dentalsis_token', 'dentalsis_usuario', 'dentalsis_login_timestamp'].forEach(k => {
+        try { sessionStorage.removeItem(k); } catch (e) {}
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+      window.location.replace('/login');
     }
 
     function formatearFechaLegibleAgenda(fechaISO) {
@@ -1530,16 +1513,19 @@
     }
 
     async function cargarAgendaMedico(silencioso = false) {
-      const token = sessionStorage.getItem('dentalsis_token');
-      if (!medicoActual || !token) return;
+      if (!medicoActual) return;
 
       const contenedor = document.getElementById('contenedorAgendaCitas');
       if (!contenedor) return;
 
       try {
         const res = await fetch('/api/especialistas/agenda/' + encodeURIComponent(medicoActual.id), {
-          headers: { 'Authorization': 'Bearer ' + token }
+          credentials: 'same-origin'
         });
+        if (res.status === 401 || res.status === 403) {
+          window.location.replace('/login');
+          return;
+        }
         if (!res.ok) {
           if (!silencioso) {
             contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error al cargar citas de la agenda.</div>';
@@ -1566,12 +1552,15 @@
     }
 
     async function cargarPacientesDentalSis(query = '') {
-      const token = sessionStorage.getItem('dentalsis_token');
-      if (!token) return;
+      if (!medicoActual) return;
       try {
         const res = await fetch('/api/especialistas/pacientes?q=' + encodeURIComponent(query || ''), {
-          headers: { 'Authorization': 'Bearer ' + token }
+          credentials: 'same-origin'
         });
+        if (res.status === 401 || res.status === 403) {
+          window.location.replace('/login');
+          return;
+        }
         if (!res.ok) return;
         const datos = await res.json();
         if (!query) {
@@ -1706,13 +1695,12 @@
     }
 
     async function cambiarEstadoCita(idCita, nuevoEstado, rutPacienteOpc, nombrePacienteOpc) {
-      const token = sessionStorage.getItem('dentalsis_token');
       try {
         const res = await fetch(`/api/especialistas/citas/${idCita}/estado`, {
           method: 'PATCH',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ nuevoEstado })
         });
@@ -1833,7 +1821,6 @@
     }
 
     async function ejecutarFirmaAccesoHistorial() {
-      const token = sessionStorage.getItem('dentalsis_token');
       const inpClave = document.getElementById('inputClaveFirmaAcceso');
       const err = document.getElementById('errorClaveFirmaAcceso');
       const clave = inpClave ? inpClave.value : '';
@@ -1849,9 +1836,9 @@
       try {
         const res = await fetch('/api/especialistas/acceso-historial', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             rutPaciente: rutObjetivoFirma,
@@ -1976,10 +1963,9 @@
     }
 
     async function cargarFichaPaciente(rut) {
-      const token = sessionStorage.getItem('dentalsis_token');
       try {
         const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rut), {
-          headers: { 'Authorization': 'Bearer ' + token }
+          credentials: 'same-origin'
         });
         if (!res.ok) return;
         const datos = await res.json();
@@ -2025,11 +2011,9 @@
 
     async function refrescarHistorialCitasActivo() {
       if (!rutPacienteActual || !firmaAccesoActual) return;
-      const token = sessionStorage.getItem('dentalsis_token');
-      if (!token) return;
       try {
         const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rutPacienteActual), {
-          headers: { 'Authorization': 'Bearer ' + token }
+          credentials: 'same-origin'
         });
         if (!res.ok) return;
         const datos = await res.json();
@@ -2070,7 +2054,6 @@
       const input = document.getElementById('inputClaveFirmaReceta');
       const err = document.getElementById('errorClaveFirmaReceta');
       const clave = (input.value || '').trim();
-      const token = sessionStorage.getItem('dentalsis_token');
 
       if (!clave) {
         err.textContent = 'Por favor ingresa tu contraseña de especialista.';
@@ -2101,9 +2084,9 @@
       try {
         const res = await fetch('/api/especialistas/recetas', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             rutPaciente: rutPacienteActual,
@@ -2347,7 +2330,6 @@
     async function guardarFichaConReautenticacion() {
       const clave = document.getElementById('inputClaveMedico').value.trim();
       const err = document.getElementById('errorClaveMedico');
-      const token = sessionStorage.getItem('dentalsis_token');
 
       if (!clave) {
         err.textContent = 'Por favor ingresa tu contraseña de especialista.';
@@ -2358,9 +2340,9 @@
       try {
         const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rutPacienteActual), {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             passwordConfirmacion: clave,
@@ -2487,13 +2469,12 @@
       if (err) err.classList.add('hidden');
       if (btn) btn.disabled = true;
 
-      const token = sessionStorage.getItem('dentalsis_token');
       try {
         const res = await fetch(`/api/especialistas/citas/${idCita}/estado`, {
           method: 'PATCH',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             nuevoEstado: 'CANCELADA',
@@ -2552,15 +2533,18 @@
     if (typeof actualizarEstadoRecetaUI === 'function') {
       actualizarEstadoRecetaUI();
     }
-    verificarSesionEspecialista();
-    renderizarCalendarioAgenda();
-    cargarAgendaMedico();
-    cargarPacientesDentalSis();
-    setInterval(() => {
-      if (!document.hidden && medicoActual) {
-        cargarAgendaMedico(true);
-      }
-    }, 15000);
+    (async function iniciarPortalEspecialista() {
+      const u = await verificarSesionEspecialista();
+      if (!u) return;
+      renderizarCalendarioAgenda();
+      cargarAgendaMedico();
+      cargarPacientesDentalSis();
+      setInterval(() => {
+        if (!document.hidden && medicoActual) {
+          cargarAgendaMedico(true);
+        }
+      }, 15000);
+    })();
   </script>
 
   <div id="modalAlertaClinica" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">

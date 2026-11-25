@@ -17,9 +17,42 @@ const {
   formatearRut,
   guardarTurnoMedico
 } = require('../models/dataStore');
-const { firmarReceta, verificarFirmaReceta } = require('../services/recetaCrypto');
+const { verificarFirmaReceta } = require('../services/recetaCrypto');
+const { firmarReceta } = require('../services/recetaCrypto');
 const { registrarEvento } = require('../services/logger');
 const { obtenerIpCliente } = require('../services/ipClient');
+
+const autorizacionesHistorial = new Map();
+const VENTANA_AUTORIZACION_MS = 30 * 60 * 1000;
+
+function registrarAutorizacionHistorialLocal(usuarioReq, rutLimpio) {
+  if (!rutLimpio) return;
+  const claves = new Set();
+  if (usuarioReq) {
+    if (usuarioReq.id) claves.add(String(usuarioReq.id));
+    if (usuarioReq.rut) claves.add(String(usuarioReq.rut).replace(/[^0-9kK]/g, '').toUpperCase());
+    if (usuarioReq.email) claves.add(String(usuarioReq.email).toLowerCase());
+  }
+  const expira = Date.now() + VENTANA_AUTORIZACION_MS;
+  claves.forEach(k => {
+    autorizacionesHistorial.set(`${k}:${rutLimpio}`, expira);
+  });
+}
+
+function tieneAutorizacionHistorialVigente(usuarioReq, rutLimpio) {
+  if (!usuarioReq || !rutLimpio) return false;
+  const ahora = Date.now();
+  const claves = [
+    usuarioReq.id && String(usuarioReq.id),
+    usuarioReq.rut && String(usuarioReq.rut).replace(/[^0-9kK]/g, '').toUpperCase(),
+    usuarioReq.email && String(usuarioReq.email).toLowerCase()
+  ].filter(Boolean);
+  for (const k of claves) {
+    const exp = autorizacionesHistorial.get(`${k}:${rutLimpio}`);
+    if (exp && exp > ahora) return true;
+  }
+  return false;
+}
 
 const MAPA_UUIDS_ESP = {
   'DOC-1': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1',
@@ -541,6 +574,22 @@ async function obtenerFichaPaciente(req, res) {
     return res.status(400).json({ error: 'RUT chileno invalido.' });
   }
 
+  const rolUp = String((req.usuario && req.usuario.rol) || '').trim().toUpperCase();
+  const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+  const autorizadoAdmin = rolUp === 'SUPERADMIN' || rolUp === 'ADMIN';
+  if (!autorizadoAdmin && !tieneAutorizacionHistorialVigente(req.usuario, rutLimpio)) {
+    registrarEvento(
+      'ACCESO_HISTORIAL_SIN_FIRMA',
+      `Consulta directa de ficha ${rutLimpio} bloqueada por falta de firma electronica vigente`,
+      obtenerIpCliente(req),
+      (req.usuario && req.usuario.id) || 'ESPECIALISTA',
+      'ALERTA'
+    );
+    return res.status(403).json({
+      error: 'Firma electronica requerida: Autorice el acceso al historial clinico con su contrasena antes de consultarlo.'
+    });
+  }
+
   const ficha = await cargarFichaCompleta(rut);
   return res.status(200).json({ ficha });
 }
@@ -609,6 +658,7 @@ function actualizarFichaConReautenticacion(req, res) {
   });
 
   const rutLimpio = rut.replace(/[^0-9kK]/g, '').toUpperCase();
+  registrarAutorizacionHistorialLocal(req.usuario || medico, rutLimpio);
   const espUuid = MAPA_UUIDS_ESP[medico.id] || medico.uuid || idMedico;
 
   try {
@@ -863,6 +913,7 @@ async function autorizarAccesoHistorial(req, res) {
   }
 
   const rutLimpio = rutPaciente.replace(/[^0-9kK]/g, '').toUpperCase();
+  registrarAutorizacionHistorialLocal(req.usuario || medico, rutLimpio);
   registrarEvento('FIRMA_ACCESO_HISTORIAL_EXITOSA', `Especialista ${medico.nombre} (ID ${medico.id}) firmo con clave y accedio al historial clinico del paciente ${rutLimpio}`, ip, idMedico, 'INFO');
 
   try {

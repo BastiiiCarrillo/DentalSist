@@ -1,8 +1,10 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const {
+  buscarMedicoPorId,
   buscarMedicoPorEmail,
   buscarMedicoPorRut,
+  buscarUsuarioPorId,
   buscarUsuarioPorRut,
   buscarUsuarioPorEmail,
   crearUsuario,
@@ -17,6 +19,97 @@ const { obtenerIpCliente } = require('../services/ipClient');
 const { ROLES } = require('../auth');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dentalsis_super_secret_jwt_2026_key';
+const COOKIE_SESION = 'dentalsis_sesion';
+const COOKIE_TEMP_PWD = 'dentalsis_temp_pwd';
+
+function parsearCookies(req) {
+  const header = req && req.headers && req.headers.cookie;
+  const mapa = {};
+  if (!header || typeof header !== 'string') return mapa;
+  header.split(';').forEach(par => {
+    const idx = par.indexOf('=');
+    if (idx <= 0) return;
+    const clave = par.slice(0, idx).trim();
+    const valor = par.slice(idx + 1).trim();
+    if (!clave) return;
+    try {
+      mapa[clave] = decodeURIComponent(valor);
+    } catch (e) {
+      mapa[clave] = valor;
+    }
+  });
+  return mapa;
+}
+
+function esConexionSegura(req) {
+  if (!req) return false;
+  if (req.secure) return true;
+  const proto = req.headers && req.headers['x-forwarded-proto'];
+  return typeof proto === 'string' && proto.split(',')[0].trim().toLowerCase() === 'https';
+}
+
+function opcionesCookieBase(req, maxAgeMs) {
+  const opts = {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: esConexionSegura(req),
+    path: '/'
+  };
+  if (typeof maxAgeMs === 'number') {
+    opts.maxAge = maxAgeMs;
+  }
+  return opts;
+}
+
+function establecerCookieHttpOnly(res, req, nombre, valor, maxAgeMs) {
+  if (!res || typeof res.cookie !== 'function') return;
+  res.cookie(nombre, valor, opcionesCookieBase(req, maxAgeMs));
+}
+
+function limpiarCookieHttpOnly(res, req, nombre) {
+  if (!res || typeof res.clearCookie !== 'function') return;
+  res.clearCookie(nombre, opcionesCookieBase(req));
+}
+
+function limpiarCookiesSesion(res, req) {
+  limpiarCookieHttpOnly(res, req, COOKIE_SESION);
+  limpiarCookieHttpOnly(res, req, COOKIE_TEMP_PWD);
+}
+
+function extraerTokenRequest(req, nombreCookie = COOKIE_SESION) {
+  const authHeader = req && req.headers && req.headers['authorization'];
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    if (token && token !== 'null' && token !== 'undefined') return token;
+  }
+  const cookies = parsearCookies(req);
+  const cookieVal = cookies[nombreCookie];
+  return cookieVal ? String(cookieVal).trim() : null;
+}
+
+function verificarJwtSesionRequest(req) {
+  const token = extraerTokenRequest(req, COOKIE_SESION);
+  if (!token) return null;
+  try {
+    const decodificado = jwt.verify(token, JWT_SECRET);
+    if (!decodificado || decodificado.soloCambioPassword) return null;
+    return decodificado;
+  } catch (e) {
+    return null;
+  }
+}
+
+function esPeticionWebCookie(req) {
+  return Boolean(req && req.headers && String(req.headers['x-auth-cookie'] || '').trim() === '1');
+}
+
+function resolverRutaInicioRol(rol) {
+  const r = String(rol || '').trim().toUpperCase();
+  if (r === 'SUPERADMIN' || r === 'ADMIN') return '/admin';
+  if (r === 'ODONTOLOGO' || r === 'ESPECIALISTA') return '/especialista';
+  if (r === 'PACIENTE') return '/paciente';
+  return '/login';
+}
 
 const MAPA_UUID_DOC_AUTH = {
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1': 'DOC-1',
@@ -178,6 +271,20 @@ async function login(req, res) {
       usuarioRol: rolAsignado
     });
 
+    limpiarCookieHttpOnly(res, req, COOKIE_SESION);
+    establecerCookieHttpOnly(res, req, COOKIE_TEMP_PWD, tempToken, 15 * 60 * 1000);
+
+    if (esPeticionWebCookie(req)) {
+      return res.status(200).json({
+        requiereCambioPassword: true,
+        mensaje: 'Ingresaste con una contrasena temporal. Por favor introduce una nueva contrasena para continuar.',
+        usuario: {
+          nombre: usuarioEncontrado.nombre,
+          rol: rolAsignado
+        }
+      });
+    }
+
     return res.status(200).json({
       requiereCambioPassword: true,
       tempToken,
@@ -199,6 +306,20 @@ async function login(req, res) {
     usuarioRol: rolAsignado
   });
 
+  limpiarCookieHttpOnly(res, req, COOKIE_TEMP_PWD);
+  establecerCookieHttpOnly(res, req, COOKIE_SESION, token, 4 * 60 * 60 * 1000);
+
+  if (esPeticionWebCookie(req)) {
+    return res.status(200).json({
+      mensaje: 'Autenticacion exitosa.',
+      redireccion: resolverRutaInicioRol(rolAsignado),
+      usuario: {
+        nombre: usuarioEncontrado.nombre,
+        rol: rolAsignado
+      }
+    });
+  }
+
   const { passwordHash, ...perfilSeguro } = usuarioEncontrado;
   perfilSeguro.rol = rolAsignado;
 
@@ -210,12 +331,10 @@ async function login(req, res) {
 }
 
 function verificarToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = extraerTokenRequest(req, COOKIE_SESION);
+  if (!token) {
     return res.status(401).json({ error: 'Acceso no autorizado: Token no proporcionado.' });
   }
-
-  const token = authHeader.split(' ')[1];
   try {
     const decodificado = jwt.verify(token, JWT_SECRET);
     if (decodificado.soloCambioPassword) {
@@ -232,12 +351,10 @@ function verificarToken(req, res, next) {
 }
 
 function verificarTokenCambioTemporal(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = extraerTokenRequest(req, COOKIE_TEMP_PWD);
+  if (!token) {
     return res.status(401).json({ error: 'Acceso no autorizado: Token temporal no proporcionado.' });
   }
-
-  const token = authHeader.split(' ')[1];
   try {
     const decodificado = jwt.verify(token, JWT_SECRET);
     if (!decodificado.soloCambioPassword) {
@@ -303,6 +420,20 @@ async function registro(req, res) {
       JWT_SECRET,
       { expiresIn: '4h' }
     );
+
+    limpiarCookieHttpOnly(res, req, COOKIE_TEMP_PWD);
+    establecerCookieHttpOnly(res, req, COOKIE_SESION, token, 4 * 60 * 60 * 1000);
+
+    if (esPeticionWebCookie(req)) {
+      return res.status(201).json({
+        mensaje: 'Usuario registrado exitosamente en DentalSis.',
+        redireccion: '/paciente',
+        usuario: {
+          nombre: nuevoUsuario.nombre,
+          rol: 'Paciente'
+        }
+      });
+    }
 
     return res.status(201).json({
       mensaje: 'Usuario registrado exitosamente en DentalSis.',
@@ -493,6 +624,20 @@ async function completarPasswordTemporal(req, res) {
       usuarioRol: rolFinal
     });
 
+    limpiarCookieHttpOnly(res, req, COOKIE_TEMP_PWD);
+    establecerCookieHttpOnly(res, req, COOKIE_SESION, token, 4 * 60 * 60 * 1000);
+
+    if (esPeticionWebCookie(req)) {
+      return res.status(200).json({
+        mensaje: 'Contrasena actualizada exitosamente.',
+        redireccion: resolverRutaInicioRol(rolFinal),
+        usuario: {
+          nombre: perfilSeguro.nombre,
+          rol: rolFinal
+        }
+      });
+    }
+
     return res.status(200).json({
       mensaje: 'Contrasena actualizada exitosamente.',
       token,
@@ -502,6 +647,118 @@ async function completarPasswordTemporal(req, res) {
     registrarEvento('CAMBIO_PASSWORD_FALLIDO', `Error al completar cambio de contrasena temporal para ${emailUsuario || rutUsuario}: ${error.message}`, ip, idUsuario || null, 'ALERTA');
     return res.status(400).json({ error: error.message || 'No se pudo actualizar la contrasena temporal.' });
   }
+}
+
+function logout(req, res) {
+  const sesion = verificarJwtSesionRequest(req);
+  if (sesion) {
+    registrarEvento('LOGOUT_USUARIO', `Cierre de sesion para ${sesion.email || sesion.id}`, obtenerIpCliente(req), sesion.id, 'INFO', {
+      usuarioNombre: sesion.nombre,
+      usuarioRol: sesion.rol
+    });
+  }
+  limpiarCookiesSesion(res, req);
+  if (res && typeof res.set === 'function') {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  }
+  return res.status(200).json({ mensaje: 'Sesion cerrada correctamente.' });
+}
+
+async function obtenerSesionActual(req, res) {
+  if (res && typeof res.set === 'function') {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+  }
+
+  const sesion = verificarJwtSesionRequest(req);
+  if (!sesion) {
+    return res.status(200).json({ autenticado: false, usuario: null });
+  }
+
+  let perfilBase = null;
+  const rolUp = String(sesion.rol || '').trim().toUpperCase();
+  const esEsp = rolUp === 'ODONTOLOGO' || rolUp === 'ESPECIALISTA';
+
+  if (esEsp) {
+    perfilBase = buscarMedicoPorId(sesion.id)
+      || (sesion.email ? buscarMedicoPorEmail(sesion.email) : null)
+      || (sesion.rut ? buscarMedicoPorRut(sesion.rut) : null);
+  } else {
+    perfilBase = buscarUsuarioPorId(sesion.id)
+      || (sesion.rut ? buscarUsuarioPorRut(sesion.rut) : null)
+      || (sesion.email ? buscarUsuarioPorEmail(sesion.email) : null);
+  }
+
+  try {
+    const db = require('../models/db');
+    if (db.obtenerPool()) {
+      const rutClean = limpiarRut(sesion.rut || '');
+      const emailClean = String(sesion.email || '').trim().toLowerCase();
+      const idStr = String(sesion.id || '');
+      if (esEsp) {
+        const rEsp = await db.query(
+          'SELECT e.id, e.nombre, e.email, e.rut, es.nombre as especialidad, e.sillon_habitual as sillon, e.registro_sis as "registroSis", e.registro_colegio as "registroColegio", COALESCE(e.debe_cambiar_password, false) as "debeCambiarPassword" FROM especialistas e LEFT JOIN especialidades es ON e.especialidad_id = es.id WHERE e.id::text = $1 OR ($2 <> \'\' AND LOWER(e.email) = $2) OR ($3 <> \'\' AND REPLACE(REPLACE(e.rut, $4, $5), $6, $7) = $3) LIMIT 1;',
+          [idStr, emailClean, rutClean, '.', '', '-', '']
+        );
+        if (rEsp.rows && rEsp.rows.length > 0) {
+          const rowEsp = rEsp.rows[0];
+          const sillonFmt = typeof rowEsp.sillon === 'number' || /^\d+$/.test(String(rowEsp.sillon || '')) ? `Box ${rowEsp.sillon}` : (rowEsp.sillon || 'Box 1');
+          const idNorm = MAPA_UUID_DOC_AUTH[String(rowEsp.id)] || String(rowEsp.id);
+          perfilBase = { ...(perfilBase || {}), ...rowEsp, id: idNorm, uuid: String(rowEsp.id), sillon: sillonFmt };
+        }
+      }
+      const rUsr = await db.query(
+        'SELECT u.id, u.nombre, u.email, u.rut, p.telefono, u.rol, u.estado, COALESCE(u.debe_cambiar_password, false) as "debeCambiarPassword" FROM usuarios u LEFT JOIN pacientes p ON REPLACE(REPLACE(p.rut, $4, $5), $6, $7) = REPLACE(REPLACE(u.rut, $4, $5), $6, $7) WHERE u.id::text = $1 OR ($2 <> \'\' AND LOWER(u.email) = $2) OR ($3 <> \'\' AND REPLACE(REPLACE(u.rut, $4, $5), $6, $7) = $3) LIMIT 1;',
+        [idStr, emailClean, rutClean, '.', '', '-', '']
+      );
+      if (rUsr.rows && rUsr.rows.length > 0) {
+        const uDb = rUsr.rows[0];
+        if (!esEsp) {
+          perfilBase = { ...(perfilBase || {}), ...uDb };
+        } else if (perfilBase) {
+          perfilBase.estado = uDb.estado;
+          perfilBase.debeCambiarPassword = Boolean(perfilBase.debeCambiarPassword || uDb.debeCambiarPassword);
+        } else {
+          perfilBase = uDb;
+        }
+      }
+    }
+  } catch (eDb) {
+  }
+
+  if (perfilBase) {
+    if (perfilBase.estado && String(perfilBase.estado).trim().toUpperCase() !== 'ACTIVO') {
+      limpiarCookiesSesion(res, req);
+      return res.status(200).json({ autenticado: false, usuario: null });
+    }
+    if (perfilBase.debeCambiarPassword || perfilBase.debe_cambiar_password) {
+      limpiarCookiesSesion(res, req);
+      return res.status(200).json({ autenticado: false, usuario: null });
+    }
+  }
+
+  const usuarioRespuesta = {
+    id: (perfilBase && perfilBase.id) || sesion.id,
+    nombre: (perfilBase && perfilBase.nombre) || sesion.nombre,
+    email: (perfilBase && perfilBase.email) || sesion.email,
+    rut: (perfilBase && (perfilBase.rutFormateado || perfilBase.rut)) || sesion.rut,
+    rol: sesion.rol
+  };
+
+  if (perfilBase && perfilBase.telefono) {
+    usuarioRespuesta.telefono = perfilBase.telefono;
+  }
+  if (esEsp && perfilBase) {
+    if (perfilBase.especialidad) usuarioRespuesta.especialidad = perfilBase.especialidad;
+    if (perfilBase.sillon) usuarioRespuesta.sillon = perfilBase.sillon;
+    if (perfilBase.registroSis) usuarioRespuesta.registroSis = perfilBase.registroSis;
+    if (perfilBase.registroColegio) usuarioRespuesta.registroColegio = perfilBase.registroColegio;
+  }
+
+  return res.status(200).json({
+    autenticado: true,
+    usuario: usuarioRespuesta
+  });
 }
 
 function verificarRol(...rolesPermitidos) {
@@ -520,10 +777,16 @@ function verificarRol(...rolesPermitidos) {
 
 module.exports = {
   login,
+  logout,
+  obtenerSesionActual,
   registro,
   actualizarPassword,
   completarPasswordTemporal,
   verificarToken,
   verificarTokenCambioTemporal,
-  verificarRol
+  verificarRol,
+  verificarJwtSesionRequest,
+  resolverRutaInicioRol,
+  COOKIE_SESION,
+  COOKIE_TEMP_PWD
 };

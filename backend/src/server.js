@@ -12,14 +12,20 @@ const {
   sanitizarEntradas,
   limiteGlobal
 } = require('./middleware/seguridad');
-const { obtenerLogsAuditoria } = require('./services/logger');
+const { obtenerLogsAuditoria, registrarEvento } = require('./services/logger');
+const { obtenerIpCliente } = require('./services/ipClient');
 
 const authRutas = require('./routes/auth.routes');
 const pacienteRutas = require('./routes/paciente.routes');
 const especialistaRutas = require('./routes/especialista.routes');
 const medicamentosRutas = require('./routes/medicamentos.routes');
 const adminRutas = require('./routes/admin.routes');
-const { verificarToken, verificarRol } = require('./controllers/auth.controller');
+const {
+  verificarToken,
+  verificarRol,
+  verificarJwtSesionRequest,
+  resolverRutaInicioRol
+} = require('./controllers/auth.controller');
 
 const app = express();
 app.disable('x-powered-by');
@@ -33,7 +39,7 @@ app.use(helmet({
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Cookie']
 }));
 
 app.use(limiteGlobal);
@@ -50,6 +56,13 @@ const rutaPublica = fs.existsSync(path.join(__dirname, '../../public'))
   ? path.join(__dirname, '../../public')
   : path.join(__dirname, '../public');
 
+function servirHtmlSinCache(res, archivo) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  return res.sendFile(path.join(rutaPublica, archivo));
+}
+
 app.use((req, res, next) => {
   if (req.method === 'GET' && req.path.endsWith('.html')) {
     const base = req.path.slice(0, -5);
@@ -59,7 +72,74 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(rutaPublica));
+app.get(['/', '/index'], (req, res) => {
+  const sesion = verificarJwtSesionRequest(req);
+  if (sesion && sesion.rol) {
+    return res.redirect(302, resolverRutaInicioRol(sesion.rol));
+  }
+  return servirHtmlSinCache(res, 'index.html');
+});
+
+app.get('/login', (req, res) => {
+  const sesion = verificarJwtSesionRequest(req);
+  if (sesion && sesion.rol) {
+    return res.redirect(302, resolverRutaInicioRol(sesion.rol));
+  }
+  return servirHtmlSinCache(res, 'login.html');
+});
+
+app.get('/paciente', (req, res) => {
+  const sesion = verificarJwtSesionRequest(req);
+  if (sesion && sesion.rol) {
+    const rolUp = String(sesion.rol).trim().toUpperCase();
+    if (rolUp !== 'PACIENTE') {
+      return res.redirect(302, resolverRutaInicioRol(sesion.rol));
+    }
+  }
+  return servirHtmlSinCache(res, 'paciente.html');
+});
+
+app.get('/especialista', (req, res) => {
+  const sesion = verificarJwtSesionRequest(req);
+  if (!sesion || !sesion.rol) {
+    return res.redirect(302, '/login');
+  }
+  const rolUp = String(sesion.rol).trim().toUpperCase();
+  if (rolUp !== 'ODONTOLOGO' && rolUp !== 'ESPECIALISTA') {
+    registrarEvento(
+      'ACCESO_PANEL_ESPECIALISTA_DENEGADO',
+      `Usuario ${sesion.email || sesion.id} (${sesion.rol}) intento acceder al portal de especialista sin autorizacion`,
+      obtenerIpCliente(req),
+      sesion.id,
+      'PELIGRO',
+      { usuarioNombre: sesion.nombre, usuarioRol: sesion.rol }
+    );
+    return res.redirect(302, resolverRutaInicioRol(sesion.rol));
+  }
+  return servirHtmlSinCache(res, 'especialista.html');
+});
+
+app.get('/admin', (req, res) => {
+  const sesion = verificarJwtSesionRequest(req);
+  if (!sesion || !sesion.rol) {
+    return res.redirect(302, '/login');
+  }
+  const rolUp = String(sesion.rol).trim().toUpperCase();
+  if (rolUp !== 'SUPERADMIN' && rolUp !== 'ADMIN') {
+    registrarEvento(
+      'ACCESO_PANEL_ADMIN_DENEGADO',
+      `Usuario ${sesion.email || sesion.id} (${sesion.rol}) intento acceder al panel administrador sin autorizacion`,
+      obtenerIpCliente(req),
+      sesion.id,
+      'PELIGRO',
+      { usuarioNombre: sesion.nombre, usuarioRol: sesion.rol }
+    );
+    return res.redirect(302, resolverRutaInicioRol(sesion.rol));
+  }
+  return servirHtmlSinCache(res, 'admin.html');
+});
+
+app.use(express.static(rutaPublica, { index: false }));
 
 app.use('/api/auth', authRutas);
 app.use('/api/pacientes', pacienteRutas);
@@ -77,26 +157,6 @@ app.get('/api/auditoria', verificarToken, verificarRol('SuperAdmin', 'Admin'), a
 
 app.get('/api/salud', (req, res) => {
   res.status(200).json({ estado: 'OPERATIVO', timestamp: new Date().toISOString() });
-});
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(rutaPublica, 'index.html'));
-});
-
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(rutaPublica, 'login.html'));
-});
-
-app.get('/paciente', (req, res) => {
-  res.sendFile(path.join(rutaPublica, 'paciente.html'));
-});
-
-app.get('/especialista', (req, res) => {
-  res.sendFile(path.join(rutaPublica, 'especialista.html'));
-});
-
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(rutaPublica, 'admin.html'));
 });
 
 app.use((err, req, res, next) => {

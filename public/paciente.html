@@ -114,10 +114,10 @@
         <div id="perfilUsuarioNavbar" class="hidden flex items-center gap-2 sm:gap-3">
           <div class="flex items-center gap-2 cursor-pointer group" onclick="abrirModalMisReservas()" title="Ver historial de reservas">
             <div id="avatarUsuarioNavbar" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-600 group-hover:bg-cyan-500 text-white font-bold flex items-center justify-center text-xs shadow-md shadow-cyan-600/20 transition">
-              CV
+              --
             </div>
             <div class="hidden sm:block text-left">
-              <span id="nombreUsuarioNavbar" class="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition">Camilo Vega Ortiz</span>
+              <span id="nombreUsuarioNavbar" class="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition">Paciente</span>
               <span id="rolUsuarioNavbar" class="text-[10px] text-teal-600 dark:text-teal-400 font-semibold block">Paciente Autenticado</span>
             </div>
           </div>
@@ -236,7 +236,7 @@
           <div class="space-y-3.5 text-xs">
             <div>
               <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">RUT Chileno (con guión)</label>
-              <input type="text" id="inputRutPaciente" oninput="formatearYValidarRutPaciente(this)" value="" placeholder="Ej: 11.111.111-1 o 18.234.901-1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
+              <input type="text" id="inputRutPaciente" oninput="formatearYValidarRutPaciente(this)" value="" placeholder="Ej: 12.345.678-5" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-cyan-500">
               <span id="mensajeErrorRut" class="text-[10px] text-red-500 font-semibold hidden block mt-0.5">RUT chileno inválido o mal escrito.</span>
             </div>
 
@@ -307,7 +307,7 @@
         </div>
         <div class="flex justify-between items-center">
           <span class="text-slate-500">Paciente:</span>
-          <span id="resumenPaciente" class="font-bold text-slate-800 dark:text-slate-200">Camilo Vega Ortiz</span>
+          <span id="resumenPaciente" class="font-bold text-slate-800 dark:text-slate-200">Paciente</span>
         </div>
         <div class="flex justify-between items-center">
           <span class="text-slate-500">Especialista:</span>
@@ -721,19 +721,17 @@
       const esp = encodeURIComponent(especialidadSeleccionada || '');
       const med = encodeURIComponent(idMedicoSeleccionado || '');
       const inputRut = document.getElementById('inputRutPaciente');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
       let rutVal = '';
       if (inputRut && inputRut.value.trim().length >= 7) {
         rutVal = inputRut.value.trim();
-      } else if (usuarioRaw) {
-        try {
-          const u = JSON.parse(usuarioRaw);
-          if (u.rut) rutVal = u.rut;
-        } catch (e) {}
+      } else if (usuarioPacienteActual && usuarioPacienteActual.rut) {
+        rutVal = usuarioPacienteActual.rut;
       }
       const rutParam = encodeURIComponent(rutVal);
       try {
-        const respuesta = await fetch(`/api/pacientes/disponibilidad?fecha=${fechaISO}&especialidad=${esp}&idMedico=${med}&rut=${rutParam}`);
+        const respuesta = await fetch(`/api/pacientes/disponibilidad?fecha=${fechaISO}&especialidad=${esp}&idMedico=${med}&rut=${rutParam}`, {
+          credentials: 'same-origin'
+        });
         if (respuesta.ok) {
           const datos = await respuesta.json();
           const nuevasOcupadas = datos.horasOcupadas || [];
@@ -943,61 +941,22 @@
       }
     }
 
-    function inicializarEstadoPaciente() {
-      const token = sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
+    let usuarioPacienteActual = null;
+
+    function limpiarAlmacenamientoLegacyPaciente() {
+      ['dentalsis_token', 'dentalsis_usuario', 'dentalsis_login_timestamp'].forEach(k => {
+        try { sessionStorage.removeItem(k); } catch (e) {}
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+    }
+
+    async function inicializarEstadoPaciente() {
+      limpiarAlmacenamientoLegacyPaciente();
       const btnNavbar = document.getElementById('btnIniciarSesionNavbar');
       const perfilNavbar = document.getElementById('perfilUsuarioNavbar');
 
-      if (token && usuarioRaw) {
-        try {
-          const usuario = JSON.parse(usuarioRaw);
-          if (btnNavbar) btnNavbar.classList.add('hidden');
-          if (perfilNavbar) perfilNavbar.classList.remove('hidden');
-          mostrarModoInvitadoPacienteUI(false);
-
-          const nombreEl = document.getElementById('nombreUsuarioNavbar');
-          const avatarEl = document.getElementById('avatarUsuarioNavbar');
-          if (nombreEl && usuario.nombre) nombreEl.textContent = usuario.nombre;
-          if (avatarEl && usuario.nombre) {
-            const partes = usuario.nombre.trim().split(' ');
-            const ini = (partes[0][0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
-            avatarEl.textContent = ini;
-          }
-
-          const inpRut = document.getElementById('inputRutPaciente');
-          const inpNom = document.getElementById('inputNombrePaciente');
-          const inpTel = document.getElementById('inputTelefonoPaciente');
-          const inpMail = document.getElementById('inputEmailPaciente');
-
-          if (inpRut && usuario.rut) {
-            inpRut.value = usuario.rut;
-            inpRut.readOnly = true;
-            inpRut.classList.add('bg-slate-100', 'dark:bg-slate-800', 'cursor-not-allowed');
-          }
-          if (inpNom && usuario.nombre) inpNom.value = usuario.nombre;
-          if (inpMail && usuario.email) inpMail.value = usuario.email;
-          if (inpTel && usuario.telefono) {
-            inpTel.value = usuario.telefono.replace('+56', '').trim();
-          }
-        } catch (e) {
-          if (btnNavbar) btnNavbar.classList.remove('hidden');
-          if (perfilNavbar) perfilNavbar.classList.add('hidden');
-          mostrarModoInvitadoPacienteUI(true);
-          const inpRut = document.getElementById('inputRutPaciente');
-          const inpNom = document.getElementById('inputNombrePaciente');
-          const inpTel = document.getElementById('inputTelefonoPaciente');
-          const inpMail = document.getElementById('inputEmailPaciente');
-          if (inpRut) {
-            inpRut.value = '';
-            inpRut.readOnly = false;
-            inpRut.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'cursor-not-allowed');
-          }
-          if (inpNom) inpNom.value = '';
-          if (inpTel) inpTel.value = '';
-          if (inpMail) inpMail.value = '';
-        }
-      } else {
+      const aplicarModoInvitado = () => {
+        usuarioPacienteActual = null;
         if (btnNavbar) btnNavbar.classList.remove('hidden');
         if (perfilNavbar) perfilNavbar.classList.add('hidden');
         mostrarModoInvitadoPacienteUI(true);
@@ -1013,14 +972,72 @@
         if (inpNom) inpNom.value = '';
         if (inpTel) inpTel.value = '';
         if (inpMail) inpMail.value = '';
+      };
+
+      try {
+        const resSes = await fetch('/api/auth/sesion', { credentials: 'same-origin' });
+        if (!resSes.ok) {
+          aplicarModoInvitado();
+          return;
+        }
+        const ses = await resSes.json();
+        if (!ses || !ses.autenticado || !ses.usuario) {
+          aplicarModoInvitado();
+          return;
+        }
+
+        const usuario = ses.usuario;
+        const rol = String(usuario.rol || '').toLowerCase();
+        if (rol === 'superadmin' || rol === 'admin') {
+          window.location.replace('/admin');
+          return;
+        }
+        if (rol === 'odontologo' || rol === 'odontólogo' || rol === 'medico' || rol === 'especialista') {
+          window.location.replace('/especialista');
+          return;
+        }
+
+        usuarioPacienteActual = usuario;
+        if (btnNavbar) btnNavbar.classList.add('hidden');
+        if (perfilNavbar) perfilNavbar.classList.remove('hidden');
+        mostrarModoInvitadoPacienteUI(false);
+
+        const nombreEl = document.getElementById('nombreUsuarioNavbar');
+        const avatarEl = document.getElementById('avatarUsuarioNavbar');
+        if (nombreEl && usuario.nombre) nombreEl.textContent = usuario.nombre;
+        if (avatarEl && usuario.nombre) {
+          const partes = usuario.nombre.trim().split(/\s+/);
+          const ini = (partes[0][0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
+          avatarEl.textContent = ini;
+        }
+
+        const inpRut = document.getElementById('inputRutPaciente');
+        const inpNom = document.getElementById('inputNombrePaciente');
+        const inpTel = document.getElementById('inputTelefonoPaciente');
+        const inpMail = document.getElementById('inputEmailPaciente');
+
+        if (inpRut && usuario.rut) {
+          inpRut.value = usuario.rut;
+          inpRut.readOnly = true;
+          inpRut.classList.add('bg-slate-100', 'dark:bg-slate-800', 'cursor-not-allowed');
+        }
+        if (inpNom && usuario.nombre) inpNom.value = usuario.nombre;
+        if (inpMail && usuario.email) inpMail.value = usuario.email;
+        if (inpTel && usuario.telefono) {
+          inpTel.value = usuario.telefono.replace('+56', '').trim();
+        }
+      } catch (e) {
+        aplicarModoInvitado();
       }
     }
 
-    function cerrarSesionPaciente() {
-      sessionStorage.clear();
-      localStorage.removeItem('dentalsis_token');
-      localStorage.removeItem('dentalsis_usuario');
-      window.location.href = '/login';
+    async function cerrarSesionPaciente() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch (e) {}
+      usuarioPacienteActual = null;
+      limpiarAlmacenamientoLegacyPaciente();
+      window.location.replace('/login');
     }
 
     function validarRutChileno(rutCompleto) {
@@ -1129,13 +1146,14 @@
       const mesPadded = String(mesSeleccionado + 1).padStart(2, '0');
       const diaPadded = String(diaSeleccionado).padStart(2, '0');
       const fechaISO = `${anoSeleccionado}-${mesPadded}-${diaPadded}`;
-      const esInvitado = !(sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token'));
+      const esInvitado = !usuarioPacienteActual;
 
       const idMedicoFinal = idMedicoSeleccionado || 'DOC-1';
 
       try {
         const respuesta = await fetch('/api/pacientes/reservar', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             rut,
@@ -1244,11 +1262,7 @@
     function verComprobanteDesdeId(citaId) {
       const c = listaCitasCargadas.find(item => String(item.id) === String(citaId));
       if (!c) return;
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
-      let u = {};
-      try {
-        if (usuarioRaw) u = JSON.parse(usuarioRaw);
-      } catch (e) {}
+      const u = usuarioPacienteActual || {};
 
       document.getElementById('comprobantePaciente').textContent = u.nombre || c.nombrePaciente || 'Paciente Registrado';
       document.getElementById('comprobanteRut').textContent = u.rut || c.rutPaciente || 'RUT Registrado';
@@ -1350,26 +1364,11 @@
     }
 
     async function abrirModalMisReservas() {
-      const token = sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
-
-      if (!token || !usuarioRaw) {
+      if (!usuarioPacienteActual || !usuarioPacienteActual.rut) {
         abrirModalRequiereLogin();
         return;
       }
-
-      let usuario = null;
-      try {
-        usuario = JSON.parse(usuarioRaw);
-      } catch (e) {
-        abrirModalRequiereLogin();
-        return;
-      }
-
-      if (!usuario || !usuario.rut) {
-        abrirModalRequiereLogin();
-        return;
-      }
+      const usuario = usuarioPacienteActual;
 
       const modal = document.getElementById('modalMisReservas');
       const contenedor = document.getElementById('contenedorListaMisReservas');
@@ -1402,12 +1401,8 @@
       if (!contenedor) return;
       contenedor.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Buscando citas registradas...</div>';
 
-      const token = sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token');
-      const headers = {};
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-
       try {
-        const res = await fetch('/api/pacientes/citas/' + encodeURIComponent(rut), { headers });
+        const res = await fetch('/api/pacientes/citas/' + encodeURIComponent(rut), { credentials: 'same-origin' });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           contenedor.innerHTML = `<div class="p-4 text-center text-xs text-amber-600 dark:text-amber-400">${escHtml(errData.error || 'No fue posible consultar las citas para este RUT.')}</div>`;
@@ -1576,15 +1571,13 @@
     }
 
     async function ejecutarCancelacionCitaPaciente() {
-      const token = sessionStorage.getItem('dentalsis_token') || localStorage.getItem('dentalsis_token');
-      const usuarioRaw = sessionStorage.getItem('dentalsis_usuario') || localStorage.getItem('dentalsis_usuario');
       const motivoInp = document.getElementById('inputMotivoCancelacion');
       const claveInp = document.getElementById('inputClaveCancelacionPaciente');
       const err = document.getElementById('errorCancelarCitaPaciente');
       const motivo = motivoInp ? motivoInp.value.trim() : '';
       const password = claveInp ? claveInp.value : '';
 
-      if (!citaCancelacionId || !token) {
+      if (!citaCancelacionId || !usuarioPacienteActual) {
         cerrarModalCancelarCita();
         return;
       }
@@ -1608,9 +1601,9 @@
       try {
         const res = await fetch('/api/pacientes/citas/' + encodeURIComponent(citaCancelacionId) + '/cancelar', {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ motivo, password })
         });
@@ -1624,10 +1617,7 @@
         }
 
         cerrarModalCancelarCita();
-        let rutUsuario = '';
-        try {
-          if (usuarioRaw) rutUsuario = JSON.parse(usuarioRaw).rut || '';
-        } catch (e) {}
+        const rutUsuario = usuarioPacienteActual.rut || '';
         if (rutUsuario) await cargarCitasPaciente(rutUsuario);
         actualizarDisponibilidadEnVivo();
         mostrarAlertaClinica('Tu cita ha sido cancelada exitosamente y el bloque horario quedó liberado.', 'Cita Cancelada');
@@ -1662,8 +1652,10 @@
     renderizarMesCompleto();
     renderizarHorarios();
     renderizarMedicosDisponibles();
-    inicializarEstadoPaciente();
-    actualizarDisponibilidadEnVivo();
+    (async function iniciarPortalPaciente() {
+      await inicializarEstadoPaciente();
+      await actualizarDisponibilidadEnVivo();
+    })();
     setInterval(actualizarDisponibilidadEnVivo, 8000);
     window.addEventListener('focus', actualizarDisponibilidadEnVivo);
     document.addEventListener('visibilitychange', () => {

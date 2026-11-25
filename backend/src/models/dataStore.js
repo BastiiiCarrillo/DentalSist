@@ -531,10 +531,15 @@ function obtenerMedicosDisponibles(especialidad, fecha, hora) {
     }
     const ocupado = verificarColisionCita(medico.id, medico.sillon, fecha, hora);
     return !ocupado;
-  }).map(m => {
-    const { passwordHash, ...datosPublicos } = m;
-    return datosPublicos;
-  });
+  }).map(m => ({
+    id: m.id,
+    nombre: m.nombre,
+    especialidad: m.especialidad,
+    sillon: m.sillon,
+    registroSis: m.registroSis,
+    registroColegio: m.registroColegio,
+    horariosBase: m.horariosBase
+  }));
 }
 
 function crearCita(datos) {
