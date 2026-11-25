@@ -740,19 +740,19 @@ async function obtenerSesionActual(req, res) {
   const usuarioRespuesta = {
     id: (perfilBase && perfilBase.id) || sesion.id,
     nombre: (perfilBase && perfilBase.nombre) || sesion.nombre,
-    email: (perfilBase && perfilBase.email) || sesion.email,
-    rut: (perfilBase && (perfilBase.rutFormateado || perfilBase.rut)) || sesion.rut,
     rol: sesion.rol
   };
 
-  if (perfilBase && perfilBase.telefono) {
-    usuarioRespuesta.telefono = perfilBase.telefono;
-  }
   if (esEsp && perfilBase) {
     if (perfilBase.especialidad) usuarioRespuesta.especialidad = perfilBase.especialidad;
     if (perfilBase.sillon) usuarioRespuesta.sillon = perfilBase.sillon;
     if (perfilBase.registroSis) usuarioRespuesta.registroSis = perfilBase.registroSis;
-    if (perfilBase.registroColegio) usuarioRespuesta.registroColegio = perfilBase.registroColegio;
+  } else if (rolUp !== 'SUPERADMIN' && rolUp !== 'ADMIN') {
+    usuarioRespuesta.email = (perfilBase && perfilBase.email) || sesion.email;
+    usuarioRespuesta.rut = (perfilBase && (perfilBase.rutFormateado || perfilBase.rut)) || sesion.rut;
+    if (perfilBase && perfilBase.telefono) {
+      usuarioRespuesta.telefono = perfilBase.telefono;
+    }
   }
 
   return res.status(200).json({

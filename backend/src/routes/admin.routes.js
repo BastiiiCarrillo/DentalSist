@@ -19,6 +19,7 @@ router.get('/resumen', obtenerResumenAdmin);
 router.get('/medicos', obtenerMedicosAdmin);
 router.get('/pacientes', obtenerPacientesAdmin);
 router.get('/pacientes/:rut/detalle', obtenerDetallePacienteAdmin);
+router.post('/pacientes/detalle', obtenerDetallePacienteAdmin);
 router.get('/recetas', obtenerRecetasAdmin);
 router.get('/logs', obtenerLogsAdmin);
 router.get('/usuarios', obtenerUsuariosResetAdmin);

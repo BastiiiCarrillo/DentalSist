@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
-const cors = require('cors');
 
 const { cargarEnv, verificarConexion } = require('./models/db');
 cargarEnv();
@@ -32,15 +31,69 @@ app.disable('x-powered-by');
 app.set('trust proxy', true);
 
 app.use(helmet({
-  contentSecurityPolicy: false,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+  hsts: false,
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.tailwindcss.com'],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: null
+    }
+  }
 }));
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Cookie']
-}));
+const origenesCorsExtra = new Set(
+  String(process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+);
+
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  const proto = req.headers['x-forwarded-proto'];
+  const esHttps = req.secure || (typeof proto === 'string' && proto.split(',')[0].trim().toLowerCase() === 'https');
+  if (esHttps) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  const reqOrigin = req.headers.origin;
+  const hostHeader = req.get('host');
+  const esMismoOrigen = Boolean(
+    reqOrigin && hostHeader && (
+      reqOrigin === `https://${hostHeader}`
+      || reqOrigin === `http://${hostHeader}`
+    )
+  );
+  if (reqOrigin) {
+    res.setHeader('Vary', 'Origin');
+    if (!esMismoOrigen && !origenesCorsExtra.has(reqOrigin)) {
+      if (req.method === 'OPTIONS') {
+        return res.status(403).json({ error: 'Origen CORS no autorizado.' });
+      }
+      return next();
+    }
+    res.setHeader('Access-Control-Allow-Origin', reqOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Auth-Cookie, X-Paciente-Rut');
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+  }
+  next();
+});
 
 app.use(limiteGlobal);
 app.use(rechazarPayloadsXml);

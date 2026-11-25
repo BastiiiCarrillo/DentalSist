@@ -104,7 +104,9 @@ describe('Cookies HttpOnly, Ocultamiento de Tokens y Aislamiento de Portales HTM
     });
     assert.strictEqual(resSesion.status, 200);
     assert.strictEqual(resSesion.data.autenticado, true);
-    assert.strictEqual(resSesion.data.usuario.email, 'alvaro.soto@dentalsis.cl');
+    assert.strictEqual(resSesion.data.usuario.nombre, 'Dr. Álvaro Soto M.');
+    assert.strictEqual(resSesion.data.usuario.email, undefined);
+    assert.strictEqual(resSesion.data.usuario.rut, undefined);
     assert.strictEqual(resSesion.data.usuario.passwordHash, undefined);
     assert.strictEqual(resSesion.data.token, undefined);
 
@@ -253,5 +255,60 @@ describe('Cookies HttpOnly, Ocultamiento de Tokens y Aislamiento de Portales HTM
     });
     assert.strictEqual(resConFirma.status, 200);
     assert.ok(resConFirma.data.ficha);
+
+    const resConFirmaPost = await peticionHttp(puerto, '/api/especialistas/ficha-consulta', 'POST', {
+      'Cookie': cookieEsp
+    }, { rut: '18.234.901-1' });
+    assert.strictEqual(resConFirmaPost.status, 200);
+    assert.ok(resConFirmaPost.data.ficha);
+  });
+
+  test('Cabeceras CSP, Permissions-Policy, CORS estricto y ausencia de doble guion en RUTs de usuarios', async () => {
+    const resSalud = await peticionHttp(puerto, '/api/salud');
+    assert.strictEqual(resSalud.status, 200);
+    assert.strictEqual(resSalud.headers['access-control-allow-origin'], undefined);
+    assert.ok(resSalud.headers['content-security-policy']);
+    assert.ok(resSalud.headers['content-security-policy'].includes("frame-ancestors 'none'"));
+    assert.strictEqual(resSalud.headers['x-frame-options'], 'DENY');
+    assert.ok(resSalud.headers['permissions-policy']);
+
+    const resCorsMalo = await peticionHttp(puerto, '/api/salud', 'GET', {
+      'Origin': 'https://atacante.externo.example'
+    });
+    assert.strictEqual(resCorsMalo.headers['access-control-allow-origin'], undefined);
+
+    const resPreflightMalo = await peticionHttp(puerto, '/api/admin/resumen', 'OPTIONS', {
+      'Origin': 'https://atacante.externo.example'
+    });
+    assert.strictEqual(resPreflightMalo.status, 403);
+
+    const tokPaciente = jwt.sign(
+      { id: 'USR-PAC-1', nombre: 'Paciente Test', email: 'camilo.vega@correo.cl', rut: '18.234.901-1', rol: 'Paciente' },
+      JWT_SECRET
+    );
+    const resMisCitas = await peticionHttp(puerto, '/api/pacientes/mis-citas', 'GET', {
+      'Cookie': `${COOKIE_SESION}=${tokPaciente}`
+    });
+    assert.strictEqual(resMisCitas.status, 200);
+    assert.ok(Array.isArray(resMisCitas.data.citas));
+
+    const tokAdmin = jwt.sign(
+      { id: 'USR-ADMIN-1', nombre: 'Ing. Admin', email: 'admin@dentalsis.cl', rut: '15.432.890-K', rol: 'SuperAdmin' },
+      JWT_SECRET
+    );
+    const resUsuarios = await peticionHttp(puerto, '/api/admin/usuarios', 'GET', {
+      'Cookie': `${COOKIE_SESION}=${tokAdmin}`
+    });
+    assert.strictEqual(resUsuarios.status, 200);
+    resUsuarios.data.usuarios.forEach(u => {
+      assert.ok(!String(u.rutFormateado || '').includes('--'));
+    });
+
+    const resSesionAdm = await peticionHttp(puerto, '/api/auth/sesion', 'GET', {
+      'Cookie': `${COOKIE_SESION}=${tokAdmin}`
+    });
+    assert.strictEqual(resSesionAdm.status, 200);
+    assert.strictEqual(resSesionAdm.data.usuario.email, undefined);
+    assert.strictEqual(resSesionAdm.data.usuario.rut, undefined);
   });
 });

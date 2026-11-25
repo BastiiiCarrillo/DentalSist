@@ -11,6 +11,7 @@ const { limiteOperacionesSensibles } = require('../middleware/seguridad');
 
 router.post('/reservar', limiteOperacionesSensibles, reservarCita);
 router.get('/disponibilidad', consultarDisponibilidad);
+router.get('/mis-citas', verificarToken, consultarMisCitas);
 router.get('/citas/:rut', verificarToken, consultarMisCitas);
 router.post('/citas/:idCita/cancelar', verificarToken, limiteOperacionesSensibles, cancelarCitaPaciente);
 

@@ -314,16 +314,16 @@
           <div class="flex flex-wrap items-center gap-2">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 font-semibold text-[11px]">
               <span id="dotAutoLogs" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span id="estadoAutoLogs">Auto · cada 5 seg</span>
+              <span id="estadoAutoLogs">Auto · cada 15 seg</span>
             </span>
             <span id="horaUltimaActLogs" class="text-[11px] text-slate-500 dark:text-slate-400">Última act: --:--:--</span>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <label for="selectorIntervaloLogs" class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Actualizar cada:</label>
             <select id="selectorIntervaloLogs" onchange="cambiarIntervaloLogs(this.value)" class="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:border-teal-500">
-              <option value="5000" selected>5 seg</option>
+              <option value="5000">5 seg</option>
               <option value="10000">10 seg</option>
-              <option value="15000">15 seg</option>
+              <option value="15000" selected>15 seg</option>
               <option value="30000">30 seg</option>
               <option value="60000">60 seg</option>
               <option value="0">Manual</option>
@@ -524,9 +524,6 @@
         logs: { panel: 'panelLogs', btn: 'tabBtnLogs' },
         passwords: { panel: 'panelPasswords', btn: 'tabBtnPasswords' }
       };
-      if (pestana === 'passwords' && cacheUsuariosReset.length === 0) {
-        cargarUsuariosResetAdmin();
-      }
       Object.keys(paneles).forEach(k => {
         const p = document.getElementById(paneles[k].panel);
         const b = document.getElementById(paneles[k].btn);
@@ -534,10 +531,21 @@
         if (p) p.classList.toggle('hidden', !activo);
         if (b) {
           b.className = activo
-            ? 'flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-600 text-white shadow-md shadow-teal-600/20 transition flex items-center justify-center gap-2'
-            : 'flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2';
+            ? 'flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-bold bg-teal-600 text-white shadow-md shadow-teal-600/20 flex items-center justify-center gap-2'
+            : 'flex-1 min-w-[150px] px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-2';
         }
       });
+      if (pestana === 'medicos' && cacheMedicos.length === 0) {
+        cargarMedicosAdmin();
+      } else if (pestana === 'pacientes' && cachePacientes.length === 0) {
+        cargarPacientesAdmin();
+      } else if (pestana === 'recetas' && cacheRecetas.length === 0) {
+        cargarRecetasAdmin();
+      } else if (pestana === 'logs') {
+        cargarLogsAdmin();
+      } else if (pestana === 'passwords' && cacheUsuariosReset.length === 0) {
+        cargarUsuariosResetAdmin();
+      }
     }
 
     async function fetchAdminJson(url) {
@@ -562,6 +570,14 @@
       document.getElementById('kpiCanceladas').textContent = String(r.canceladas || 0);
       document.getElementById('kpiPacientes').textContent = String(r.totalPacientes || 0);
       document.getElementById('kpiRecetasLogs').textContent = `${r.totalRecetas || 0} / ${r.totalLogs || 0}`;
+      const cMed = document.getElementById('countTabMedicos');
+      const cPac = document.getElementById('countTabPacientes');
+      const cRec = document.getElementById('countTabRecetas');
+      const cLog = document.getElementById('countTabLogs');
+      if (cMed) cMed.textContent = String(r.totalMedicos || 0);
+      if (cPac) cPac.textContent = String(r.totalPacientes || 0);
+      if (cRec) cRec.textContent = String(r.totalRecetas || 0);
+      if (cLog) cLog.textContent = String(r.totalLogs || 0);
     }
 
     async function cargarMedicosAdmin() {
@@ -590,7 +606,7 @@
     }
 
     let timerLogsAdmin = null;
-    let intervaloLogsMs = 5000;
+    let intervaloLogsMs = 15000;
 
     async function cargarLogsAdmin() {
       const data = await fetchAdminJson('/api/admin/logs');
@@ -625,7 +641,7 @@
         if (badgeTxt) badgeTxt.textContent = `Auto · cada ${Math.round(intervaloLogsMs / 1000)} seg`;
         if (dot) dot.classList.remove('hidden');
         timerLogsAdmin = setInterval(() => {
-          if (!document.hidden) cargarLogsAdmin();
+          if (!document.hidden && pestanaActiva === 'logs') cargarLogsAdmin();
         }, intervaloLogsMs);
       } else {
         if (badgeTxt) badgeTxt.textContent = 'Modo Manual';
@@ -848,7 +864,17 @@
       modal.classList.remove('hidden');
       actualizarBloqueoScrollFondo();
 
-      const data = await fetchAdminJson('/api/admin/pacientes/' + encodeURIComponent(rut) + '/detalle');
+      const resDetalle = await fetch('/api/admin/pacientes/detalle', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rut })
+      });
+      if (resDetalle.status === 401 || resDetalle.status === 403) {
+        cerrarSesionAdmin();
+        return;
+      }
+      const data = resDetalle.ok ? await resDetalle.json() : null;
       if (!data || !data.ficha) {
         cuerpo.innerHTML = '<div class="p-6 text-center text-red-500 font-semibold">No fue posible cargar el historial del paciente.</div>';
         return;
@@ -1181,6 +1207,8 @@
     function cerrarModalAutorizarResetAdmin() {
       const m = document.getElementById('modalAutorizarResetAdmin');
       if (m) m.classList.add('hidden');
+      const inpPwd = document.getElementById('inputPasswordAdminReset');
+      if (inpPwd) inpPwd.value = '';
       usuarioObjetivoReset = null;
       if (typeof actualizarBloqueoScrollFondo === 'function') actualizarBloqueoScrollFondo();
     }
@@ -1245,6 +1273,7 @@
           errBox.classList.remove('hidden');
         }
       } finally {
+        if (inputPwd) inputPwd.value = '';
         if (btn) {
           btn.disabled = false;
           btn.textContent = 'Generar Clave Temporal';
@@ -1275,20 +1304,21 @@
     }
 
     async function recargarDatosPrincipalesAdmin() {
-      await Promise.all([
-        cargarResumenAdmin(),
-        cargarMedicosAdmin(),
-        cargarPacientesAdmin(),
-        cargarRecetasAdmin(),
-        cargarUsuariosResetAdmin()
-      ]);
+      const tareas = [cargarResumenAdmin()];
+      if (pestanaActiva === 'medicos') tareas.push(cargarMedicosAdmin());
+      else if (pestanaActiva === 'pacientes') tareas.push(cargarPacientesAdmin());
+      else if (pestanaActiva === 'recetas') tareas.push(cargarRecetasAdmin());
+      await Promise.all(tareas);
     }
 
     async function recargarTodoAdmin() {
-      await Promise.all([
-        recargarDatosPrincipalesAdmin(),
-        cargarLogsAdmin()
-      ]);
+      const tareas = [cargarResumenAdmin()];
+      if (pestanaActiva === 'medicos') tareas.push(cargarMedicosAdmin());
+      else if (pestanaActiva === 'pacientes') tareas.push(cargarPacientesAdmin());
+      else if (pestanaActiva === 'recetas') tareas.push(cargarRecetasAdmin());
+      else if (pestanaActiva === 'logs') tareas.push(cargarLogsAdmin());
+      else if (pestanaActiva === 'passwords') tareas.push(cargarUsuariosResetAdmin());
+      await Promise.all(tareas);
     }
 
     async function inicializarAdmin() {
@@ -1321,11 +1351,11 @@
           navAv.textContent = (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
         }
         document.body.classList.remove('hidden');
-        recargarTodoAdmin();
+        await recargarDatosPrincipalesAdmin();
         cambiarIntervaloLogs(intervaloLogsMs);
         setInterval(() => {
           if (!document.hidden) recargarDatosPrincipalesAdmin();
-        }, 20000);
+        }, 30000);
       } catch (e) {
         window.location.replace('/login');
       }

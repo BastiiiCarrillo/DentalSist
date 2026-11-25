@@ -568,7 +568,7 @@ async function cambiarEstado(req, res) {
 }
 
 async function obtenerFichaPaciente(req, res) {
-  const { rut } = req.params;
+  const rut = req.params.rut || (req.body && req.body.rut);
 
   if (!rut || !validarRutChileno(rut)) {
     return res.status(400).json({ error: 'RUT chileno invalido.' });
@@ -595,7 +595,7 @@ async function obtenerFichaPaciente(req, res) {
 }
 
 function actualizarFichaConReautenticacion(req, res) {
-  const { rut } = req.params;
+  const rut = req.params.rut || (req.body && req.body.rut);
   const idMedico = (req.usuario && req.usuario.id) ? req.usuario.id : req.body.idMedico;
   const {
     passwordConfirmacion,

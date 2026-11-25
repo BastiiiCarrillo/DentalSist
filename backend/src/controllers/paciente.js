@@ -263,7 +263,11 @@ async function reservarCita(req, res) {
 }
 
 async function consultarDisponibilidad(req, res) {
-  const { especialidad, fecha, hora, idMedico, rut } = req.query;
+  const { verificarJwtSesionRequest } = require('./auth.controller');
+  const sesion = verificarJwtSesionRequest(req);
+  const { especialidad, fecha, hora, idMedico, rut: rutQuery } = req.query;
+  const rutHeader = req.headers && req.headers['x-paciente-rut'];
+  const rut = (sesion && sesion.rut) || rutHeader || rutQuery;
 
   if (!fecha) {
     return res.status(400).json({ error: 'Se requiere especificar la fecha.' });
@@ -353,7 +357,7 @@ async function consultarDisponibilidad(req, res) {
 }
 
 async function consultarMisCitas(req, res) {
-  const { rut } = req.params;
+  const rut = req.params.rut || (req.usuario && req.usuario.rut);
 
   if (!rut || !validarRutChileno(rut)) {
     return res.status(400).json({ error: 'RUT chileno invalido.' });

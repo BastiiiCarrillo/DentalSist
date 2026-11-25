@@ -473,8 +473,14 @@ async function obtenerMedicosAdmin(req, res) {
     );
     const citaEnAtencion = citasMedico.find(c => c.estado === 'EN_ATENCION') || null;
     const citasHoy = citasMedico.filter(c => c.fecha === hoyChile);
+    const citasLimpias = citasMedico.map(({ emailPaciente, telefonoPaciente, especialistaUuid, ...restoCita }) => restoCita);
     return {
-      ...m,
+      id: m.id,
+      nombre: m.nombre,
+      rut: formatearRut(limpiarRut(m.rut || '')) || m.rut,
+      especialidad: m.especialidad,
+      sillon: m.sillon,
+      registroSis: m.registroSis,
       enAtencion: Boolean(citaEnAtencion),
       pacienteEnAtencion: citaEnAtencion ? {
         nombrePaciente: citaEnAtencion.nombrePaciente,
@@ -491,15 +497,17 @@ async function obtenerMedicosAdmin(req, res) {
         noAsistio: citasMedico.filter(c => c.estado === 'NO_ASISTIO').length,
         canceladas: citasMedico.filter(c => c.estado === 'CANCELADA').length
       },
-      citas: citasMedico
+      citas: citasLimpias
     };
   });
+
+  const citasRespuesta = citas.map(({ emailPaciente, telefonoPaciente, especialistaUuid, ...resto }) => resto);
 
   return res.status(200).json({
     fechaHoyChile: formatearFechaDDMMAAAA(hoyChile),
     totalMedicos: medicos.length,
     medicos,
-    citas
+    citas: citasRespuesta
   });
 }
 
@@ -529,7 +537,7 @@ async function obtenerPacientesAdmin(req, res) {
 }
 
 async function obtenerDetallePacienteAdmin(req, res) {
-  const { rut } = req.params;
+  const rut = req.params.rut || (req.body && req.body.rut);
   if (!rut || !validarRutChileno(rut)) {
     return res.status(400).json({ error: 'RUT chileno de paciente inválido.' });
   }
@@ -675,12 +683,12 @@ async function obtenerUsuariosResetAdmin(req, res) {
 
         for (const e of (rEsp.rows || [])) {
           const clave = String(e.email || dataStore.limpiarRut(e.rut || '')).toLowerCase();
+          const rutFmt = dataStore.formatearRut(dataStore.limpiarRut(e.rut || ''));
           mapa.set(clave, {
             id: String(e.id),
             tipo: 'especialista',
             nombre: e.nombre,
-            rut: e.rut,
-            rutFormateado: dataStore.formatearRut(e.rut || ''),
+            rutFormateado: rutFmt,
             email: e.email,
             rol: 'Odontologo',
             especialidad: e.especialidad || '',
@@ -700,12 +708,12 @@ async function obtenerUsuariosResetAdmin(req, res) {
               : rolUp === 'ODONTOLOGO'
                 ? 'Odontologo'
                 : 'Paciente';
+          const rutFmt = dataStore.formatearRut(dataStore.limpiarRut(u.rut || ''));
           mapa.set(clave, {
             id: String(u.id),
             tipo: 'usuario',
             nombre: u.nombre,
-            rut: u.rut,
-            rutFormateado: dataStore.formatearRut(u.rut || ''),
+            rutFormateado: rutFmt,
             email: u.email,
             rol: rolNorm,
             especialidad: '',

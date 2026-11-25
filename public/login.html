@@ -656,9 +656,13 @@
       }
     }
 
+    let loginEnCurso = false;
+
     async function ejecutarLogin() {
+      if (loginEnCurso) return;
       const identificador = document.getElementById('loginUsuario').value.trim();
-      const password = document.getElementById('loginPassword').value;
+      const inputPass = document.getElementById('loginPassword');
+      const password = inputPass ? inputPass.value : '';
       const recordarme = document.getElementById('checkRecordarme') ? document.getElementById('checkRecordarme').checked : false;
       const err = document.getElementById('errorLogin');
 
@@ -676,6 +680,9 @@
       }
 
       err.classList.add('hidden');
+      loginEnCurso = true;
+      const btnLogin = document.querySelector('#seccionLogin button[onclick="ejecutarLogin()"]');
+      if (btnLogin) btnLogin.disabled = true;
 
       try {
         const respuesta = await fetch('/api/auth/login', {
@@ -691,6 +698,7 @@
             rol: (rolSeleccionado === 'medico' ? 'especialista' : 'paciente')
           })
         });
+        if (inputPass) inputPass.value = '';
 
         const datos = await respuesta.json();
 
@@ -721,6 +729,9 @@
       } catch (e) {
         err.textContent = 'Error al comunicarse con el servidor.';
         err.classList.remove('hidden');
+      } finally {
+        loginEnCurso = false;
+        if (btnLogin) btnLogin.disabled = false;
       }
     }
     function mostrarAlertaClinica(mensaje, titulo = 'Aviso del Sistema') {
@@ -878,6 +889,10 @@
       } catch (e) {
         mostrarError('Error de conexión con el servidor.');
       } finally {
+        const i1 = document.getElementById('inputNuevaPasswordTemporal');
+        const i2 = document.getElementById('inputConfirmarPasswordTemporal');
+        if (i1) i1.value = '';
+        if (i2) i2.value = '';
         if (btn) {
           btn.disabled = false;
           btn.textContent = 'Guardar Nueva Contraseña';

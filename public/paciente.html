@@ -715,22 +715,23 @@
       return `${anoSeleccionado}-${mesPadded}-${diaPadded}`;
     }
 
+    let disponibilidadEnCurso = false;
+
     async function actualizarDisponibilidadEnVivo() {
-      if (document.hidden) return;
+      if (document.hidden || disponibilidadEnCurso) return;
+      disponibilidadEnCurso = true;
       const fechaISO = obtenerFechaISOActual();
       const esp = encodeURIComponent(especialidadSeleccionada || '');
       const med = encodeURIComponent(idMedicoSeleccionado || '');
       const inputRut = document.getElementById('inputRutPaciente');
-      let rutVal = '';
-      if (inputRut && inputRut.value.trim().length >= 7) {
-        rutVal = inputRut.value.trim();
-      } else if (usuarioPacienteActual && usuarioPacienteActual.rut) {
-        rutVal = usuarioPacienteActual.rut;
+      const headers = {};
+      if (!usuarioPacienteActual && inputRut && inputRut.value.trim().length >= 7) {
+        headers['X-Paciente-Rut'] = inputRut.value.trim();
       }
-      const rutParam = encodeURIComponent(rutVal);
       try {
-        const respuesta = await fetch(`/api/pacientes/disponibilidad?fecha=${fechaISO}&especialidad=${esp}&idMedico=${med}&rut=${rutParam}`, {
-          credentials: 'same-origin'
+        const respuesta = await fetch(`/api/pacientes/disponibilidad?fecha=${fechaISO}&especialidad=${esp}&idMedico=${med}`, {
+          credentials: 'same-origin',
+          headers
         });
         if (respuesta.ok) {
           const datos = await respuesta.json();
@@ -741,7 +742,9 @@
           }
           renderizarHorarios();
         }
-      } catch (e) {}
+      } catch (e) {} finally {
+        disponibilidadEnCurso = false;
+      }
     }
 
     function renderizarHorarios() {
@@ -1402,7 +1405,7 @@
       contenedor.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">Buscando citas registradas...</div>';
 
       try {
-        const res = await fetch('/api/pacientes/citas/' + encodeURIComponent(rut), { credentials: 'same-origin' });
+        const res = await fetch('/api/pacientes/mis-citas', { credentials: 'same-origin' });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           contenedor.innerHTML = `<div class="p-4 text-center text-xs text-amber-600 dark:text-amber-400">${escHtml(errData.error || 'No fue posible consultar las citas para este RUT.')}</div>`;
@@ -1607,6 +1610,7 @@
           },
           body: JSON.stringify({ motivo, password })
         });
+        if (claveInp) claveInp.value = '';
         const datos = await res.json();
         if (!res.ok) {
           if (err) {

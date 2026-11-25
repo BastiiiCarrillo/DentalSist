@@ -1512,11 +1512,17 @@
       contenedor.innerHTML = html;
     }
 
+    let agendaCargandoEsp = false;
+
     async function cargarAgendaMedico(silencioso = false) {
-      if (!medicoActual) return;
+      if (!medicoActual || agendaCargandoEsp) return;
+      agendaCargandoEsp = true;
 
       const contenedor = document.getElementById('contenedorAgendaCitas');
-      if (!contenedor) return;
+      if (!contenedor) {
+        agendaCargandoEsp = false;
+        return;
+      }
 
       try {
         const res = await fetch('/api/especialistas/agenda/' + encodeURIComponent(medicoActual.id), {
@@ -1548,11 +1554,16 @@
         if (!silencioso) {
           contenedor.innerHTML = '<div class="p-4 text-center text-xs text-red-500 font-semibold">Error de conexión al cargar agenda.</div>';
         }
+      } finally {
+        agendaCargandoEsp = false;
       }
     }
 
+    let pacientesCargandoEsp = false;
+
     async function cargarPacientesDentalSis(query = '') {
-      if (!medicoActual) return;
+      if (!medicoActual || (pacientesCargandoEsp && !query)) return;
+      if (!query) pacientesCargandoEsp = true;
       try {
         const res = await fetch('/api/especialistas/pacientes?q=' + encodeURIComponent(query || ''), {
           credentials: 'same-origin'
@@ -1569,7 +1580,9 @@
         } else {
           renderizarDropdownPacientes(datos.pacientes || []);
         }
-      } catch (e) {}
+      } catch (e) {} finally {
+        if (!query) pacientesCargandoEsp = false;
+      }
     }
 
     function renderizarChipsPacientesDentalSis() {
@@ -1816,6 +1829,8 @@
     function cerrarModalFirmaAccesoHistorial() {
       const modal = document.getElementById('modalFirmaAccesoHistorial');
       if (modal) modal.classList.add('hidden');
+      const inpClave = document.getElementById('inputClaveFirmaAcceso');
+      if (inpClave) inpClave.value = '';
       const err = document.getElementById('errorClaveFirmaAcceso');
       if (err) err.classList.add('hidden');
     }
@@ -1845,6 +1860,7 @@
             passwordConfirmacion: clave
           })
         });
+        if (inpClave) inpClave.value = '';
 
         const datos = await res.json();
         if (!res.ok) {
@@ -1964,8 +1980,11 @@
 
     async function cargarFichaPaciente(rut) {
       try {
-        const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rut), {
-          credentials: 'same-origin'
+        const res = await fetch('/api/especialistas/ficha-consulta', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rut })
         });
         if (!res.ok) return;
         const datos = await res.json();
@@ -2012,8 +2031,11 @@
     async function refrescarHistorialCitasActivo() {
       if (!rutPacienteActual || !firmaAccesoActual) return;
       try {
-        const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rutPacienteActual), {
-          credentials: 'same-origin'
+        const res = await fetch('/api/especialistas/ficha-consulta', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rut: rutPacienteActual })
         });
         if (!res.ok) return;
         const datos = await res.json();
@@ -2096,6 +2118,7 @@
             passwordConfirmacion: clave
           })
         });
+        if (input) input.value = '';
 
         const datos = await res.json();
         if (!res.ok) {
@@ -2328,7 +2351,8 @@
     }
 
     async function guardarFichaConReautenticacion() {
-      const clave = document.getElementById('inputClaveMedico').value.trim();
+      const inpClaveMed = document.getElementById('inputClaveMedico');
+      const clave = inpClaveMed ? inpClaveMed.value.trim() : '';
       const err = document.getElementById('errorClaveMedico');
 
       if (!clave) {
@@ -2338,13 +2362,14 @@
       }
 
       try {
-        const res = await fetch('/api/especialistas/ficha/' + encodeURIComponent(rutPacienteActual), {
+        const res = await fetch('/api/especialistas/ficha-registro', {
           method: 'POST',
           credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
+            rut: rutPacienteActual,
             passwordConfirmacion: clave,
             tipoAtencion: document.getElementById('campoConsulta').value.trim() || 'Consulta Quirúrgica',
             diagnostico: document.getElementById('campoDiagnostico').value.trim(),
@@ -2352,6 +2377,7 @@
             observaciones: document.getElementById('campoAlergia').value.trim()
           })
         });
+        if (inpClaveMed) inpClaveMed.value = '';
 
         const datos = await res.json();
         if (!res.ok) {
@@ -2482,6 +2508,7 @@
             passwordConfirmacion
           })
         });
+        if (claveInp) claveInp.value = '';
         const datos = await res.json();
         if (!res.ok) {
           if (err) {
